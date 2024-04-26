@@ -1,14 +1,13 @@
 package commands
 
 import (
-	"fmt"
-
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/api/cmdroute"
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/state"
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/commands/general"
+	"github.com/yyewolf/rwbyadv3/internal/commands/system"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 )
 
@@ -35,11 +34,10 @@ func New(a interfaces.App) interfaces.CommandRepository {
 		logrus.WithError(err).Fatal("Failed to get commands from discord")
 	}
 
-	fmt.Println(commands)
-
 	cr.commands = commands
 
 	cr.menus = append(cr.menus, general.New(cr))
+	cr.menus = append(cr.menus, system.New(cr))
 
 	return cr
 }

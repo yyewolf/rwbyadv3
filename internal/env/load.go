@@ -1,7 +1,7 @@
 package env
 
 import (
-	"github.com/diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/yyewolf/rwbyadv3/internal/values"
 
 	"github.com/caarlos0/env/v10"
@@ -31,7 +31,7 @@ func Load() {
 
 	// Parsing IDs
 	if val, err := discord.ParseSnowflake(cfg.Discord.AppID); err == nil {
-		cfg.Discord.AppIDSnowflake = val
+		cfg.Discord.AppIDSnowflake = discord.AppID(val)
 	} else {
 		logrus.Fatalf("failed to parse APP_ID: %v", err)
 	}
