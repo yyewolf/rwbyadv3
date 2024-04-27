@@ -23,7 +23,7 @@ func Connect() *Database {
 		SetAuth(options.Credential{
 			Username:   cfg.Mongo.User,
 			Password:   cfg.Mongo.Pass,
-			AuthSource: cfg.Mongo.Database,
+			AuthSource: cfg.Mongo.AuthDatabase,
 		})
 
 	if cfg.Mode == values.Dev {
