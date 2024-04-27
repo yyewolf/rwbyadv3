@@ -1,12 +1,9 @@
 ---
 name: Release
 
-on: # yamllint disable-line rule:truthy
+on:
   pull_request:
   push:
-    branches:
-      - main
-      - beta
 
 env:
   REGISTRY: ghcr.io
@@ -17,23 +14,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    outputs:
-      published: ${{ steps.release.outputs.published }}
-      release-git-tag: ${{ steps.release.outputs.release-git-tag }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Release
-        id: release
-        uses: ahmadnassri/action-semantic-release@v2.2.8
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  release-image:
-    name: Release image
+  test-build:
+    name: Test the image build process
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -104,7 +86,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: true
+          push: false
           build-args: |
             VERSION=${{ steps.get-tag.outputs.tag }}
           tags: ${{ steps.metadata.outputs.tags }}
