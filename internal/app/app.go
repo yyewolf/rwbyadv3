@@ -8,11 +8,13 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/state"
+	"github.com/google/go-github/v61/github"
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/commands"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/models"
+	"github.com/yyewolf/rwbyadv3/internal/repo"
 	"github.com/yyewolf/rwbyadv3/internal/values"
 )
 
@@ -26,6 +28,9 @@ type App struct {
 	state  *state.State
 	router *cmdroute.Router
 	cr     interfaces.CommandRepository
+
+	// github stuff
+	github *repo.GithubClient
 
 	// graceful shutdown
 	shutdown     chan struct{}
@@ -49,6 +54,8 @@ func New(options ...Option) interfaces.App {
 
 	app.shutdown = make(chan struct{})
 	app.errorChannel = make(chan error)
+
+	app.github = repo.NewGithubClient(&app.config)
 
 	return app
 }
@@ -87,6 +94,10 @@ func (a *App) ReadyHandler(rd *gateway.ReadyEvent) {
 			},
 		})
 	}
+}
+
+func (a *App) NewGithubIssue(params repo.NewIssueParams) (*github.Issue, error) {
+	return a.github.NewGithubIssue(params)
 }
 
 func (a *App) State() *state.State {

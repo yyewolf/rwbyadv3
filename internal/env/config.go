@@ -25,6 +25,13 @@ type Config struct {
 		AppID          string        `env:"APP_ID" envDefault:""`
 		AppIDSnowflake discord.AppID `env:"-"`
 	} `envPrefix:"DISCORD_"`
+
+	// Github
+	Github struct {
+		Token      string `env:"TOKEN" envDefault:""`
+		Username   string `env:"USERNAME" envDefault:""`
+		Repository string `env:"REPOSITORY" envDefault:""`
+	} `envPrefix:"GITHUB_"`
 }
 
 func Get() Config {
