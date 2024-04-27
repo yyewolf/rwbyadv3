@@ -21,8 +21,9 @@ func Connect() *Database {
 	opts := options.Client().
 		ApplyURI(uri).
 		SetAuth(options.Credential{
-			Username: cfg.Mongo.User,
-			Password: cfg.Mongo.Pass,
+			Username:   cfg.Mongo.User,
+			Password:   cfg.Mongo.Pass,
+			AuthSource: cfg.Mongo.Database,
 		})
 
 	if cfg.Mode == values.Dev {
