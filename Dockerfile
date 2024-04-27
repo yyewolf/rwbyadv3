@@ -1,23 +1,15 @@
-ARG OSTYPE=linux-gnu
-ARG ARCHITECTURE=x86_64
-ARG DOCKER_REGISTRY=ghcr.io
-ARG DOCKER_IMAGE_NAME
+FROM golang:1.22-alpine AS builder
+WORKDIR /app
+ENV CGO_ENABLED=0
+COPY go.mod go.sum ./
+RUN --mount=type=ssh go mod download && go mod verify
+COPY . .
+RUN go build -o /app/rwbyadv3 /app/cmd/bot/main.go
 
-# List out all image permutations to trick dependabot
-FROM --platform=linux/amd64 kong/kong-build-tools:apk-1.8.8 as x86_64-linux-musl
-FROM --platform=linux/amd64 kong/kong-build-tools:rpm-1.8.8 as x86_64-linux-gnu
-FROM --platform=linux/arm64 kong/kong-build-tools:apk-1.8.8 as aarch64-linux-musl
-FROM --platform=linux/arm64 kong/kong-build-tools:rpm-1.8.8 as aarch64-linux-gnu
+RUN apk --no-cache add ca-certificates && update-ca-certificates
 
-
-# Run the build script
-FROM $ARCHITECTURE-$OSTYPE as build
-
-COPY . /src
-RUN /src/build.sh && /src/test.sh
-
-
-# Copy the build result to scratch so we can export the result
-FROM scratch as package
-
-COPY --from=build /tmp/build /
+FROM scratch
+COPY --from=builder /app/rwbyadv3 .
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+USER 1000
+ENTRYPOINT ["/rwbyadv3"]
