@@ -1,9 +1,11 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/diamondburned/arikawa/v3/api/cmdroute"
+	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/state"
 	"github.com/sirupsen/logrus"
@@ -11,6 +13,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/models"
+	"github.com/yyewolf/rwbyadv3/internal/values"
 )
 
 type App struct {
@@ -42,18 +45,48 @@ func New(options ...Option) interfaces.App {
 	app.state.AddIntents(gateway.IntentGuilds)
 	app.cr = commands.New(app)
 
-	app.state.AddHandler(func(rd *gateway.ReadyEvent) {
-		logrus.Info("Bot is ready, registering commands...")
-		err := app.cr.RegisterCommands()
-		if err != nil {
-			logrus.WithError(err).Fatal("Failed to register commands")
-		}
-	})
+	app.state.AddHandler(app.ReadyHandler)
 
 	app.shutdown = make(chan struct{})
 	app.errorChannel = make(chan error)
 
 	return app
+}
+
+func (a *App) ReadyHandler(rd *gateway.ReadyEvent) {
+	logrus.Info("Bot is ready, registering commands...")
+	err := a.cr.RegisterCommands()
+	if err != nil {
+		logrus.WithError(err).Fatal("Failed to register commands")
+	}
+
+	// Set status depending on mode :
+	switch a.config.Mode {
+	case values.Dev:
+		a.state.SendGateway(context.TODO(), &gateway.UpdatePresenceCommand{
+			Activities: []discord.Activity{
+				{
+					Name: "/help for help - dev",
+				},
+			},
+		})
+	case values.Preprod:
+		a.state.SendGateway(context.TODO(), &gateway.UpdatePresenceCommand{
+			Activities: []discord.Activity{
+				{
+					Name: "/help for help - preprod",
+				},
+			},
+		})
+	case values.Prod:
+		a.state.SendGateway(context.TODO(), &gateway.UpdatePresenceCommand{
+			Activities: []discord.Activity{
+				{
+					Name: "/help for help",
+				},
+			},
+		})
+	}
 }
 
 func (a *App) State() *state.State {
