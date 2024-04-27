@@ -15,7 +15,7 @@ import (
 func Connect() *Database {
 	// Build the connection string
 	cfg := env.Get()
-	uri := fmt.Sprintf("mongodb://%s:%s/?%s", cfg.Mongo.Host, cfg.Mongo.Port, cfg.Mongo.Additional)
+	uri := fmt.Sprintf("mongodb://%s:%s/%s?%s", cfg.Mongo.Host, cfg.Mongo.Port, cfg.Mongo.Database, cfg.Mongo.Additional)
 
 	// Set client options
 	opts := options.Client().
