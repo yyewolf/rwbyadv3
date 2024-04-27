@@ -21,6 +21,8 @@ func Load() {
 	switch cfg.Mode {
 	case values.Dev:
 		logrus.SetLevel(logrus.DebugLevel)
+	case values.Preprod:
+		logrus.SetLevel(logrus.DebugLevel)
 	case values.Prod:
 		logrus.SetLevel(logrus.InfoLevel)
 	case values.Unset:

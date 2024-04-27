@@ -10,12 +10,13 @@ type Config struct {
 
 	// Database
 	Mongo struct {
-		Host       string `env:"HOST" envDefault:"localhost"`
-		Port       string `env:"PORT" envDefault:"27017"`
-		User       string `env:"USER" envDefault:""`
-		Pass       string `env:"PASS" envDefault:""`
-		Database   string `env:"DATABASE" envDefault:"rcbs"`
-		Additional string `env:"ADDITIONAL" envDefault:""`
+		Host         string `env:"HOST" envDefault:"localhost"`
+		Port         string `env:"PORT" envDefault:"27017"`
+		User         string `env:"USER" envDefault:""`
+		Pass         string `env:"PASS" envDefault:""`
+		Database     string `env:"DATABASE" envDefault:"rcbs"`
+		AuthDatabase string `env:"AUTH_DATABASE" envDefault:"rcbs"`
+		Additional   string `env:"ADDITIONAL" envDefault:""`
 	} `envPrefix:"MONGO_"`
 
 	// Discord
