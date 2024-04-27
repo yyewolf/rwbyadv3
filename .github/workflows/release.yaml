@@ -50,27 +50,18 @@ jobs:
       - name: Build list of Docker tags to use
         id: tag-types
         run: |
-          suffix=""
-          if [[ ${{ github.ref }} == "refs/heads/beta" ]]; then
-            suffix="-nightly"
-          fi
           if [[ ${{ contains(github.ref, 'tag') }} == true ]]; then
-            PRETAGS="
+          TAGS="
             type=semver,pattern={{major}},priority=920
             type=semver,pattern={{major}}.{{minor}},priority=910
             type=semver,pattern={{version}},priority=900
             type=ref,event=branch
             type=sha,format=long"
           else
-          PRETAGS="
+          TAGS="
             type=ref,event=branch
             type=sha,format=long"
           fi
-
-          TAGS=""
-          for tag in $PRETAGS; do
-            TAGS="$TAGS $tag$suffix"
-          done
 
           # https://trstringer.com/github-actions-multiline-strings
           {
