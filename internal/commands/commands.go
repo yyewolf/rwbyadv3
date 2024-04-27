@@ -6,6 +6,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/state"
 	"github.com/sirupsen/logrus"
+	"github.com/yyewolf/rwbyadv3/internal/commands/bugs"
 	"github.com/yyewolf/rwbyadv3/internal/commands/general"
 	"github.com/yyewolf/rwbyadv3/internal/commands/system"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
@@ -37,6 +38,7 @@ func New(a interfaces.App) interfaces.CommandRepository {
 	cr.commands = commands
 
 	cr.menus = append(cr.menus, general.New(cr))
+	cr.menus = append(cr.menus, bugs.New(cr))
 	cr.menus = append(cr.menus, system.New(cr))
 
 	return cr

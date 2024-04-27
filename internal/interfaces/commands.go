@@ -2,7 +2,6 @@ package interfaces
 
 import (
 	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/api/cmdroute"
 )
 
 type Command interface {
@@ -10,7 +9,8 @@ type Command interface {
 	GetDescription() string
 	RegisterCommand() (*api.CreateCommandData, error)
 
-	Func() cmdroute.CommandHandlerFunc
+	// This is not useful and can lead to issue with subcommands
+	// Func() cmdroute.CommandHandlerFunc
 }
 
 type CommandRepository interface {
