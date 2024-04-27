@@ -64,8 +64,16 @@ branches:
     required_pull_request_reviews:
     required_status_checks:
       strict: true
-      contexts: [pre-commit, Create Release, 'Create Release Artifacts (aarch64, linux-gnu)', 'Create Release Artifacts (aarch64, linux-musl)', 'Create
-          Release Artifacts (x86_64, linux-gnu)', 'Create Release Artifacts (x86_64, linux-musl)']
+      contexts: [Release]
+    enforce_admins:
+    required_linear_history: true
+    restrictions:
+- name: beta
+  protection:
+    required_pull_request_reviews:
+    required_status_checks:
+      strict: true
+      contexts: [Release]
     enforce_admins:
     required_linear_history: true
     restrictions:
