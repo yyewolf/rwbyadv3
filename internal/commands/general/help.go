@@ -7,7 +7,6 @@ import (
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/api/cmdroute"
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/state"
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/env"
@@ -42,8 +41,7 @@ func (cmd *HelpCommand) GetDescription() string {
 
 func (cmd *HelpCommand) RegisterCommand() (*api.CreateCommandData, error) {
 	cmd.menu.cr.CommandRouter().AddFunc(cmd.GetName(), cmd.Func())
-
-	cmd.s.AddHandler(cmd.InteractionHandler())
+	cmd.menu.cr.CommandRouter().AddComponentFunc("help_menu", cmd.InteractionHandler())
 
 	return &api.CreateCommandData{
 		Name:        cmd.GetName(),
@@ -121,40 +119,30 @@ func (cmd *HelpCommand) Func() cmdroute.CommandHandlerFunc {
 	}
 }
 
-func (cmd *HelpCommand) InteractionHandler() func(*gateway.InteractionCreateEvent) {
-	return func(e *gateway.InteractionCreateEvent) {
-		switch e.Data.(type) {
-		default:
-			return
-		case *discord.StringSelectInteraction:
+func (cmd *HelpCommand) InteractionHandler() cmdroute.ComponentHandlerFunc {
+	return func(ctx context.Context, data cmdroute.ComponentData) *api.InteractionResponse {
+		if cmd.embeds == nil {
+			cmd.GenerateEmbed()
 		}
 
-		d := e.Data.(*discord.StringSelectInteraction)
+		menuName := data.Event.Data.(*discord.StringSelectInteraction).Values[0]
 
-		// Only consider help menus
-		if d.CustomID != "help_menu" {
-			return
-		}
-
-		// Reply to discord with a followup message
-		err := cmd.s.RespondInteraction(e.ID, e.Token, api.InteractionResponse{
+		err := cmd.s.RespondInteraction(data.Event.ID, data.Event.Token, api.InteractionResponse{
 			Type: api.DeferredMessageUpdate,
 		})
 		if err != nil {
-			logrus.WithError(err).WithField("menu", "help").Error("Failed to defer message update")
-			return
+			logrus.WithError(err).WithField("menu", "help").Error("Failed to update message")
 		}
 
-		menuName := d.Values[0]
-
 		// Update the embed of the original message
-		_, err = cmd.s.EditInteractionResponse(cmd.c.Discord.AppIDSnowflake, e.Token, api.EditInteractionResponseData{
+		_, err = cmd.s.EditInteractionResponse(cmd.c.Discord.AppIDSnowflake, data.Event.Token, api.EditInteractionResponseData{
 			Embeds:     &[]discord.Embed{cmd.GetEmbed(menuName)},
 			Components: cmd.GetSelect(menuName),
 		})
 		if err != nil {
 			logrus.WithError(err).WithField("menu", "help").Error("Failed to update message")
-			return
 		}
+
+		return nil
 	}
 }
