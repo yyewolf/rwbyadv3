@@ -1,19 +1,13 @@
-# Generic Github Repository Template
+# RWBY Adventures
 
-Generic github repository template that keeps child repositories sync'd
+TODO: add explanation here
 
-Use this template as a sensible baseline for new github repositories.
+# Contributors
 
-## Instructions
+Please feel free to contribute to this project. Make sure to open a Pull Request against the develop branch. We welcome improvements, feature suggestions, and bug reports. For major changes, please discuss them first in an issue or in discussions before making a PR.
 
-- Create template from repository
-- Install the [settings app](https://github.com/apps/settings) on the new repository
-- Remove and re-add the `.github/settings.yml` file so the settings app gets enabled
-- From the new repository settings page enable "Allow auto-merge"
-- Following the [CODEOWNERS SYNTAX](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners#codeowners-syntax) guidelines, update the new repository CODEOWNERS file
-- Following our [Github bot guidline documentation](https://konghq.atlassian.net/wiki/spaces/ENGEN/pages/2720268304/How+To+-+Github+Automation+Guidelines) add a github and dependabot secret for AUTO_MERGE_TOKEN
-- **Update** the .github/template-sync.yml file in [kong/template-github-release](https://github.com/Kong/template-github-release) repository with the **cloned repository name** to enable template sync changes
-- Update .releaserc to have the correct repository name
-- Correct the image name in `.github/workflows/release.yaml`
-- Correct the image name in `Makefile`
-- Remove the sync workflow at `.github/template-sync.yml` and `.github/workflows/sync.yml`
+# License
+
+This project is licensed under the BSD 3-Clause License - see the LICENSE.md file for details.
+
+# Contact
