@@ -4,20 +4,16 @@ import (
 	"github.com/FrancoLiberali/cql"
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/yyewolf/rwbyadv3/internal/conditions"
+	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/models"
 	"gorm.io/gorm"
 )
-
-type PlayerRepository interface {
-	Create(player *models.Player) error
-	GetByDiscordID(discordID discord.UserID) (*models.Player, error)
-}
 
 type PlayerRepositoryImpl struct {
 	*gorm.DB
 }
 
-func NewPlayerRepository(g *gorm.DB) PlayerRepository {
+func NewPlayerRepository(g *gorm.DB) interfaces.PlayerRepository {
 	return &PlayerRepositoryImpl{
 		DB: g,
 	}

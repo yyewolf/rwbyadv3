@@ -17,13 +17,16 @@ type PingCommand struct {
 	c *env.Config
 
 	menu *SystemMenu
+
+	interfaces.ContextGenerator
 }
 
 func newPingCommand(m *SystemMenu) interfaces.Command {
 	return &PingCommand{
-		c:    m.cr.Config(),
-		s:    m.cr.State(),
-		menu: m,
+		c:                m.cr.Config(),
+		s:                m.cr.State(),
+		menu:             m,
+		ContextGenerator: m.cr.ContextGenerator(),
 	}
 }
 

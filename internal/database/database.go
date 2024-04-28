@@ -6,20 +6,21 @@ import (
 	gorm_logrus "github.com/onrik/gorm-logrus"
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/env"
+	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-type Database struct {
+type DatabaseImpl struct {
 	c env.Config
 
-	Players PlayerRepository
+	players interfaces.PlayerRepository
 
 	db *gorm.DB
 }
 
-func New(c env.Config) *Database {
+func New(c env.Config) interfaces.Database {
 	dsn := fmt.Sprintf(
 		"host=%s port=%s dbname=%s user=%s password=%s sslmode=disable TimeZone=%s",
 		c.Database.Host,
@@ -37,15 +38,15 @@ func New(c env.Config) *Database {
 		panic("failed to connect database")
 	}
 
-	return &Database{
+	return &DatabaseImpl{
 		db: db,
 		c:  c,
 
-		Players: NewPlayerRepository(db),
+		players: NewPlayerRepository(db),
 	}
 }
 
-func (db *Database) Disconnect() error {
+func (db *DatabaseImpl) Disconnect() error {
 	sqlDB, err := db.db.DB()
 	if err != nil {
 		logrus.Fatal(err)
@@ -53,6 +54,10 @@ func (db *Database) Disconnect() error {
 	return sqlDB.Close()
 }
 
-func (db *Database) Migrate() error {
+func (db *DatabaseImpl) Migrate() error {
 	return db.db.AutoMigrate(&models.Player{})
+}
+
+func (db *DatabaseImpl) Players() interfaces.PlayerRepository {
+	return db.players
 }

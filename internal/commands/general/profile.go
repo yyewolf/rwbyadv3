@@ -1,7 +1,6 @@
 package general
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/diamondburned/arikawa/v3/api"
@@ -11,6 +10,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
+	"github.com/yyewolf/rwbyadv3/internal/middleware"
 	"github.com/yyewolf/rwbyadv3/models"
 )
 
@@ -19,13 +19,16 @@ type ProfileCommand struct {
 	c *env.Config
 
 	menu *GeneralMenu
+
+	interfaces.ContextGenerator
 }
 
 func newProfileCommand(m *GeneralMenu) interfaces.Command {
 	return &ProfileCommand{
-		c:    m.cr.Config(),
-		s:    m.cr.State(),
-		menu: m,
+		c:                m.cr.Config(),
+		s:                m.cr.State(),
+		menu:             m,
+		ContextGenerator: m.cr.ContextGenerator(),
 	}
 }
 
@@ -38,7 +41,7 @@ func (cmd *ProfileCommand) GetDescription() string {
 }
 
 func (cmd *ProfileCommand) RegisterCommand() (*api.CreateCommandData, error) {
-	cmd.menu.cr.CommandRouter().AddFunc(cmd.GetName(), cmd.Func())
+	cmd.menu.cr.CommandRouter().AddFunc(cmd.GetName(), middleware.ContextualizeCommandRouter(cmd, cmd.Func))
 
 	return &api.CreateCommandData{
 		Name:        cmd.GetName(),
@@ -47,29 +50,27 @@ func (cmd *ProfileCommand) RegisterCommand() (*api.CreateCommandData, error) {
 	}, nil
 }
 
-func (cmd *ProfileCommand) Func() cmdroute.CommandHandlerFunc {
-	return func(ctx context.Context, data cmdroute.CommandData) *api.InteractionResponseData {
-		db := cmd.menu.cr.Database()
-		p, err := db.Players.GetByDiscordID(data.Event.SenderID())
+func (cmd *ProfileCommand) Func(ctx interfaces.Context, data cmdroute.CommandData) *api.InteractionResponseData {
+	db := cmd.menu.cr.Database()
+	p, err := db.Players().GetByDiscordID(data.Event.SenderID())
+	if err != nil {
+		p = &models.Player{
+			DiscordID: data.Event.SenderID().String(),
+		}
+		err := db.Players().Create(p)
 		if err != nil {
-			p = &models.Player{
-				DiscordID: data.Event.SenderID().String(),
-			}
-			err := db.Players.Create(p)
-			if err != nil {
-				return &api.InteractionResponseData{
-					Content: option.NewNullableString("An error has occured"),
-					Flags:   discord.EphemeralMessage,
-				}
-			}
-
 			return &api.InteractionResponseData{
-				Content: option.NewNullableString("Created : " + fmt.Sprintf("%+#v", p)),
+				Content: option.NewNullableString("An error has occured"),
+				Flags:   discord.EphemeralMessage,
 			}
 		}
 
 		return &api.InteractionResponseData{
-			Content: option.NewNullableString("Loaded : " + fmt.Sprintf("%+#v", p)),
+			Content: option.NewNullableString("Created : " + fmt.Sprintf("%+#v", p)),
 		}
+	}
+
+	return &api.InteractionResponseData{
+		Content: option.NewNullableString("Loaded : " + fmt.Sprintf("%+#v", p)),
 	}
 }

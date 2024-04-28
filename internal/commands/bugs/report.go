@@ -19,13 +19,16 @@ type ReportCommand struct {
 	c *env.Config
 
 	menu *BugsMenu
+
+	interfaces.ContextGenerator
 }
 
 func newReportCommand(m *BugsMenu) interfaces.Command {
 	return &ReportCommand{
-		c:    m.cr.Config(),
-		s:    m.cr.State(),
-		menu: m,
+		c:                m.cr.Config(),
+		s:                m.cr.State(),
+		menu:             m,
+		ContextGenerator: m.cr.ContextGenerator(),
 	}
 }
 

@@ -21,13 +21,16 @@ type HelpCommand struct {
 	embeds map[string]*discord.Embed
 
 	menu *GeneralMenu
+
+	interfaces.ContextGenerator
 }
 
 func newHelpCommand(m *GeneralMenu) interfaces.Command {
 	return &HelpCommand{
-		c:    m.cr.Config(),
-		s:    m.cr.State(),
-		menu: m,
+		c:                m.cr.Config(),
+		s:                m.cr.State(),
+		menu:             m,
+		ContextGenerator: m.cr.ContextGenerator(),
 	}
 }
 

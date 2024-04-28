@@ -11,9 +11,9 @@ import (
 	"github.com/google/go-github/v61/github"
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/commands"
-	"github.com/yyewolf/rwbyadv3/internal/database"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
+	"github.com/yyewolf/rwbyadv3/internal/middleware"
 	"github.com/yyewolf/rwbyadv3/internal/repo"
 	"github.com/yyewolf/rwbyadv3/internal/values"
 )
@@ -22,12 +22,13 @@ type App struct {
 	config env.Config
 
 	// database stuff
-	db *database.Database
+	db interfaces.Database
 
 	// discord stuff
 	state  *state.State
 	router *cmdroute.Router
 	cr     interfaces.CommandRepository
+	cg     interfaces.ContextGenerator
 
 	// github stuff
 	github *repo.GithubClient
@@ -48,6 +49,7 @@ func New(options ...Option) interfaces.App {
 	app.state = state.New(fmt.Sprintf("Bot %s", app.config.Discord.Token))
 	app.state.AddInteractionHandler(app.router)
 	app.state.AddIntents(gateway.IntentGuilds)
+	app.cg = middleware.NewContextGenerator(app)
 	app.cr = commands.New(app)
 
 	app.state.AddHandler(app.ReadyHandler)
@@ -112,6 +114,10 @@ func (a *App) Config() *env.Config {
 	return &a.config
 }
 
-func (a *App) Database() *database.Database {
+func (a *App) Database() interfaces.Database {
 	return a.db
+}
+
+func (a *App) ContextGenerator() interfaces.ContextGenerator {
+	return a.cg
 }
