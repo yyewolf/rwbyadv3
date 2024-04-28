@@ -11,9 +11,9 @@ import (
 	"github.com/google/go-github/v61/github"
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/commands"
+	"github.com/yyewolf/rwbyadv3/internal/database"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
-	"github.com/yyewolf/rwbyadv3/internal/models"
 	"github.com/yyewolf/rwbyadv3/internal/repo"
 	"github.com/yyewolf/rwbyadv3/internal/values"
 )
@@ -22,7 +22,7 @@ type App struct {
 	config env.Config
 
 	// database stuff
-	db *models.Database
+	db *database.Database
 
 	// discord stuff
 	state  *state.State
@@ -110,4 +110,8 @@ func (a *App) CommandRouter() *cmdroute.Router {
 
 func (a *App) Config() *env.Config {
 	return &a.config
+}
+
+func (a *App) Database() *database.Database {
+	return a.db
 }

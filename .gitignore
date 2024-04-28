@@ -22,7 +22,7 @@ go.work
 
 # Docker dev environment
 dev-keyfile
-mongodb-data
+db_data
 
 # Env
 .env

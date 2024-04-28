@@ -9,15 +9,14 @@ type Config struct {
 	Mode values.Mode `env:"MODE" envDefault:"unset"`
 
 	// Database
-	Mongo struct {
-		Host         string `env:"HOST" envDefault:"localhost"`
-		Port         string `env:"PORT" envDefault:"27017"`
-		User         string `env:"USER" envDefault:""`
-		Pass         string `env:"PASS" envDefault:""`
-		Database     string `env:"DATABASE" envDefault:"rcbs"`
-		AuthDatabase string `env:"AUTH_DATABASE" envDefault:"rcbs"`
-		Additional   string `env:"ADDITIONAL" envDefault:""`
-	} `envPrefix:"MONGO_"`
+	Database struct {
+		Host     string `env:"HOST" envDefault:"localhost"`
+		Port     string `env:"PORT" envDefault:"5432"`
+		User     string `env:"USER" envDefault:""`
+		Pass     string `env:"PASS" envDefault:""`
+		Database string `env:"DATABASE" envDefault:"rwby"`
+		Timezone string `env:"TZ" envDefault:"Europe/Paris"`
+	} `envPrefix:"DB_"`
 
 	// Discord
 	Discord struct {

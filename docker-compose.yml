@@ -1,17 +1,16 @@
 version: "3.7"
 
 services:
-  mongo:
-    image: mongo
-    container_name: mongo
-    command: ["--replSet", "dbrs", "--bind_ip_all", "--keyFile", "/dev-keyfile"]
+  postgresql:
+    restart: unless-stopped
+    image: postgres:latest
+    expose:
+      - ${DB_PORT}
     ports:
-      - "27017:27017"
-    volumes:
-      - ./mongodb-data:/data/db
-      - ./docker/mongo/rs-initiate.js:/docker-entrypoint-initdb.d/rs-initiate.js
-      - ./docker/mongo/dev-keyfile:/dev-keyfile
+      - "${DB_PORT}:${DB_PORT}"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS}
-      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+      - POSTGRES_DB=${DB_DATABASE}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
