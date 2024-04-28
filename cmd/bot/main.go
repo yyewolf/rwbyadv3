@@ -7,21 +7,20 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/app"
+	"github.com/yyewolf/rwbyadv3/internal/database"
 	"github.com/yyewolf/rwbyadv3/internal/env"
-	"github.com/yyewolf/rwbyadv3/internal/models"
-	"github.com/yyewolf/rwbyadv3/internal/mongo"
 )
 
 func main() {
 	env.Load()
 	c := env.Get()
 
-	db := mongo.Connect()
-	migratedDb := models.Migrate(db)
+	db := database.New(c)
+	db.Migrate()
 
 	app := app.New(
 		app.WithConfig(c),
-		app.WithDatabase(migratedDb),
+		app.WithDatabase(db),
 	)
 
 	go app.Start()

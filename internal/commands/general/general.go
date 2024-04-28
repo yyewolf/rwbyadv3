@@ -18,6 +18,7 @@ func New(cr interfaces.CommandRepository) interfaces.Menu {
 	}
 
 	m.commands = append(m.commands, newHelpCommand(m))
+	m.commands = append(m.commands, newProfileCommand(m))
 
 	return m
 }

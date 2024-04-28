@@ -17,6 +17,8 @@ type App interface {
 	State() *state.State
 	CommandRouter() *cmdroute.Router
 	Config() *env.Config
+	Database() Database
+	ContextGenerator() ContextGenerator
 
 	// Github
 	NewGithubIssue(params repo.NewIssueParams) (*github.Issue, error)
