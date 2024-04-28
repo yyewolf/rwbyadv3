@@ -1,7 +1,6 @@
 package general
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/diamondburned/arikawa/v3/api"
@@ -11,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
+	"github.com/yyewolf/rwbyadv3/internal/middleware"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 )
 
@@ -43,8 +43,8 @@ func (cmd *HelpCommand) GetDescription() string {
 }
 
 func (cmd *HelpCommand) RegisterCommand() (*api.CreateCommandData, error) {
-	cmd.menu.cr.CommandRouter().AddFunc(cmd.GetName(), cmd.Func())
-	cmd.menu.cr.CommandRouter().AddComponentFunc("help_menu", cmd.InteractionHandler())
+	cmd.menu.cr.CommandRouter().AddFunc(cmd.GetName(), middleware.ContextualizeCommandRouter(cmd, cmd.Func))
+	cmd.menu.cr.CommandRouter().AddComponentFunc("help_menu", middleware.ContextualizeCommandRouter(cmd, cmd.InteractionHandler))
 
 	return &api.CreateCommandData{
 		Name:        cmd.GetName(),
@@ -107,45 +107,41 @@ func (cmd *HelpCommand) GetSelect(selectedMenu string) *discord.ContainerCompone
 	)
 }
 
-func (cmd *HelpCommand) Func() cmdroute.CommandHandlerFunc {
-	return func(ctx context.Context, data cmdroute.CommandData) *api.InteractionResponseData {
-		if cmd.embeds == nil {
-			cmd.GenerateEmbed()
-		}
+func (cmd *HelpCommand) Func(ctx interfaces.Context, data cmdroute.CommandData) *api.InteractionResponseData {
+	if cmd.embeds == nil {
+		cmd.GenerateEmbed()
+	}
 
-		var defaultMenu = "General"
+	var defaultMenu = "General"
 
-		return &api.InteractionResponseData{
-			Embeds:     &[]discord.Embed{cmd.GetEmbed(defaultMenu)},
-			Components: cmd.GetSelect(defaultMenu),
-		}
+	return &api.InteractionResponseData{
+		Embeds:     &[]discord.Embed{cmd.GetEmbed(defaultMenu)},
+		Components: cmd.GetSelect(defaultMenu),
 	}
 }
 
-func (cmd *HelpCommand) InteractionHandler() cmdroute.ComponentHandlerFunc {
-	return func(ctx context.Context, data cmdroute.ComponentData) *api.InteractionResponse {
-		if cmd.embeds == nil {
-			cmd.GenerateEmbed()
-		}
-
-		menuName := data.Event.Data.(*discord.StringSelectInteraction).Values[0]
-
-		err := cmd.s.RespondInteraction(data.Event.ID, data.Event.Token, api.InteractionResponse{
-			Type: api.DeferredMessageUpdate,
-		})
-		if err != nil {
-			logrus.WithError(err).WithField("menu", "help").Error("Failed to update message")
-		}
-
-		// Update the embed of the original message
-		_, err = cmd.s.EditInteractionResponse(cmd.c.Discord.AppIDSnowflake, data.Event.Token, api.EditInteractionResponseData{
-			Embeds:     &[]discord.Embed{cmd.GetEmbed(menuName)},
-			Components: cmd.GetSelect(menuName),
-		})
-		if err != nil {
-			logrus.WithError(err).WithField("menu", "help").Error("Failed to update message")
-		}
-
-		return nil
+func (cmd *HelpCommand) InteractionHandler(ctx interfaces.Context, data cmdroute.ComponentData) *api.InteractionResponse {
+	if cmd.embeds == nil {
+		cmd.GenerateEmbed()
 	}
+
+	menuName := data.Event.Data.(*discord.StringSelectInteraction).Values[0]
+
+	err := cmd.s.RespondInteraction(data.Event.ID, data.Event.Token, api.InteractionResponse{
+		Type: api.DeferredMessageUpdate,
+	})
+	if err != nil {
+		logrus.WithError(err).WithField("menu", "help").Error("Failed to update message")
+	}
+
+	// Update the embed of the original message
+	_, err = cmd.s.EditInteractionResponse(cmd.c.Discord.AppIDSnowflake, data.Event.Token, api.EditInteractionResponseData{
+		Embeds:     &[]discord.Embed{cmd.GetEmbed(menuName)},
+		Components: cmd.GetSelect(menuName),
+	})
+	if err != nil {
+		logrus.WithError(err).WithField("menu", "help").Error("Failed to update message")
+	}
+
+	return nil
 }

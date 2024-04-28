@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
+	"github.com/yyewolf/rwbyadv3/internal/middleware"
 	"github.com/yyewolf/rwbyadv3/internal/repo"
 )
 
@@ -41,9 +42,12 @@ func (cmd *ReportCommand) GetDescription() string {
 }
 
 func (cmd *ReportCommand) RegisterCommand() (*api.CreateCommandData, error) {
-	cmd.s.AddHandler(cmd.HandleCommand())
-
-	cmd.s.AddHandler(cmd.HandleResponse())
+	cmd.s.AddHandler(
+		middleware.ContextualizeEventHandler(cmd, cmd.HandleCommand),
+	)
+	cmd.s.AddHandler(
+		middleware.ContextualizeEventHandler(cmd, cmd.HandleResponse),
+	)
 
 	return &api.CreateCommandData{
 		Name:        cmd.GetName(),
@@ -64,113 +68,109 @@ func (cmd *ReportCommand) RegisterCommand() (*api.CreateCommandData, error) {
 	}, nil
 }
 
-func (cmd *ReportCommand) HandleCommand() func(*gateway.InteractionCreateEvent) {
-	return func(e *gateway.InteractionCreateEvent) {
-		switch e.Data.(type) {
-		default:
-			return
-		case *discord.CommandInteraction:
-		}
+func (cmd *ReportCommand) HandleCommand(ctx interfaces.Context, e *gateway.InteractionCreateEvent) {
+	switch e.Data.(type) {
+	default:
+		return
+	case *discord.CommandInteraction:
+	}
 
-		d := e.Data.(*discord.CommandInteraction)
+	d := e.Data.(*discord.CommandInteraction)
 
-		if d.Name != cmd.GetName() {
-			return
-		}
+	if d.Name != cmd.GetName() {
+		return
+	}
 
-		// Get type
-		var t string
-		for _, o := range d.Options {
-			if o.Name == "bug" || o.Name == "issue" {
-				t = o.Name
-				break
-			}
+	// Get type
+	var t string
+	for _, o := range d.Options {
+		if o.Name == "bug" || o.Name == "issue" {
+			t = o.Name
+			break
 		}
+	}
 
-		// Reply with modal
-		err := cmd.s.RespondInteraction(e.ID, e.Token, api.InteractionResponse{
-			Type: api.ModalResponse,
-			Data: &api.InteractionResponseData{
-				Title: option.NewNullableString("Report a new " + t),
-				Components: discord.ComponentsPtr(
-					&discord.TextInputComponent{
-						CustomID:    "title",
-						Placeholder: "A brief title of the issue",
-						Label:       "Title",
-						Style:       discord.TextInputShortStyle,
-						Required:    true,
-					},
-					&discord.TextInputComponent{
-						CustomID:    "description",
-						Placeholder: "A detailed description of the issue",
-						Label:       "Description",
-						Style:       discord.TextInputParagraphStyle,
-						Required:    true,
-					},
-				),
-				CustomID: option.NewNullableString("modal_report_" + t),
-			},
-		})
-		if err != nil {
-			logrus.WithError(err).WithField("command", "bug").Error("Failed to respond to interaction")
-			return
-		}
+	// Reply with modal
+	err := cmd.s.RespondInteraction(e.ID, e.Token, api.InteractionResponse{
+		Type: api.ModalResponse,
+		Data: &api.InteractionResponseData{
+			Title: option.NewNullableString("Report a new " + t),
+			Components: discord.ComponentsPtr(
+				&discord.TextInputComponent{
+					CustomID:    "title",
+					Placeholder: "A brief title of the issue",
+					Label:       "Title",
+					Style:       discord.TextInputShortStyle,
+					Required:    true,
+				},
+				&discord.TextInputComponent{
+					CustomID:    "description",
+					Placeholder: "A detailed description of the issue",
+					Label:       "Description",
+					Style:       discord.TextInputParagraphStyle,
+					Required:    true,
+				},
+			),
+			CustomID: option.NewNullableString("modal_report_" + t),
+		},
+	})
+	if err != nil {
+		logrus.WithError(err).WithField("command", "bug").Error("Failed to respond to interaction")
+		return
 	}
 }
 
-func (cmd *ReportCommand) HandleResponse() func(*gateway.InteractionCreateEvent) {
-	return func(e *gateway.InteractionCreateEvent) {
-		switch e.Data.(type) {
-		default:
-			return
-		case *discord.ModalInteraction:
+func (cmd *ReportCommand) HandleResponse(ctx interfaces.Context, e *gateway.InteractionCreateEvent) {
+	switch e.Data.(type) {
+	default:
+		return
+	case *discord.ModalInteraction:
+	}
+
+	d := e.Data.(*discord.ModalInteraction)
+	if d.CustomID != "modal_report_bug" && d.CustomID != "modal_report_issue" {
+		return
+	}
+
+	reportType := string(d.CustomID[13:])
+	reportTitle := d.Components.Find("title").(*discord.TextInputComponent).Value
+	reportDescription := d.Components.Find("description").(*discord.TextInputComponent).Value
+
+	var response api.InteractionResponse
+
+	issue, err := cmd.menu.cr.NewGithubIssue(repo.NewIssueParams{
+		Title:       fmt.Sprintf("New %s: %s", reportType, reportTitle),
+		Description: reportDescription,
+	})
+	if err != nil {
+		logrus.WithError(err).Error("Failed to create issue")
+		response = api.InteractionResponse{
+			Type: api.MessageInteractionWithSource,
+			Data: &api.InteractionResponseData{
+				Content: option.NewNullableString("Failed to create issue"),
+				Flags:   discord.EphemeralMessage,
+			},
 		}
-
-		d := e.Data.(*discord.ModalInteraction)
-		if d.CustomID != "modal_report_bug" && d.CustomID != "modal_report_issue" {
-			return
-		}
-
-		reportType := string(d.CustomID[13:])
-		reportTitle := d.Components.Find("title").(*discord.TextInputComponent).Value
-		reportDescription := d.Components.Find("description").(*discord.TextInputComponent).Value
-
-		var response api.InteractionResponse
-
-		issue, err := cmd.menu.cr.NewGithubIssue(repo.NewIssueParams{
-			Title:       fmt.Sprintf("New %s: %s", reportType, reportTitle),
-			Description: reportDescription,
-		})
-		if err != nil {
-			logrus.WithError(err).Error("Failed to create issue")
-			response = api.InteractionResponse{
-				Type: api.MessageInteractionWithSource,
-				Data: &api.InteractionResponseData{
-					Content: option.NewNullableString("Failed to create issue"),
-					Flags:   discord.EphemeralMessage,
-				},
-			}
-		} else {
-			response = api.InteractionResponse{
-				Type: api.MessageInteractionWithSource,
-				Data: &api.InteractionResponseData{
-					Embeds: &[]discord.Embed{
-						{
-							Title: "Reported " + reportType,
-							Description: "Thank you for the report.\n" +
-								"Your report can be seen [here](" + issue.GetHTMLURL() + ")\n" +
-								"You can complement your issue by logging in and completing it.",
-						},
+	} else {
+		response = api.InteractionResponse{
+			Type: api.MessageInteractionWithSource,
+			Data: &api.InteractionResponseData{
+				Embeds: &[]discord.Embed{
+					{
+						Title: "Reported " + reportType,
+						Description: "Thank you for the report.\n" +
+							"Your report can be seen [here](" + issue.GetHTMLURL() + ")\n" +
+							"You can complement your issue by logging in and completing it.",
 					},
 				},
-			}
+			},
 		}
+	}
 
-		// Reply with modal
-		err = cmd.s.RespondInteraction(e.ID, e.Token, response)
-		if err != nil {
-			logrus.WithError(err).WithField("command", "bug").Error("Failed to respond to interaction")
-			return
-		}
+	// Reply with modal
+	err = cmd.s.RespondInteraction(e.ID, e.Token, response)
+	if err != nil {
+		logrus.WithError(err).WithField("command", "bug").Error("Failed to respond to interaction")
+		return
 	}
 }
