@@ -1,7 +1,7 @@
 package env
 
 import (
-	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/disgoorg/snowflake/v2"
 	"github.com/yyewolf/rwbyadv3/internal/values"
 )
 
@@ -20,9 +20,8 @@ type Config struct {
 
 	// Discord
 	Discord struct {
-		Token          string        `env:"TOKEN" envDefault:""`
-		AppID          string        `env:"APP_ID" envDefault:""`
-		AppIDSnowflake discord.AppID `env:"-"`
+		Token string       `env:"TOKEN" envDefault:""`
+		AppID snowflake.ID `env:"APP_ID" envDefault:""`
 	} `envPrefix:"DISCORD_"`
 
 	// Github

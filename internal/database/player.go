@@ -2,7 +2,7 @@ package database
 
 import (
 	"github.com/FrancoLiberali/cql"
-	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/disgoorg/snowflake/v2"
 	"github.com/yyewolf/rwbyadv3/internal/conditions"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/models"
@@ -25,7 +25,7 @@ func (p *PlayerRepositoryImpl) Create(player *models.Player) error {
 	return result.Error
 }
 
-func (p *PlayerRepositoryImpl) GetByDiscordID(discordID discord.UserID) (*models.Player, error) {
+func (p *PlayerRepositoryImpl) GetByDiscordID(discordID snowflake.ID) (*models.Player, error) {
 	return cql.Query(
 		p.DB,
 		conditions.Player.DiscordID.Is().Eq(discordID.String()),

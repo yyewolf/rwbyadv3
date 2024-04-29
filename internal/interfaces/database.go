@@ -1,7 +1,7 @@
 package interfaces
 
 import (
-	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/disgoorg/snowflake/v2"
 	"github.com/yyewolf/rwbyadv3/models"
 )
 
@@ -14,5 +14,5 @@ type Database interface {
 
 type PlayerRepository interface {
 	Create(player *models.Player) error
-	GetByDiscordID(discordID discord.UserID) (*models.Player, error)
+	GetByDiscordID(discordID snowflake.ID) (*models.Player, error)
 }
