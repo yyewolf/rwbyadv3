@@ -25,10 +25,6 @@ func (a *App) Start() {
 		if a.client != nil {
 			a.client.Close(context.TODO())
 		}
-
-		if a.db != nil {
-			a.db.Disconnect()
-		}
 	case err := <-a.errorChannel:
 		logrus.WithField("error", err).Error("An error stopped execution")
 	}

@@ -1,0 +1,12 @@
+{
+    "terminal.integrated.env.linux": {
+        "DATABASE_URL": "postgres://rtyop:123456@127.0.0.1:5432/rwby?sslmode=disable",
+        "DBMATE_MIGRATIONS_DIR": "sql/migrations",
+        "DBMATE_SCHEMA_FILE": "sql/schema.sql",
+    },
+    "sqlfluff.dialect": "postgres",
+    "editor.formatOnSave": true,
+    "sqlfluff.excludeRules": [
+        "AM04"
+    ]
+}

@@ -1,13 +1,17 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
+	_ "github.com/lib/pq"
+
 	"github.com/sirupsen/logrus"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/yyewolf/rwbyadv3/internal/app"
-	"github.com/yyewolf/rwbyadv3/internal/database"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 )
 
@@ -15,12 +19,15 @@ func main() {
 	env.Load()
 	c := env.Get()
 
-	db := database.New(c)
-	db.Migrate()
+	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s host=%s sslmode=disable", c.Database.User, c.Database.Pass, c.Database.Database, c.Database.Host))
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	boil.SetDB(db)
 
 	app := app.New(
 		app.WithConfig(c),
-		app.WithDatabase(db),
 	)
 
 	go app.Start()
@@ -31,5 +38,6 @@ func main() {
 	logrus.Info("Bot is now running. Press CTRL+C to exit.")
 	<-done // Will block here until user hits ctrl+c
 
+	db.Close()
 	app.Shutdown()
 }

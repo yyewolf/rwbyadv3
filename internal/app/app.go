@@ -25,9 +25,6 @@ import (
 type App struct {
 	config env.Config
 
-	// database stuff
-	db interfaces.Database
-
 	// discord stuff
 	handler *handler.Mux
 	client  bot.Client
@@ -104,8 +101,4 @@ func (a *App) Handler() *handler.Mux {
 
 func (a *App) Config() *env.Config {
 	return &a.config
-}
-
-func (a *App) Database() interfaces.Database {
-	return a.db
 }
