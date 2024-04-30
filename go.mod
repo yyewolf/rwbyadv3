@@ -3,13 +3,14 @@ module github.com/yyewolf/rwbyadv3
 go 1.22.0
 
 require (
+	github.com/amacneil/dbmate/v2 v2.15.0
 	github.com/caarlos0/env/v10 v10.0.0
 	github.com/disgoorg/disgo v0.18.4
 	github.com/disgoorg/snowflake/v2 v2.0.1
 	github.com/friendsofgo/errors v0.9.2
 	github.com/google/go-github/v61 v61.0.0
 	github.com/joho/godotenv v1.5.1
-	github.com/lib/pq v1.10.6
+	github.com/lib/pq v1.10.9
 	github.com/samber/slog-logrus/v2 v2.3.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/volatiletech/null/v8 v8.1.2
@@ -29,9 +30,9 @@ require (
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/volatiletech/inflect v0.0.1 // indirect
 	github.com/volatiletech/randomize v0.0.1 // indirect
-	golang.org/x/crypto v0.19.0 // indirect
+	golang.org/x/crypto v0.22.0 // indirect
 	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f // indirect
-	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
-	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
+	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 )

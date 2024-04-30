@@ -3,10 +3,13 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/amacneil/dbmate/v2/pkg/dbmate"
+	_ "github.com/amacneil/dbmate/v2/pkg/driver/postgres"
 	_ "github.com/lib/pq"
 
 	"github.com/sirupsen/logrus"
@@ -19,7 +22,18 @@ func main() {
 	env.Load()
 	c := env.Get()
 
-	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s host=%s sslmode=disable", c.Database.User, c.Database.Pass, c.Database.Database, c.Database.Host))
+	u, _ := url.Parse(fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", c.Database.User, c.Database.Pass, c.Database.Host, c.Database.Port, c.Database.Database))
+	migrate := dbmate.New(u)
+	migrate.SchemaFile = c.Database.SchemaFile
+	migrate.MigrationsDir = []string{c.Database.MigrationsFolder}
+	migrate.Log = logrus.New().Writer()
+
+	err := migrate.CreateAndMigrate()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable", c.Database.User, c.Database.Pass, c.Database.Database, c.Database.Host, c.Database.Port))
 	if err != nil {
 		logrus.Fatal(err)
 	}
