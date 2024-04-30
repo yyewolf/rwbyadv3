@@ -15,6 +15,9 @@ type Config struct {
 		User     string `env:"USER" envDefault:""`
 		Pass     string `env:"PASS" envDefault:""`
 		Database string `env:"DATABASE" envDefault:"rwby"`
+
+		SchemaFile       string `env:"SCHEMA_FILE" envDefault:"/sql/schema.sql"`
+		MigrationsFolder string `env:"MIGRATIONS_FOLDER" envDefault:"/sql/migrations"`
 	} `envPrefix:"DB_"`
 
 	// Discord
