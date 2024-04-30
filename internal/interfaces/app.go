@@ -1,8 +1,8 @@
 package interfaces
 
 import (
-	"github.com/diamondburned/arikawa/v3/api/cmdroute"
-	"github.com/diamondburned/arikawa/v3/state"
+	"github.com/disgoorg/disgo/bot"
+	"github.com/disgoorg/disgo/handler"
 	"github.com/google/go-github/v61/github"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/repo"
@@ -14,11 +14,10 @@ type App interface {
 	Shutdown() error
 
 	// Getter
-	State() *state.State
-	CommandRouter() *cmdroute.Router
 	Config() *env.Config
 	Database() Database
-	ContextGenerator() ContextGenerator
+	Handler() *handler.Mux
+	Client() bot.Client
 
 	// Github
 	NewGithubIssue(params repo.NewIssueParams) (*github.Issue, error)

@@ -9,7 +9,10 @@ import (
 
 func (a *App) Start() {
 	go func() {
-		err := a.state.Connect(context.TODO())
+		err := a.client.OpenGateway(context.TODO())
+		if err == nil {
+			return
+		}
 
 		select {
 		case a.errorChannel <- err:
@@ -19,15 +22,15 @@ func (a *App) Start() {
 
 	select {
 	case <-a.shutdown:
-		if a.state != nil {
-			a.state.Close()
+		if a.client != nil {
+			a.client.Close(context.TODO())
 		}
 
 		if a.db != nil {
 			a.db.Disconnect()
 		}
 	case err := <-a.errorChannel:
-		logrus.Error(err)
+		logrus.WithField("error", err).Error("An error stopped execution")
 	}
 }
 

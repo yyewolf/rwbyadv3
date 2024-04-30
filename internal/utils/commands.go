@@ -1,16 +1,14 @@
 package utils
 
-import (
-	"github.com/diamondburned/arikawa/v3/discord"
-)
+import "github.com/disgoorg/disgo/discord"
 
 // HELPER FUNCTIONS
-func FindCommandByName(commands []discord.Command, name string) discord.Command {
+func FindCommandByName(commands []discord.ApplicationCommand, name string) discord.ApplicationCommand {
 	for _, command := range commands {
-		if command.Name == name {
+		if command.Name() == name {
 			return command
 		}
 	}
 
-	return discord.Command{}
+	return nil
 }
