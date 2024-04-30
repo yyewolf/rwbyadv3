@@ -26,3 +26,6 @@ db_data
 
 # Env
 .env
+
+# SQL
+sqlboiler.toml

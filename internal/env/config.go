@@ -15,7 +15,6 @@ type Config struct {
 		User     string `env:"USER" envDefault:""`
 		Pass     string `env:"PASS" envDefault:""`
 		Database string `env:"DATABASE" envDefault:"rwby"`
-		Timezone string `env:"TZ" envDefault:"Europe/Paris"`
 	} `envPrefix:"DB_"`
 
 	// Discord

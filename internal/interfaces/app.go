@@ -15,7 +15,6 @@ type App interface {
 
 	// Getter
 	Config() *env.Config
-	Database() Database
 	Handler() *handler.Mux
 	Client() bot.Client
 
