@@ -101,7 +101,7 @@ func (cmd *reportCommand) HandleResponse(t string) handler.ModalHandler {
 			discord.NewMessageCreateBuilder().
 				SetEmbeds(
 					discord.NewEmbedBuilder().
-						SetTitle("Reported"+reportType).
+						SetTitle("Reported "+reportType).
 						SetDescriptionf(
 							"Thank you for the report.\n"+
 								"Your report can be seen [here](%s)\n"+
