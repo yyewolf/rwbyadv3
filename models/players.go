@@ -73,19 +73,49 @@ var PlayerWhere = struct {
 
 // PlayerRels is where relationship names are stored.
 var PlayerRels = struct {
-	Cards string
+	IDGithubStar     string
+	GithubStar       string
+	AuthGithubStates string
+	Cards            string
 }{
-	Cards: "Cards",
+	IDGithubStar:     "IDGithubStar",
+	GithubStar:       "GithubStar",
+	AuthGithubStates: "AuthGithubStates",
+	Cards:            "Cards",
 }
 
 // playerR is where relationships are stored.
 type playerR struct {
-	Cards CardSlice `boil:"Cards" json:"Cards" toml:"Cards" yaml:"Cards"`
+	IDGithubStar     *GithubStar          `boil:"IDGithubStar" json:"IDGithubStar" toml:"IDGithubStar" yaml:"IDGithubStar"`
+	GithubStar       *GithubStar          `boil:"GithubStar" json:"GithubStar" toml:"GithubStar" yaml:"GithubStar"`
+	AuthGithubStates AuthGithubStateSlice `boil:"AuthGithubStates" json:"AuthGithubStates" toml:"AuthGithubStates" yaml:"AuthGithubStates"`
+	Cards            CardSlice            `boil:"Cards" json:"Cards" toml:"Cards" yaml:"Cards"`
 }
 
 // NewStruct creates a new relationship struct
 func (*playerR) NewStruct() *playerR {
 	return &playerR{}
+}
+
+func (r *playerR) GetIDGithubStar() *GithubStar {
+	if r == nil {
+		return nil
+	}
+	return r.IDGithubStar
+}
+
+func (r *playerR) GetGithubStar() *GithubStar {
+	if r == nil {
+		return nil
+	}
+	return r.GithubStar
+}
+
+func (r *playerR) GetAuthGithubStates() AuthGithubStateSlice {
+	if r == nil {
+		return nil
+	}
+	return r.AuthGithubStates
 }
 
 func (r *playerR) GetCards() CardSlice {
@@ -431,6 +461,42 @@ func (q playerQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (boo
 	return count > 0, nil
 }
 
+// IDGithubStar pointed to by the foreign key.
+func (o *Player) IDGithubStar(mods ...qm.QueryMod) githubStarQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"player_id\" = ?", o.ID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return GithubStars(queryMods...)
+}
+
+// GithubStar pointed to by the foreign key.
+func (o *Player) GithubStar(mods ...qm.QueryMod) githubStarQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"player_id\" = ?", o.ID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return GithubStars(queryMods...)
+}
+
+// AuthGithubStates retrieves all the auth_github_state's AuthGithubStates with an executor.
+func (o *Player) AuthGithubStates(mods ...qm.QueryMod) authGithubStateQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"auth_github_states\".\"player_id\"=?", o.ID),
+	)
+
+	return AuthGithubStates(queryMods...)
+}
+
 // Cards retrieves all the card's Cards with an executor.
 func (o *Player) Cards(mods ...qm.QueryMod) cardQuery {
 	var queryMods []qm.QueryMod
@@ -443,6 +509,359 @@ func (o *Player) Cards(mods ...qm.QueryMod) cardQuery {
 	)
 
 	return Cards(queryMods...)
+}
+
+// LoadIDGithubStar allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (playerL) LoadIDGithubStar(ctx context.Context, e boil.ContextExecutor, singular bool, maybePlayer interface{}, mods queries.Applicator) error {
+	var slice []*Player
+	var object *Player
+
+	if singular {
+		var ok bool
+		object, ok = maybePlayer.(*Player)
+		if !ok {
+			object = new(Player)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybePlayer))
+			}
+		}
+	} else {
+		s, ok := maybePlayer.(*[]*Player)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybePlayer))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &playerR{}
+		}
+		args[object.ID] = struct{}{}
+
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &playerR{}
+			}
+
+			args[obj.ID] = struct{}{}
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`github_stars`),
+		qm.WhereIn(`github_stars.player_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`github_stars.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load GithubStar")
+	}
+
+	var resultSlice []*GithubStar
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice GithubStar")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for github_stars")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for github_stars")
+	}
+
+	if len(githubStarAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.IDGithubStar = foreign
+		if foreign.R == nil {
+			foreign.R = &githubStarR{}
+		}
+		foreign.R.IDPlayer = object
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.ID == foreign.PlayerID {
+				local.R.IDGithubStar = foreign
+				if foreign.R == nil {
+					foreign.R = &githubStarR{}
+				}
+				foreign.R.IDPlayer = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadGithubStar allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-1 relationship.
+func (playerL) LoadGithubStar(ctx context.Context, e boil.ContextExecutor, singular bool, maybePlayer interface{}, mods queries.Applicator) error {
+	var slice []*Player
+	var object *Player
+
+	if singular {
+		var ok bool
+		object, ok = maybePlayer.(*Player)
+		if !ok {
+			object = new(Player)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybePlayer))
+			}
+		}
+	} else {
+		s, ok := maybePlayer.(*[]*Player)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybePlayer))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &playerR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &playerR{}
+			}
+
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`github_stars`),
+		qm.WhereIn(`github_stars.player_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`github_stars.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load GithubStar")
+	}
+
+	var resultSlice []*GithubStar
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice GithubStar")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for github_stars")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for github_stars")
+	}
+
+	if len(githubStarAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.GithubStar = foreign
+		if foreign.R == nil {
+			foreign.R = &githubStarR{}
+		}
+		foreign.R.Player = object
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.ID == foreign.PlayerID {
+				local.R.GithubStar = foreign
+				if foreign.R == nil {
+					foreign.R = &githubStarR{}
+				}
+				foreign.R.Player = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAuthGithubStates allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (playerL) LoadAuthGithubStates(ctx context.Context, e boil.ContextExecutor, singular bool, maybePlayer interface{}, mods queries.Applicator) error {
+	var slice []*Player
+	var object *Player
+
+	if singular {
+		var ok bool
+		object, ok = maybePlayer.(*Player)
+		if !ok {
+			object = new(Player)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybePlayer))
+			}
+		}
+	} else {
+		s, ok := maybePlayer.(*[]*Player)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybePlayer))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &playerR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &playerR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`auth_github_states`),
+		qm.WhereIn(`auth_github_states.player_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`auth_github_states.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load auth_github_states")
+	}
+
+	var resultSlice []*AuthGithubState
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice auth_github_states")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on auth_github_states")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for auth_github_states")
+	}
+
+	if len(authGithubStateAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.AuthGithubStates = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &authGithubStateR{}
+			}
+			foreign.R.Player = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.PlayerID {
+				local.R.AuthGithubStates = append(local.R.AuthGithubStates, foreign)
+				if foreign.R == nil {
+					foreign.R = &authGithubStateR{}
+				}
+				foreign.R.Player = local
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 // LoadCards allows an eager lookup of values, cached into the
@@ -502,6 +921,7 @@ func (playerL) LoadCards(ctx context.Context, e boil.ContextExecutor, singular b
 	query := NewQuery(
 		qm.From(`cards`),
 		qm.WhereIn(`cards.player_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`cards.deleted_at`),
 	)
 	if mods != nil {
 		mods.Apply(query)
@@ -555,6 +975,181 @@ func (playerL) LoadCards(ctx context.Context, e boil.ContextExecutor, singular b
 		}
 	}
 
+	return nil
+}
+
+// SetIDGithubStarG of the player to the related item.
+// Sets o.R.IDGithubStar to related.
+// Adds o to related.R.IDPlayer.
+// Uses the global database handle.
+func (o *Player) SetIDGithubStarG(ctx context.Context, insert bool, related *GithubStar) error {
+	return o.SetIDGithubStar(ctx, boil.GetContextDB(), insert, related)
+}
+
+// SetIDGithubStar of the player to the related item.
+// Sets o.R.IDGithubStar to related.
+// Adds o to related.R.IDPlayer.
+func (o *Player) SetIDGithubStar(ctx context.Context, exec boil.ContextExecutor, insert bool, related *GithubStar) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE \"players\" SET %s WHERE %s",
+		strmangle.SetParamNames("\"", "\"", 1, []string{"id"}),
+		strmangle.WhereClause("\"", "\"", 2, playerPrimaryKeyColumns),
+	)
+	values := []interface{}{related.PlayerID, o.ID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	o.ID = related.PlayerID
+	if o.R == nil {
+		o.R = &playerR{
+			IDGithubStar: related,
+		}
+	} else {
+		o.R.IDGithubStar = related
+	}
+
+	if related.R == nil {
+		related.R = &githubStarR{
+			IDPlayer: o,
+		}
+	} else {
+		related.R.IDPlayer = o
+	}
+
+	return nil
+}
+
+// SetGithubStarG of the player to the related item.
+// Sets o.R.GithubStar to related.
+// Adds o to related.R.Player.
+// Uses the global database handle.
+func (o *Player) SetGithubStarG(ctx context.Context, insert bool, related *GithubStar) error {
+	return o.SetGithubStar(ctx, boil.GetContextDB(), insert, related)
+}
+
+// SetGithubStar of the player to the related item.
+// Sets o.R.GithubStar to related.
+// Adds o to related.R.Player.
+func (o *Player) SetGithubStar(ctx context.Context, exec boil.ContextExecutor, insert bool, related *GithubStar) error {
+	var err error
+
+	if insert {
+		related.PlayerID = o.ID
+
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	} else {
+		updateQuery := fmt.Sprintf(
+			"UPDATE \"github_stars\" SET %s WHERE %s",
+			strmangle.SetParamNames("\"", "\"", 1, []string{"player_id"}),
+			strmangle.WhereClause("\"", "\"", 2, githubStarPrimaryKeyColumns),
+		)
+		values := []interface{}{o.ID, related.PlayerID}
+
+		if boil.IsDebug(ctx) {
+			writer := boil.DebugWriterFrom(ctx)
+			fmt.Fprintln(writer, updateQuery)
+			fmt.Fprintln(writer, values)
+		}
+		if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+			return errors.Wrap(err, "failed to update foreign table")
+		}
+
+		related.PlayerID = o.ID
+	}
+
+	if o.R == nil {
+		o.R = &playerR{
+			GithubStar: related,
+		}
+	} else {
+		o.R.GithubStar = related
+	}
+
+	if related.R == nil {
+		related.R = &githubStarR{
+			Player: o,
+		}
+	} else {
+		related.R.Player = o
+	}
+	return nil
+}
+
+// AddAuthGithubStatesG adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.AuthGithubStates.
+// Sets related.R.Player appropriately.
+// Uses the global database handle.
+func (o *Player) AddAuthGithubStatesG(ctx context.Context, insert bool, related ...*AuthGithubState) error {
+	return o.AddAuthGithubStates(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// AddAuthGithubStates adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.AuthGithubStates.
+// Sets related.R.Player appropriately.
+func (o *Player) AddAuthGithubStates(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AuthGithubState) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.PlayerID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"auth_github_states\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"player_id"}),
+				strmangle.WhereClause("\"", "\"", 2, authGithubStatePrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.State}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.PlayerID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &playerR{
+			AuthGithubStates: related,
+		}
+	} else {
+		o.R.AuthGithubStates = append(o.R.AuthGithubStates, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &authGithubStateR{
+				Player: o,
+			}
+		} else {
+			rel.R.Player = o
+		}
+	}
 	return nil
 }
 
@@ -622,7 +1217,7 @@ func (o *Player) AddCards(ctx context.Context, exec boil.ContextExecutor, insert
 
 // Players retrieves all the records using an executor.
 func Players(mods ...qm.QueryMod) playerQuery {
-	mods = append(mods, qm.From("\"players\""))
+	mods = append(mods, qm.From("\"players\""), qmhelper.WhereIsNull("\"players\".\"deleted_at\""))
 	q := NewQuery(mods...)
 	if len(queries.GetSelect(q)) == 0 {
 		queries.SetSelect(q, []string{"\"players\".*"})
@@ -646,7 +1241,7 @@ func FindPlayer(ctx context.Context, exec boil.ContextExecutor, iD string, selec
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"players\" where \"id\"=$1", sel,
+		"select %s from \"players\" where \"id\"=$1 and \"deleted_at\" is null", sel,
 	)
 
 	q := queries.Raw(query, iD)
@@ -1047,13 +1642,13 @@ func (o *Player) Upsert(ctx context.Context, exec boil.ContextExecutor, updateOn
 
 // DeleteG deletes a single Player record.
 // DeleteG will match against the primary key column to find the record to delete.
-func (o *Player) DeleteG(ctx context.Context) (int64, error) {
-	return o.Delete(ctx, boil.GetContextDB())
+func (o *Player) DeleteG(ctx context.Context, hardDelete bool) (int64, error) {
+	return o.Delete(ctx, boil.GetContextDB(), hardDelete)
 }
 
 // Delete deletes a single Player record with an executor.
 // Delete will match against the primary key column to find the record to delete.
-func (o *Player) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
+func (o *Player) Delete(ctx context.Context, exec boil.ContextExecutor, hardDelete bool) (int64, error) {
 	if o == nil {
 		return 0, errors.New("models: no Player provided for delete")
 	}
@@ -1062,8 +1657,26 @@ func (o *Player) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, 
 		return 0, err
 	}
 
-	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), playerPrimaryKeyMapping)
-	sql := "DELETE FROM \"players\" WHERE \"id\"=$1"
+	var (
+		sql  string
+		args []interface{}
+	)
+	if hardDelete {
+		args = queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), playerPrimaryKeyMapping)
+		sql = "DELETE FROM \"players\" WHERE \"id\"=$1"
+	} else {
+		currTime := time.Now().In(boil.GetLocation())
+		o.DeletedAt = null.TimeFrom(currTime)
+		wl := []string{"deleted_at"}
+		sql = fmt.Sprintf("UPDATE \"players\" SET %s WHERE \"id\"=$2",
+			strmangle.SetParamNames("\"", "\"", 1, wl),
+		)
+		valueMapping, err := queries.BindMapping(playerType, playerMapping, append(wl, playerPrimaryKeyColumns...))
+		if err != nil {
+			return 0, err
+		}
+		args = queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), valueMapping)
+	}
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1087,17 +1700,22 @@ func (o *Player) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, 
 	return rowsAff, nil
 }
 
-func (q playerQuery) DeleteAllG(ctx context.Context) (int64, error) {
-	return q.DeleteAll(ctx, boil.GetContextDB())
+func (q playerQuery) DeleteAllG(ctx context.Context, hardDelete bool) (int64, error) {
+	return q.DeleteAll(ctx, boil.GetContextDB(), hardDelete)
 }
 
 // DeleteAll deletes all matching rows.
-func (q playerQuery) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
+func (q playerQuery) DeleteAll(ctx context.Context, exec boil.ContextExecutor, hardDelete bool) (int64, error) {
 	if q.Query == nil {
 		return 0, errors.New("models: no playerQuery provided for delete all")
 	}
 
-	queries.SetDelete(q.Query)
+	if hardDelete {
+		queries.SetDelete(q.Query)
+	} else {
+		currTime := time.Now().In(boil.GetLocation())
+		queries.SetUpdate(q.Query, M{"deleted_at": currTime})
+	}
 
 	result, err := q.Query.ExecContext(ctx, exec)
 	if err != nil {
@@ -1113,12 +1731,12 @@ func (q playerQuery) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (
 }
 
 // DeleteAllG deletes all rows in the slice.
-func (o PlayerSlice) DeleteAllG(ctx context.Context) (int64, error) {
-	return o.DeleteAll(ctx, boil.GetContextDB())
+func (o PlayerSlice) DeleteAllG(ctx context.Context, hardDelete bool) (int64, error) {
+	return o.DeleteAll(ctx, boil.GetContextDB(), hardDelete)
 }
 
 // DeleteAll deletes all rows in the slice, using an executor.
-func (o PlayerSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
+func (o PlayerSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor, hardDelete bool) (int64, error) {
 	if len(o) == 0 {
 		return 0, nil
 	}
@@ -1131,14 +1749,31 @@ func (o PlayerSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (
 		}
 	}
 
-	var args []interface{}
-	for _, obj := range o {
-		pkeyArgs := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(obj)), playerPrimaryKeyMapping)
-		args = append(args, pkeyArgs...)
+	var (
+		sql  string
+		args []interface{}
+	)
+	if hardDelete {
+		for _, obj := range o {
+			pkeyArgs := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(obj)), playerPrimaryKeyMapping)
+			args = append(args, pkeyArgs...)
+		}
+		sql = "DELETE FROM \"players\" WHERE " +
+			strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, playerPrimaryKeyColumns, len(o))
+	} else {
+		currTime := time.Now().In(boil.GetLocation())
+		for _, obj := range o {
+			pkeyArgs := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(obj)), playerPrimaryKeyMapping)
+			args = append(args, pkeyArgs...)
+			obj.DeletedAt = null.TimeFrom(currTime)
+		}
+		wl := []string{"deleted_at"}
+		sql = fmt.Sprintf("UPDATE \"players\" SET %s WHERE "+
+			strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 2, playerPrimaryKeyColumns, len(o)),
+			strmangle.SetParamNames("\"", "\"", 1, wl),
+		)
+		args = append([]interface{}{currTime}, args...)
 	}
-
-	sql := "DELETE FROM \"players\" WHERE " +
-		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, playerPrimaryKeyColumns, len(o))
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1212,7 +1847,8 @@ func (o *PlayerSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) 
 	}
 
 	sql := "SELECT \"players\".* FROM \"players\" WHERE " +
-		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, playerPrimaryKeyColumns, len(*o))
+		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, playerPrimaryKeyColumns, len(*o)) +
+		"and \"deleted_at\" is null"
 
 	q := queries.Raw(sql, args...)
 
@@ -1234,7 +1870,7 @@ func PlayerExistsG(ctx context.Context, iD string) (bool, error) {
 // PlayerExists checks if the Player row exists.
 func PlayerExists(ctx context.Context, exec boil.ContextExecutor, iD string) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"players\" where \"id\"=$1 limit 1)"
+	sql := "select exists(select 1 from \"players\" where \"id\"=$1 and \"deleted_at\" is null limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)

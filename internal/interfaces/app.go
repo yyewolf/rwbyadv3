@@ -3,7 +3,6 @@ package interfaces
 import (
 	"github.com/disgoorg/disgo/bot"
 	"github.com/disgoorg/disgo/handler"
-	"github.com/google/go-github/v61/github"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/repo"
 )
@@ -19,5 +18,6 @@ type App interface {
 	Client() bot.Client
 
 	// Github
-	NewGithubIssue(params repo.NewIssueParams) (*github.Issue, error)
+	// NewGithubIssue(params repo.NewIssueParams) (*github.Issue, error)
+	Github() *repo.GithubClient
 }

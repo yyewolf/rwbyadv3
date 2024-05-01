@@ -4,9 +4,13 @@
 package models
 
 var TableNames = struct {
-	Cards   string
-	Players string
+	AuthGithubStates string
+	Cards            string
+	GithubStars      string
+	Players          string
 }{
-	Cards:   "cards",
-	Players: "players",
+	AuthGithubStates: "auth_github_states",
+	Cards:            "cards",
+	GithubStars:      "github_stars",
+	Players:          "players",
 }

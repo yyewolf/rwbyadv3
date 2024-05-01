@@ -84,7 +84,7 @@ func (cmd *reportCommand) HandleResponse(t string) handler.ModalHandler {
 		reportTitle := d.Text("title")
 		reportDescription := d.Text("description")
 
-		issue, err := cmd.app.NewGithubIssue(repo.NewIssueParams{
+		issue, err := cmd.app.Github().NewGithubIssue(repo.NewIssueParams{
 			Title:       fmt.Sprintf("New %s: %s", reportType, reportTitle),
 			Description: reportDescription,
 		})

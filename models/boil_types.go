@@ -50,3 +50,39 @@ func makeCacheKey(cols boil.Columns, nzDefaults []string) string {
 	strmangle.PutBuffer(buf)
 	return str
 }
+
+type AuthGithubStatesType string
+
+// Enum values for AuthGithubStatesType
+const (
+	AuthGithubStatesTypeCheckStar AuthGithubStatesType = "check_star"
+)
+
+func AllAuthGithubStatesType() []AuthGithubStatesType {
+	return []AuthGithubStatesType{
+		AuthGithubStatesTypeCheckStar,
+	}
+}
+
+func (e AuthGithubStatesType) IsValid() error {
+	switch e {
+	case AuthGithubStatesTypeCheckStar:
+		return nil
+	default:
+		return errors.New("enum is not valid")
+	}
+}
+
+func (e AuthGithubStatesType) String() string {
+	return string(e)
+}
+
+func (e AuthGithubStatesType) Ordinal() int {
+	switch e {
+	case AuthGithubStatesTypeCheckStar:
+		return 0
+
+	default:
+		panic(errors.New("enum is not valid"))
+	}
+}
