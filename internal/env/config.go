@@ -31,9 +31,20 @@ type Config struct {
 		Token      string `env:"TOKEN" envDefault:""`
 		Username   string `env:"USERNAME" envDefault:""`
 		Repository string `env:"REPOSITORY" envDefault:""`
+
+		App struct {
+			ClientID     string `env:"CLIENT_ID" envDefault:""`
+			ClientSecret string `env:"CLIENT_SECRET" envDefault:""`
+			BaseURI      string `env:"BASE_URI" envDefault:""`
+		} `envPrefix:"APP_"`
 	} `envPrefix:"GITHUB_"`
+
+	// Web
+	Web struct {
+		Port string `env:"PORT" envDefault:"8080"`
+	} `envPrefix:"WEB_"`
 }
 
-func Get() Config {
-	return cfg
+func Get() *Config {
+	return &cfg
 }

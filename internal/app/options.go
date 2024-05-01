@@ -6,8 +6,14 @@ import (
 
 type Option func(a *App)
 
-func WithConfig(config env.Config) Option {
+func WithConfig(config *env.Config) Option {
 	return func(a *App) {
 		a.config = config
+	}
+}
+
+func WithWeb() Option {
+	return func(a *App) {
+		a.enableWeb = true
 	}
 }

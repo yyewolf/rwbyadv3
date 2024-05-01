@@ -10,7 +10,6 @@ import (
 	"github.com/disgoorg/disgo/events"
 	"github.com/disgoorg/disgo/gateway"
 	"github.com/disgoorg/disgo/handler"
-	"github.com/google/go-github/v61/github"
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/commands"
@@ -18,12 +17,13 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/repo"
 	"github.com/yyewolf/rwbyadv3/internal/values"
+	"github.com/yyewolf/rwbyadv3/web"
 
 	sloglogrus "github.com/samber/slog-logrus/v2"
 )
 
 type App struct {
-	config env.Config
+	config *env.Config
 
 	// discord stuff
 	handler *handler.Mux
@@ -37,6 +37,10 @@ type App struct {
 	// graceful shutdown
 	shutdown     chan struct{}
 	errorChannel chan error
+
+	// options
+	enableWeb bool
+	webApp    *web.WebApp
 }
 
 func New(options ...Option) interfaces.App {
@@ -66,7 +70,13 @@ func New(options ...Option) interfaces.App {
 	app.shutdown = make(chan struct{})
 	app.errorChannel = make(chan error)
 
-	app.github = repo.NewGithubClient(&app.config)
+	app.github = repo.NewGithubClient(app.config)
+
+	if app.enableWeb {
+		app.webApp = web.NewWebApp(
+			web.WithApp(app),
+		)
+	}
 
 	return app
 }
@@ -87,10 +97,6 @@ func (a *App) OnReady(_ *events.Ready) {
 	}
 }
 
-func (a *App) NewGithubIssue(params repo.NewIssueParams) (*github.Issue, error) {
-	return a.github.NewGithubIssue(params)
-}
-
 func (a *App) Client() bot.Client {
 	return a.client
 }
@@ -100,5 +106,9 @@ func (a *App) Handler() *handler.Mux {
 }
 
 func (a *App) Config() *env.Config {
-	return &a.config
+	return a.config
+}
+
+func (a *App) Github() *repo.GithubClient {
+	return a.github
 }

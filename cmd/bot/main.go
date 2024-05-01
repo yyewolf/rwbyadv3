@@ -42,6 +42,7 @@ func main() {
 
 	app := app.New(
 		app.WithConfig(c),
+		app.WithWeb(),
 	)
 
 	go app.Start()
