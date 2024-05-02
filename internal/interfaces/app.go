@@ -9,13 +9,13 @@ import (
 
 type App interface {
 	Start()
-
 	Shutdown() error
 
 	// Getter
 	Config() *env.Config
 	Handler() *handler.Mux
 	Client() bot.Client
+	JobHandler() JobHandler
 
 	// Github
 	// NewGithubIssue(params repo.NewIssueParams) (*github.Issue, error)
