@@ -1,11 +1,8 @@
 package profile
 
 import (
-	"context"
-
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
-	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/models"
@@ -29,7 +26,11 @@ func ProfileCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command 
 		builder.WithCommandName(commandName),
 		builder.WithDescription(commandDescription),
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
-			h.Command("/"+commandName, cmd.HandleCommand)
+			h.Command("/"+commandName, builder.WithContext(
+				cmd.HandleCommand,
+				builder.WithPlayer(),
+				builder.WithPlayerGithubStars(),
+			))
 			return nil
 		}),
 		builder.WithSlashCommand(discord.SlashCommandCreate{
@@ -40,28 +41,17 @@ func ProfileCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command 
 }
 
 func (cmd *profileCommand) HandleCommand(e *handler.CommandEvent) error {
-	p, err := models.FindPlayerG(context.Background(), e.User().ID.String())
-	if err != nil {
-		p = &models.Player{
-			ID: e.User().ID.String(),
-		}
-		err := p.InsertG(context.Background(), boil.Infer())
-		if err != nil {
-			return e.Respond(
-				discord.InteractionResponseTypeCreateMessage,
-				discord.NewMessageCreateBuilder().
-					SetContent("There has been an error").
-					SetEphemeral(true),
-			)
-		}
-
+	authError := e.Ctx.Value(builder.ErrorKey)
+	if authError != nil {
 		return e.Respond(
 			discord.InteractionResponseTypeCreateMessage,
 			discord.NewMessageCreateBuilder().
-				SetContentf("Created : %+#v", p).
+				SetContentf("You do not have an account yet...").
 				SetEphemeral(true),
 		)
 	}
+
+	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
 
 	return e.Respond(
 		discord.InteractionResponseTypeCreateMessage,
