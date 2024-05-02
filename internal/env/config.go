@@ -39,6 +39,19 @@ type Config struct {
 		} `envPrefix:"APP_"`
 	} `envPrefix:"GITHUB_"`
 
+	// Rbmq
+	Rbmq struct {
+		Host string `env:"HOST" envDefault:"localhost"`
+		Port string `env:"PORT" envDefault:"5672"`
+		User string `env:"USER" envDefault:""`
+		Pass string `env:"PASS" envDefault:""`
+
+		Jobs struct {
+			Exchange string `env:"EXCHANGE" envDefault:"jobs"`
+			Queue    string `env:"QUEUE" envDefault:"jobs"`
+		} `envPrefix:"JOBS_"`
+	} `envPrefix:"RBMQ_"`
+
 	// Web
 	Web struct {
 		Port string `env:"PORT" envDefault:"8080"`

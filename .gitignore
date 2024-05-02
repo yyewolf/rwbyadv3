@@ -29,3 +29,6 @@ db_data
 
 # SQL
 sqlboiler.toml
+
+# Templ
+*_templ.go

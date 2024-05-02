@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/values"
@@ -42,9 +43,13 @@ func (a *App) Start() {
 		if a.enableWeb && a.webApp != nil {
 			a.webApp.Stop()
 		}
+
+		a.jobHandler.Shutdown()
 	case err := <-a.errorChannel:
 		logrus.WithField("error", err).Error("An error stopped execution")
 	}
+
+	time.Sleep(2 * time.Second)
 }
 
 func (a *App) Shutdown() error {

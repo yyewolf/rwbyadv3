@@ -1,0 +1,44 @@
+package errors
+
+import "github.com/yyewolf/rwbyadv3/web/templates/layout"
+
+templ Error(code, text, back string) {
+	<section class="flex flex-col items-center justify-center h-[100vh] gap-12">
+		if code != "" {
+			<div class="items-center justify-center flex flex-col gap-4">
+				<h2 class="bg-rose-700 px-2 text-6xl rounded rotate-[20deg] absolute">
+					{ code }
+				</h2>
+			</div>
+		}
+		if text != "" {
+			<p class="text-3xl text-center md:text-sm text-gray-400">
+				{ text }
+			</p>
+		}
+		if back != "" {
+			<a hx-swap="transition:true" href={ templ.SafeURL(back) } class="btn btn-secondary btn-outline">
+				Go Back
+			</a>
+		}
+	</section>
+}
+
+templ ErrorIndex(
+	title,
+	username string,
+	fromProtected bool,
+	isError bool,
+	cmp templ.Component,
+) {
+	@layout.Base(
+		title,
+		username,
+		fromProtected,
+		isError,
+		[]string{},
+		[]string{},
+	) {
+		@cmp
+	}
+}

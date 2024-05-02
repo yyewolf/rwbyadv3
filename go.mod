@@ -3,6 +3,7 @@ module github.com/yyewolf/rwbyadv3
 go 1.22.0
 
 require (
+	github.com/a-h/templ v0.2.663
 	github.com/amacneil/dbmate/v2 v2.15.0
 	github.com/caarlos0/env/v10 v10.0.0
 	github.com/disgoorg/disgo v0.18.4
@@ -13,6 +14,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/lib/pq v1.10.9
+	github.com/rabbitmq/amqp091-go v1.9.0
 	github.com/samber/slog-logrus/v2 v2.3.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/volatiletech/null/v8 v8.1.2
@@ -23,6 +25,7 @@ require (
 
 require (
 	github.com/disgoorg/json v1.1.0 // indirect
+	github.com/ericlagergren/decimal v0.0.0-20190420051523-6335edbaa640 // indirect
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect

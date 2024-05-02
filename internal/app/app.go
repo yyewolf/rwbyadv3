@@ -15,6 +15,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/commands"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
+	"github.com/yyewolf/rwbyadv3/internal/rbmq"
 	"github.com/yyewolf/rwbyadv3/internal/repo"
 	"github.com/yyewolf/rwbyadv3/internal/values"
 	"github.com/yyewolf/rwbyadv3/web"
@@ -34,6 +35,9 @@ type App struct {
 	// github stuff
 	github *repo.GithubClient
 
+	// jobs stuff
+	jobHandler interfaces.JobHandler
+
 	// graceful shutdown
 	shutdown     chan struct{}
 	errorChannel chan error
@@ -49,6 +53,10 @@ func New(options ...Option) interfaces.App {
 	for _, opt := range options {
 		opt(app)
 	}
+
+	app.jobHandler = rbmq.New(
+		rbmq.WithConfig(app.config),
+	)
 
 	app.handler = handler.New()
 
@@ -86,6 +94,19 @@ func (a *App) OnReady(_ *events.Ready) {
 
 	a.ms = commands.RegisterCommands(a)
 
+	// Begin job handler here
+	go func() {
+		err := a.jobHandler.Start()
+		if err == nil {
+			return
+		}
+
+		select {
+		case a.errorChannel <- err:
+		default:
+		}
+	}()
+
 	// Set status depending on mode :
 	switch a.config.Mode {
 	case values.Dev:
@@ -111,4 +132,7 @@ func (a *App) Config() *env.Config {
 
 func (a *App) Github() *repo.GithubClient {
 	return a.github
+}
+func (a *App) JobHandler() interfaces.JobHandler {
+	return a.jobHandler
 }

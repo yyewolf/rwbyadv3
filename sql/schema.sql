@@ -65,6 +65,22 @@ CREATE TABLE public.github_stars (
 
 
 --
+-- Name: jobs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.jobs (
+    id character varying(100) NOT NULL,
+    jobkey character varying(100) NOT NULL,
+    retries integer DEFAULT 0 NOT NULL,
+    run_at timestamp with time zone NOT NULL,
+    params jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone
+);
+
+
+--
 -- Name: players; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -115,6 +131,14 @@ ALTER TABLE ONLY public.github_stars
 
 ALTER TABLE ONLY public.github_stars
     ADD CONSTRAINT github_stars_pkey PRIMARY KEY (player_id);
+
+
+--
+-- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.jobs
+    ADD CONSTRAINT jobs_pkey PRIMARY KEY (id, jobkey);
 
 
 --
@@ -176,4 +200,5 @@ ALTER TABLE ONLY public.github_stars
 
 INSERT INTO public.schema_migrations (version) VALUES
     ('20240430114611'),
-    ('20240501142003');
+    ('20240501142003'),
+    ('20240502144720');
