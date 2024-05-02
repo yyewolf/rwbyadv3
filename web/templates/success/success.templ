@@ -1,0 +1,37 @@
+package success
+
+import "github.com/yyewolf/rwbyadv3/web/templates/layout"
+
+templ Success(text, back string) {
+	<section class="flex flex-col items-center justify-center h-[100vh] gap-12">
+		if text != "" {
+			<p class="text-3xl text-center md:text-sm text-green-400">
+				{ text }
+			</p>
+		}
+		if back != "" {
+			<a hx-swap="transition:true" href={ templ.SafeURL(back) } class="btn btn-secondary btn-outline">
+				Go Back
+			</a>
+		}
+	</section>
+}
+
+templ SuccessIndex(
+	title,
+	username string,
+	fromProtected bool,
+	isError bool,
+	cmp templ.Component,
+) {
+	@layout.Base(
+		title,
+		username,
+		fromProtected,
+		isError,
+		[]string{},
+		[]string{},
+	) {
+		@cmp
+	}
+}

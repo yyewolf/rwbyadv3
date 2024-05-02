@@ -19,6 +19,9 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/yyewolf/rwbyadv3/web/templates"
+	"github.com/yyewolf/rwbyadv3/web/templates/errors"
+	"github.com/yyewolf/rwbyadv3/web/templates/success"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
 )
@@ -67,6 +70,26 @@ func ReverseState(s string) string {
 	return strings.Split(s, "/")[0]
 }
 
+func ErrorPage(c echo.Context, code int) error {
+	return templates.RenderView(c, errors.ErrorIndex(
+		"- Auth Error",
+		"",
+		true,
+		true,
+		errors.Error(fmt.Sprint(code), "Try again in a few seconds...", ""),
+	))
+}
+
+func SuccessPage(c echo.Context, text string) error {
+	return templates.RenderView(c, success.SuccessIndex(
+		"- Auth Success",
+		"",
+		true,
+		true,
+		success.Success(text, ""),
+	))
+}
+
 func (h *GithubAuthHandler) BeginAuth() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Get state from query
@@ -87,17 +110,16 @@ func (h *GithubAuthHandler) BeginAuth() echo.HandlerFunc {
 func (h *GithubAuthHandler) Callback() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Read oauthState from Cookie
-		oauthState, _ := c.Cookie("oauthstate")
-		if c.FormValue("state") != oauthState.Value {
-			logrus.Warn("differing state")
-			return c.Redirect(http.StatusTemporaryRedirect, "/")
+		oauthState, err := c.Cookie("oauthstate")
+		if err != nil || c.FormValue("state") != oauthState.Value {
+			return ErrorPage(c, http.StatusForbidden)
 		}
 
 		s := ReverseState(oauthState.Value)
 		state, err := models.FindAuthGithubStateG(context.Background(), s)
 		if err != nil {
 			logrus.WithField("state", s).Error("state not found in DB")
-			return c.Redirect(http.StatusTemporaryRedirect, "/")
+			return ErrorPage(c, http.StatusForbidden)
 		}
 
 		state.DeleteG(context.Background(), false)
@@ -105,7 +127,7 @@ func (h *GithubAuthHandler) Callback() echo.HandlerFunc {
 		token, err := h.c.Exchange(context.Background(), c.FormValue("code"))
 		if err != nil {
 			logrus.WithError(err).Error("error invalid code")
-			return c.Redirect(http.StatusTemporaryRedirect, "/")
+			return ErrorPage(c, http.StatusForbidden)
 		}
 
 		switch state.Type {
@@ -122,20 +144,20 @@ func (h *GithubAuthHandler) CallbackCheckStars(state *models.AuthGithubState, to
 		githubUser, err := h.app.Github().GetTokenUser(token.AccessToken)
 		if err != nil {
 			logrus.WithField("state", state.State).WithError(err).Error("error getting user")
-			return c.Redirect(http.StatusTemporaryRedirect, "/")
+			return ErrorPage(c, http.StatusInternalServerError)
 		}
 
 		starred, err := h.app.Github().CheckTokenUserStar(token.AccessToken, h.cfg.Github.Username, h.cfg.Github.Repository)
 		if err != nil {
 			logrus.WithField("state", state.State).WithError(err).Error("error checking star")
-			return c.Redirect(http.StatusTemporaryRedirect, "/")
+			return ErrorPage(c, http.StatusInternalServerError)
 		}
 
 		// Send a DM
 		channel, err := h.app.Client().Rest().CreateDMChannel(snowflake.MustParse(state.PlayerID))
 		if err != nil {
 			logrus.WithField("state", state.State).WithError(err).Error("can't create DM channel")
-			return c.Redirect(http.StatusTemporaryRedirect, "/")
+			return ErrorPage(c, http.StatusInternalServerError)
 		}
 
 		if !starred {
@@ -146,14 +168,14 @@ func (h *GithubAuthHandler) CallbackCheckStars(state *models.AuthGithubState, to
 			)
 
 			logrus.WithField("state", state.State).Error("user has not starred")
-			return c.Redirect(http.StatusTemporaryRedirect, "/")
+			return ErrorPage(c, http.StatusInternalServerError)
 		}
 
 		// ok, we save the user and has_starred
 		githubStar, err := models.FindGithubStarG(context.Background(), state.PlayerID)
 		if err != nil {
 			logrus.WithField("state", state.State).WithError(err).Error("can't get github star")
-			return c.Redirect(http.StatusTemporaryRedirect, "/")
+			return ErrorPage(c, http.StatusInternalServerError)
 		}
 		githubStar.HasStarred = true
 		githubStar.GithubUserID = null.NewString(fmt.Sprintf("%d", githubUser.GetID()), true)
@@ -165,6 +187,6 @@ func (h *GithubAuthHandler) CallbackCheckStars(state *models.AuthGithubState, to
 				Build(),
 		)
 
-		return c.Redirect(http.StatusTemporaryRedirect, "/")
+		return SuccessPage(c, "Successfully looked through github, thank you, you can go back to discord now 😊")
 	}
 }
