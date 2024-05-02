@@ -4,6 +4,9 @@ ENV CGO_ENABLED=0
 COPY go.mod go.sum ./
 RUN --mount=type=ssh go mod download && go mod verify
 COPY . .
+RUN go install github.com/volatiletech/sqlboiler/v4@latest && \
+    go install github.com/volatiletech/sqlboiler/v4/drivers/sqlboiler-psql@latest && \
+    go install github.com/a-h/templ/cmd/templ@latest
 RUN go generate
 RUN go build -o /app/rwbyadv3 /app/cmd/bot/main.go
 
