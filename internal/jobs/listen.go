@@ -1,4 +1,4 @@
-package rbmq
+package jobs
 
 import (
 	"context"
@@ -29,11 +29,10 @@ func (j *JobHandler) Listen() error {
 		err := json.Unmarshal(d, &job)
 		if err != nil {
 			logrus.Error(err)
-			msg.Ack(false)
 		} else {
 			j.handleJob(&job)
-			msg.Ack(false)
 		}
+		msg.Ack(true)
 	}
 
 	return nil

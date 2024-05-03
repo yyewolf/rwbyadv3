@@ -33,6 +33,10 @@ type Job struct {
 	CreatedAt time.Time  `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt time.Time  `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 	DeletedAt null.Time  `boil:"deleted_at" json:"deleted_at,omitempty" toml:"deleted_at" yaml:"deleted_at,omitempty"`
+	LastRunID int64      `boil:"last_run_id" json:"last_run_id" toml:"last_run_id" yaml:"last_run_id"`
+	Recurring bool       `boil:"recurring" json:"recurring" toml:"recurring" yaml:"recurring"`
+	DeltaTime int64      `boil:"delta_time" json:"delta_time" toml:"delta_time" yaml:"delta_time"`
+	Errored   bool       `boil:"errored" json:"errored" toml:"errored" yaml:"errored"`
 
 	R *jobR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L jobL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -47,6 +51,10 @@ var JobColumns = struct {
 	CreatedAt string
 	UpdatedAt string
 	DeletedAt string
+	LastRunID string
+	Recurring string
+	DeltaTime string
+	Errored   string
 }{
 	ID:        "id",
 	Jobkey:    "jobkey",
@@ -56,6 +64,10 @@ var JobColumns = struct {
 	CreatedAt: "created_at",
 	UpdatedAt: "updated_at",
 	DeletedAt: "deleted_at",
+	LastRunID: "last_run_id",
+	Recurring: "recurring",
+	DeltaTime: "delta_time",
+	Errored:   "errored",
 }
 
 var JobTableColumns = struct {
@@ -67,6 +79,10 @@ var JobTableColumns = struct {
 	CreatedAt string
 	UpdatedAt string
 	DeletedAt string
+	LastRunID string
+	Recurring string
+	DeltaTime string
+	Errored   string
 }{
 	ID:        "jobs.id",
 	Jobkey:    "jobs.jobkey",
@@ -76,6 +92,10 @@ var JobTableColumns = struct {
 	CreatedAt: "jobs.created_at",
 	UpdatedAt: "jobs.updated_at",
 	DeletedAt: "jobs.deleted_at",
+	LastRunID: "jobs.last_run_id",
+	Recurring: "jobs.recurring",
+	DeltaTime: "jobs.delta_time",
+	Errored:   "jobs.errored",
 }
 
 // Generated where
@@ -124,6 +144,29 @@ func (w whereHelpertypes_JSON) GTE(x types.JSON) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.GTE, x)
 }
 
+type whereHelperint64 struct{ field string }
+
+func (w whereHelperint64) EQ(x int64) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
+func (w whereHelperint64) NEQ(x int64) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
+func (w whereHelperint64) LT(x int64) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
+func (w whereHelperint64) LTE(x int64) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
+func (w whereHelperint64) GT(x int64) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
+func (w whereHelperint64) GTE(x int64) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
+func (w whereHelperint64) IN(slice []int64) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
+}
+func (w whereHelperint64) NIN(slice []int64) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
+}
+
 var JobWhere = struct {
 	ID        whereHelperstring
 	Jobkey    whereHelperstring
@@ -133,6 +176,10 @@ var JobWhere = struct {
 	CreatedAt whereHelpertime_Time
 	UpdatedAt whereHelpertime_Time
 	DeletedAt whereHelpernull_Time
+	LastRunID whereHelperint64
+	Recurring whereHelperbool
+	DeltaTime whereHelperint64
+	Errored   whereHelperbool
 }{
 	ID:        whereHelperstring{field: "\"jobs\".\"id\""},
 	Jobkey:    whereHelperstring{field: "\"jobs\".\"jobkey\""},
@@ -142,6 +189,10 @@ var JobWhere = struct {
 	CreatedAt: whereHelpertime_Time{field: "\"jobs\".\"created_at\""},
 	UpdatedAt: whereHelpertime_Time{field: "\"jobs\".\"updated_at\""},
 	DeletedAt: whereHelpernull_Time{field: "\"jobs\".\"deleted_at\""},
+	LastRunID: whereHelperint64{field: "\"jobs\".\"last_run_id\""},
+	Recurring: whereHelperbool{field: "\"jobs\".\"recurring\""},
+	DeltaTime: whereHelperint64{field: "\"jobs\".\"delta_time\""},
+	Errored:   whereHelperbool{field: "\"jobs\".\"errored\""},
 }
 
 // JobRels is where relationship names are stored.
@@ -161,9 +212,9 @@ func (*jobR) NewStruct() *jobR {
 type jobL struct{}
 
 var (
-	jobAllColumns            = []string{"id", "jobkey", "retries", "run_at", "params", "created_at", "updated_at", "deleted_at"}
+	jobAllColumns            = []string{"id", "jobkey", "retries", "run_at", "params", "created_at", "updated_at", "deleted_at", "last_run_id", "recurring", "delta_time", "errored"}
 	jobColumnsWithoutDefault = []string{"id", "jobkey", "run_at", "params"}
-	jobColumnsWithDefault    = []string{"retries", "created_at", "updated_at", "deleted_at"}
+	jobColumnsWithDefault    = []string{"retries", "created_at", "updated_at", "deleted_at", "last_run_id", "recurring", "delta_time", "errored"}
 	jobPrimaryKeyColumns     = []string{"id", "jobkey"}
 	jobGeneratedColumns      = []string{}
 )

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/disgoorg/disgo"
 	"github.com/disgoorg/disgo/bot"
@@ -15,7 +16,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/commands"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
-	"github.com/yyewolf/rwbyadv3/internal/rbmq"
+	"github.com/yyewolf/rwbyadv3/internal/jobs"
 	"github.com/yyewolf/rwbyadv3/internal/repo"
 	"github.com/yyewolf/rwbyadv3/internal/values"
 	"github.com/yyewolf/rwbyadv3/web"
@@ -54,8 +55,8 @@ func New(options ...Option) interfaces.App {
 		opt(app)
 	}
 
-	app.jobHandler = rbmq.New(
-		rbmq.WithConfig(app.config),
+	app.jobHandler = jobs.New(
+		jobs.WithConfig(app.config),
 	)
 
 	app.handler = handler.New()
@@ -85,6 +86,14 @@ func New(options ...Option) interfaces.App {
 			web.WithApp(app),
 		)
 	}
+
+	// Jobs
+	app.jobHandler.RegisterJobKey("cleanup_db", app.CleanupJob)
+	app.jobHandler.ScheduleRecurringJob(
+		"cleanup_db",
+		time.Date(2024, 1, 1, 1, 1, 0, 0, time.Local),
+		24*time.Hour,
+	)
 
 	return app
 }

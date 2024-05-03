@@ -1,4 +1,4 @@
-package rbmq
+package jobs
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/values"
+	"github.com/yyewolf/rwbyadv3/models"
 )
 
 type JobHandler struct {
@@ -17,7 +18,8 @@ type JobHandler struct {
 	close  chan bool
 	closed bool
 
-	jobTypes map[interfaces.JobKey]func(params map[string]interface{}) error
+	jobTypes        map[interfaces.JobKey]func(params map[string]interface{}) error
+	reScheduleQueue []*models.Job
 }
 
 func New(options ...Option) interfaces.JobHandler {
@@ -64,7 +66,7 @@ func (j *JobHandler) Start() error {
 		return err
 	}
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
 		case <-j.close:
@@ -93,6 +95,19 @@ func (j *JobHandler) Start() error {
 
 				j.conn = conn
 				j.ch = ch
+			} else {
+				for i := 0; i < 5; i++ {
+					if len(j.reScheduleQueue) == 0 {
+						break
+					}
+					job := j.reScheduleQueue[0]
+					err := j.reScheduleJob(job)
+					if err == nil {
+						j.reScheduleQueue = j.reScheduleQueue[1:]
+						break
+					}
+					time.Sleep(200 * time.Millisecond)
+				}
 			}
 		}
 	}

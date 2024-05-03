@@ -76,7 +76,11 @@ CREATE TABLE public.jobs (
     params jsonb NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    deleted_at timestamp with time zone
+    deleted_at timestamp with time zone,
+    last_run_id bigint DEFAULT 0 NOT NULL,
+    recurring boolean DEFAULT false NOT NULL,
+    delta_time bigint DEFAULT 0 NOT NULL,
+    errored boolean DEFAULT false NOT NULL
 );
 
 
@@ -201,4 +205,5 @@ ALTER TABLE ONLY public.github_stars
 INSERT INTO public.schema_migrations (version) VALUES
     ('20240430114611'),
     ('20240501142003'),
-    ('20240502144720');
+    ('20240502144720'),
+    ('20240503174603');

@@ -47,8 +47,9 @@ type Config struct {
 		Pass string `env:"PASS" envDefault:""`
 
 		Jobs struct {
-			Exchange string `env:"EXCHANGE" envDefault:"jobs"`
-			Queue    string `env:"QUEUE" envDefault:"jobs"`
+			DLExchange string `env:"DLEXCHANGE" envDefault:"jobs"`
+			Exchange   string `env:"EXCHANGE" envDefault:"jobs"`
+			Queue      string `env:"QUEUE" envDefault:"jobs"`
 		} `envPrefix:"JOBS_"`
 	} `envPrefix:"RBMQ_"`
 

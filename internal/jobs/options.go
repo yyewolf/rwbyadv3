@@ -1,4 +1,4 @@
-package rbmq
+package jobs
 
 import (
 	"github.com/yyewolf/rwbyadv3/internal/env"
