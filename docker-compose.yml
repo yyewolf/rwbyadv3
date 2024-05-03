@@ -1,17 +1,34 @@
-version: "3.7"
-
 services:
-  mongo:
-    image: mongo
-    container_name: mongo
-    command: ["--replSet", "dbrs", "--bind_ip_all", "--keyFile", "/dev-keyfile"]
+  postgresql:
+    restart: unless-stopped
+    image: postgres:latest
+    expose:
+      - ${DB_PORT}
     ports:
-      - "27017:27017"
-    volumes:
-      - ./mongodb-data:/data/db
-      - ./docker/mongo/rs-initiate.js:/docker-entrypoint-initdb.d/rs-initiate.js
-      - ./docker/mongo/dev-keyfile:/dev-keyfile
+      - "${DB_PORT}:${DB_PORT}"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS}
-      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+      - POSTGRES_DB=${DB_DATABASE}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    restart: always
+    ports:
+      - "8888:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@test.com
+      PGADMIN_DEFAULT_PASSWORD: guest
+
+  rabbitmq:
+    image: heidiks/rabbitmq-delayed-message-exchange:3.13.0-management
+    container_name: rabbitmq
+    ports:
+        - 5672:5672
+        - 15672:15672
+    volumes:
+        - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+        - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq

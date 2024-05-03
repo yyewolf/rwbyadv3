@@ -1,0 +1,12 @@
+output   = "models"
+wipe     = true
+no-tests = true
+add-enum-types = true
+
+[psql]
+    dbname = "rwby"
+    host = "127.0.0.1"
+    user = "rtyop"
+    pass = "123456"
+    sslmode = "disable"
+    blacklist = [ "schema_migrations" ]

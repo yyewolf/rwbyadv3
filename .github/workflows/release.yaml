@@ -100,3 +100,17 @@ jobs:
             VERSION=${{ steps.get-tag.outputs.tag }}
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
+
+  deploy:
+    needs: [release-image]
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Deploy to production
+        run: |
+          if [[ ${{ github.ref }} == 'refs/heads/main' || ${{ github.ref }} == 'refs/heads/beta' ]]; then
+            curl -X GET ${{ secrets.DEPLOY_URL }}
+          fi
