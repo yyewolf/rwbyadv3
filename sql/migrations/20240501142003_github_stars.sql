@@ -19,9 +19,7 @@ ADD CONSTRAINT fk_player_id FOREIGN KEY (player_id) REFERENCES players (id)
 DEFERRABLE INITIALLY DEFERRED;
 
 ALTER TABLE players
-ADD CONSTRAINT fk_github_star FOREIGN KEY (id) REFERENCES github_stars (
-    player_id
-)
+ADD CONSTRAINT fk_github_star FOREIGN KEY (id) REFERENCES github_stars (player_id)
 DEFERRABLE INITIALLY DEFERRED;
 
 CREATE TYPE auth_github_states_type AS ENUM ('check_star');

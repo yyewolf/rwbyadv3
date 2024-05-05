@@ -142,6 +142,7 @@ func (a *App) Config() *env.Config {
 func (a *App) Github() *repo.GithubClient {
 	return a.github
 }
+
 func (a *App) JobHandler() interfaces.JobHandler {
 	return a.jobHandler
 }

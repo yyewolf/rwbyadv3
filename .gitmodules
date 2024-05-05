@@ -1,0 +1,3 @@
+[submodule "cards"]
+	path = cards
+	url = https://github.com/yyewolf/rwbyadv3_data.git

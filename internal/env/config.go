@@ -57,6 +57,11 @@ type Config struct {
 	Web struct {
 		Port string `env:"PORT" envDefault:"8080"`
 	} `envPrefix:"WEB_"`
+
+	// App parameters
+	App struct {
+		CardsLocation string `env:"CARDS_LOCATION" envDefault:"/cards"`
+	} `envPrefix:"APP_"`
 }
 
 func Get() *Config {

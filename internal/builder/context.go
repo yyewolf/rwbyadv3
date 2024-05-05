@@ -26,6 +26,7 @@ type Event interface {
 type ContextBuilder struct {
 	withPlayer            bool
 	withPlayerGithubStars bool
+	withPlayerCards       bool
 }
 
 type ContextOption func(a *ContextBuilder)
@@ -36,6 +37,10 @@ func FillContext[K Event](cb *ContextBuilder, event K, ctx context.Context) cont
 
 		if cb.withPlayerGithubStars {
 			mods = append(mods, qm.Load(models.PlayerRels.GithubStar))
+		}
+
+		if cb.withPlayerCards {
+			mods = append(mods, qm.Load(qm.Rels(models.PlayerRels.Cards, models.CardRels.CardsStat)))
 		}
 
 		mods = append(mods,
@@ -93,5 +98,11 @@ func WithPlayer() func(a *ContextBuilder) {
 func WithPlayerGithubStars() func(a *ContextBuilder) {
 	return func(a *ContextBuilder) {
 		a.withPlayerGithubStars = true
+	}
+}
+
+func WithPlayerCards() func(a *ContextBuilder) {
+	return func(a *ContextBuilder) {
+		a.withPlayerCards = true
 	}
 }

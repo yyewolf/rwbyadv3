@@ -6,12 +6,14 @@ package models
 var TableNames = struct {
 	AuthGithubStates string
 	Cards            string
+	CardsStats       string
 	GithubStars      string
 	Jobs             string
 	Players          string
 }{
 	AuthGithubStates: "auth_github_states",
 	Cards:            "cards",
+	CardsStats:       "cards_stats",
 	GithubStars:      "github_stars",
 	Jobs:             "jobs",
 	Players:          "players",
