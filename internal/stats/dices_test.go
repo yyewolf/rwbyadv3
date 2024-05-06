@@ -24,11 +24,12 @@ func showStatsNormal(data []float64) {
 }
 
 func showStatsExp(data []float64) {
-	fmt.Println("Between 0-20:", float64(N-countOver(data, 20))*100.0/float64(N), "%")
-	fmt.Println("Between 20-40:", float64(countOver(data, 20)-countOver(data, 40))*100.0/float64(N), "%")
-	fmt.Println("Between 40-60:", float64(countOver(data, 40)-countOver(data, 60))*100.0/float64(N), "%")
-	fmt.Println("Between 60-80:", float64(countOver(data, 60)-countOver(data, 80))*100.0/float64(N), "%")
-	fmt.Println("Between 80-100:", float64(countOver(data, 80))*100.0/float64(N), "%")
+	fmt.Println("0:", float64(N-countOver(data, 100/6))*100.0/float64(N), "%")
+	fmt.Println("1:", float64(countOver(data, 100/6)-countOver(data, 2*100/6))*100.0/float64(N), "%")
+	fmt.Println("2:", float64(countOver(data, 2*100/6)-countOver(data, 3*100/6))*100.0/float64(N), "%")
+	fmt.Println("3:", float64(countOver(data, 3*100/6)-countOver(data, 4*100/6))*100.0/float64(N), "%")
+	fmt.Println("4:", float64(countOver(data, 4*100/6)-countOver(data, 5*100/6))*100.0/float64(N), "%")
+	fmt.Println("5:", float64(countOver(data, 5*100/6))*100.0/float64(N), "%")
 }
 
 func TestNormalLoot(t *testing.T) {

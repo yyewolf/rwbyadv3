@@ -18,6 +18,18 @@ CREATE TYPE public.auth_github_states_type AS ENUM (
 );
 
 
+--
+-- Name: loot_boxes_type; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.loot_boxes_type AS ENUM (
+    'classic',
+    'rare',
+    'limited',
+    'special'
+);
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -109,6 +121,21 @@ CREATE TABLE public.jobs (
 
 
 --
+-- Name: loot_boxes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.loot_boxes (
+    id character varying(50) NOT NULL,
+    player_id character varying(50) NOT NULL,
+    type public.loot_boxes_type NOT NULL,
+    metadata json,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone
+);
+
+
+--
 -- Name: players; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -178,6 +205,14 @@ ALTER TABLE ONLY public.jobs
 
 
 --
+-- Name: loot_boxes loot_boxes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.loot_boxes
+    ADD CONSTRAINT loot_boxes_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: players players_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -242,6 +277,14 @@ ALTER TABLE ONLY public.github_stars
 
 
 --
+-- Name: loot_boxes loot_boxes_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.loot_boxes
+    ADD CONSTRAINT loot_boxes_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -255,4 +298,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240501142003'),
     ('20240502144720'),
     ('20240503174603'),
-    ('20240505092653');
+    ('20240505092653'),
+    ('20240506144248');

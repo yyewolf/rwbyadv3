@@ -77,11 +77,13 @@ var PlayerRels = struct {
 	GithubStar       string
 	AuthGithubStates string
 	Cards            string
+	LootBoxes        string
 }{
 	IDGithubStar:     "IDGithubStar",
 	GithubStar:       "GithubStar",
 	AuthGithubStates: "AuthGithubStates",
 	Cards:            "Cards",
+	LootBoxes:        "LootBoxes",
 }
 
 // playerR is where relationships are stored.
@@ -90,6 +92,7 @@ type playerR struct {
 	GithubStar       *GithubStar          `boil:"GithubStar" json:"GithubStar" toml:"GithubStar" yaml:"GithubStar"`
 	AuthGithubStates AuthGithubStateSlice `boil:"AuthGithubStates" json:"AuthGithubStates" toml:"AuthGithubStates" yaml:"AuthGithubStates"`
 	Cards            CardSlice            `boil:"Cards" json:"Cards" toml:"Cards" yaml:"Cards"`
+	LootBoxes        LootBoxSlice         `boil:"LootBoxes" json:"LootBoxes" toml:"LootBoxes" yaml:"LootBoxes"`
 }
 
 // NewStruct creates a new relationship struct
@@ -123,6 +126,13 @@ func (r *playerR) GetCards() CardSlice {
 		return nil
 	}
 	return r.Cards
+}
+
+func (r *playerR) GetLootBoxes() LootBoxSlice {
+	if r == nil {
+		return nil
+	}
+	return r.LootBoxes
 }
 
 // playerL is where Load methods for each relationship are stored.
@@ -509,6 +519,20 @@ func (o *Player) Cards(mods ...qm.QueryMod) cardQuery {
 	)
 
 	return Cards(queryMods...)
+}
+
+// LootBoxes retrieves all the loot_box's LootBoxes with an executor.
+func (o *Player) LootBoxes(mods ...qm.QueryMod) lootBoxQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"loot_boxes\".\"player_id\"=?", o.ID),
+	)
+
+	return LootBoxes(queryMods...)
 }
 
 // LoadIDGithubStar allows an eager lookup of values, cached into the
@@ -978,6 +1002,120 @@ func (playerL) LoadCards(ctx context.Context, e boil.ContextExecutor, singular b
 	return nil
 }
 
+// LoadLootBoxes allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (playerL) LoadLootBoxes(ctx context.Context, e boil.ContextExecutor, singular bool, maybePlayer interface{}, mods queries.Applicator) error {
+	var slice []*Player
+	var object *Player
+
+	if singular {
+		var ok bool
+		object, ok = maybePlayer.(*Player)
+		if !ok {
+			object = new(Player)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybePlayer))
+			}
+		}
+	} else {
+		s, ok := maybePlayer.(*[]*Player)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybePlayer))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &playerR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &playerR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`loot_boxes`),
+		qm.WhereIn(`loot_boxes.player_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`loot_boxes.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load loot_boxes")
+	}
+
+	var resultSlice []*LootBox
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice loot_boxes")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on loot_boxes")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for loot_boxes")
+	}
+
+	if len(lootBoxAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.LootBoxes = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &lootBoxR{}
+			}
+			foreign.R.Player = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.PlayerID {
+				local.R.LootBoxes = append(local.R.LootBoxes, foreign)
+				if foreign.R == nil {
+					foreign.R = &lootBoxR{}
+				}
+				foreign.R.Player = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // SetIDGithubStarG of the player to the related item.
 // Sets o.R.IDGithubStar to related.
 // Adds o to related.R.IDPlayer.
@@ -1206,6 +1344,68 @@ func (o *Player) AddCards(ctx context.Context, exec boil.ContextExecutor, insert
 	for _, rel := range related {
 		if rel.R == nil {
 			rel.R = &cardR{
+				Player: o,
+			}
+		} else {
+			rel.R.Player = o
+		}
+	}
+	return nil
+}
+
+// AddLootBoxesG adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.LootBoxes.
+// Sets related.R.Player appropriately.
+// Uses the global database handle.
+func (o *Player) AddLootBoxesG(ctx context.Context, insert bool, related ...*LootBox) error {
+	return o.AddLootBoxes(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// AddLootBoxes adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.LootBoxes.
+// Sets related.R.Player appropriately.
+func (o *Player) AddLootBoxes(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*LootBox) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.PlayerID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"loot_boxes\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"player_id"}),
+				strmangle.WhereClause("\"", "\"", 2, lootBoxPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.PlayerID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &playerR{
+			LootBoxes: related,
+		}
+	} else {
+		o.R.LootBoxes = append(o.R.LootBoxes, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &lootBoxR{
 				Player: o,
 			}
 		} else {

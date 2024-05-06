@@ -9,6 +9,7 @@ var TableNames = struct {
 	CardsStats       string
 	GithubStars      string
 	Jobs             string
+	LootBoxes        string
 	Players          string
 }{
 	AuthGithubStates: "auth_github_states",
@@ -16,5 +17,6 @@ var TableNames = struct {
 	CardsStats:       "cards_stats",
 	GithubStars:      "github_stars",
 	Jobs:             "jobs",
+	LootBoxes:        "loot_boxes",
 	Players:          "players",
 }

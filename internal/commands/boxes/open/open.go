@@ -11,6 +11,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/lootbox"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
+	"github.com/yyewolf/rwbyadv3/models"
 )
 
 const (
@@ -31,7 +32,11 @@ func OpenCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 		builder.WithCommandName(commandName),
 		builder.WithDescription(commandDescription),
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
-			h.Command("/open", cmd.HandleCommand())
+			h.Command("/open", builder.WithContext(
+				cmd.HandleCommand,
+				builder.WithPlayer(),
+				builder.WithPlayerLootBoxes(),
+			))
 			return nil
 		}),
 		builder.WithSlashCommand(discord.SlashCommandCreate{
@@ -41,35 +46,58 @@ func OpenCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 	)
 }
 
-func (cmd *openCommand) HandleCommand() handler.CommandHandler {
-	return func(e *handler.CommandEvent) error {
-		c := lootbox.NormalLootBox.PickCard(cards.Cards)
-		t := utils.Cards.Template(c)
+func (cmd *openCommand) HandleCommand(e *handler.CommandEvent) error {
+	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
 
-		c.PlayerID = e.User().ID.String()
-
-		tx, err := boil.BeginTx(context.Background(), nil)
-		if err != nil {
-			return err
-		}
-
-		err = c.Insert(context.Background(), tx, boil.Infer())
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-
-		err = c.SetCardsStat(context.Background(), tx, true, utils.Cards.GenerateStats(c))
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-
-		tx.Commit()
-
+	if len(p.R.LootBoxes) == 0 {
 		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContentf("Looted %s (%v, %v)", t.Name, c, c.R.CardsStat).
+			SetContent("You don't have any lootboxes :(").
+			SetEphemeral(true).
 			Build(),
 		)
 	}
+
+	tx, err := boil.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+
+	lootBox := p.R.LootBoxes[0]
+
+	_, err = lootBox.Delete(context.Background(), tx, false)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// var c *models.Card
+
+	// switch lootBox.Type {
+	// case models.LootBoxesTypeClassic:
+	// case models.LootBoxesTypeRare:
+	// case models.LootBoxesTypeLimited:
+	// case models.LootBoxesTypeSpecial:
+	// }
+
+	c := lootbox.NormalLootBox.PickCard(cards.Cards)
+	c.PlayerID = e.User().ID.String()
+
+	err = c.Insert(context.Background(), tx, boil.Infer())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = c.SetCardsStat(context.Background(), tx, true, utils.Cards.GenerateStats(c))
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+
+	return e.CreateMessage(discord.NewMessageCreateBuilder().
+		SetContentf("Looted `%s`, you have %d loot boxes left.", utils.Cards.FullString(c), len(p.R.LootBoxes)-1).
+		Build(),
+	)
 }

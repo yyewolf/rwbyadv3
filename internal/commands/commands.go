@@ -6,9 +6,11 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/commands/boxes"
 	"github.com/yyewolf/rwbyadv3/internal/commands/bugs"
 	"github.com/yyewolf/rwbyadv3/internal/commands/general"
+	"github.com/yyewolf/rwbyadv3/internal/commands/preprod"
 	"github.com/yyewolf/rwbyadv3/internal/commands/rewards"
 	"github.com/yyewolf/rwbyadv3/internal/commands/system"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
+	"github.com/yyewolf/rwbyadv3/internal/values"
 )
 
 func RegisterCommands(app interfaces.App) *builder.MenuStore {
@@ -19,6 +21,10 @@ func RegisterCommands(app interfaces.App) *builder.MenuStore {
 	rewards.NewMenu(ms, app)
 	system.NewMenu(ms, app)
 	bugs.NewMenu(ms, app)
+
+	if app.Config().Mode != values.Prod {
+		preprod.NewMenu(ms, app)
+	}
 
 	createCommands, err := ms.RegisterCommands()
 	if err != nil {
