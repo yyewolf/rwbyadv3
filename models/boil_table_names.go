@@ -4,19 +4,25 @@
 package models
 
 var TableNames = struct {
-	AuthGithubStates string
-	Cards            string
-	CardsStats       string
-	GithubStars      string
-	Jobs             string
-	LootBoxes        string
-	Players          string
+	AuthGithubStates    string
+	Cards               string
+	CardsStats          string
+	GithubStars         string
+	Jobs                string
+	LootBoxes           string
+	PlayerCardFavorites string
+	PlayerCards         string
+	PlayerCardsDeck     string
+	Players             string
 }{
-	AuthGithubStates: "auth_github_states",
-	Cards:            "cards",
-	CardsStats:       "cards_stats",
-	GithubStars:      "github_stars",
-	Jobs:             "jobs",
-	LootBoxes:        "loot_boxes",
-	Players:          "players",
+	AuthGithubStates:    "auth_github_states",
+	Cards:               "cards",
+	CardsStats:          "cards_stats",
+	GithubStars:         "github_stars",
+	Jobs:                "jobs",
+	LootBoxes:           "loot_boxes",
+	PlayerCardFavorites: "player_card_favorites",
+	PlayerCards:         "player_cards",
+	PlayerCardsDeck:     "player_cards_deck",
+	Players:             "players",
 }

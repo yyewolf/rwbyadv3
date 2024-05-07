@@ -25,8 +25,8 @@ CREATE TYPE public.auth_github_states_type AS ENUM (
 CREATE TYPE public.loot_boxes_type AS ENUM (
     'classic',
     'rare',
-    'limited',
-    'special'
+    'special',
+    'limited'
 );
 
 
@@ -136,6 +136,39 @@ CREATE TABLE public.loot_boxes (
 
 
 --
+-- Name: player_card_favorites; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.player_card_favorites (
+    player_id character varying(50) NOT NULL,
+    card_id character varying(50) NOT NULL,
+    "position" integer NOT NULL
+);
+
+
+--
+-- Name: player_cards; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.player_cards (
+    player_id character varying(50) NOT NULL,
+    card_id character varying(50) NOT NULL,
+    "position" integer NOT NULL
+);
+
+
+--
+-- Name: player_cards_deck; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.player_cards_deck (
+    player_id character varying(50) NOT NULL,
+    card_id character varying(50) NOT NULL,
+    "position" integer NOT NULL
+);
+
+
+--
 -- Name: players; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -143,7 +176,8 @@ CREATE TABLE public.players (
     id character varying(50) NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    deleted_at timestamp with time zone
+    deleted_at timestamp with time zone,
+    selected_card_id character varying(50)
 );
 
 
@@ -210,6 +244,30 @@ ALTER TABLE ONLY public.jobs
 
 ALTER TABLE ONLY public.loot_boxes
     ADD CONSTRAINT loot_boxes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: player_card_favorites player_card_favorites_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.player_card_favorites
+    ADD CONSTRAINT player_card_favorites_pkey PRIMARY KEY (player_id, card_id);
+
+
+--
+-- Name: player_cards_deck player_cards_deck_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.player_cards_deck
+    ADD CONSTRAINT player_cards_deck_pkey PRIMARY KEY (player_id, card_id);
+
+
+--
+-- Name: player_cards player_cards_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.player_cards
+    ADD CONSTRAINT player_cards_pkey PRIMARY KEY (player_id, card_id);
 
 
 --
@@ -285,6 +343,62 @@ ALTER TABLE ONLY public.loot_boxes
 
 
 --
+-- Name: player_card_favorites player_card_favorites_card_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.player_card_favorites
+    ADD CONSTRAINT player_card_favorites_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id);
+
+
+--
+-- Name: player_card_favorites player_card_favorites_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.player_card_favorites
+    ADD CONSTRAINT player_card_favorites_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+
+
+--
+-- Name: player_cards player_cards_card_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.player_cards
+    ADD CONSTRAINT player_cards_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id) ON DELETE CASCADE;
+
+
+--
+-- Name: player_cards_deck player_cards_deck_card_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.player_cards_deck
+    ADD CONSTRAINT player_cards_deck_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id);
+
+
+--
+-- Name: player_cards_deck player_cards_deck_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.player_cards_deck
+    ADD CONSTRAINT player_cards_deck_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+
+
+--
+-- Name: player_cards player_cards_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.player_cards
+    ADD CONSTRAINT player_cards_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+
+
+--
+-- Name: players players_selected_card_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.players
+    ADD CONSTRAINT players_selected_card_id_fkey FOREIGN KEY (selected_card_id) REFERENCES public.cards(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -299,4 +413,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240502144720'),
     ('20240503174603'),
     ('20240505092653'),
-    ('20240506144248');
+    ('20240506144248'),
+    ('20240507105741');

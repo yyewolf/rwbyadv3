@@ -93,22 +93,22 @@ type LootBoxesType string
 const (
 	LootBoxesTypeClassic LootBoxesType = "classic"
 	LootBoxesTypeRare    LootBoxesType = "rare"
-	LootBoxesTypeLimited LootBoxesType = "limited"
 	LootBoxesTypeSpecial LootBoxesType = "special"
+	LootBoxesTypeLimited LootBoxesType = "limited"
 )
 
 func AllLootBoxesType() []LootBoxesType {
 	return []LootBoxesType{
 		LootBoxesTypeClassic,
 		LootBoxesTypeRare,
-		LootBoxesTypeLimited,
 		LootBoxesTypeSpecial,
+		LootBoxesTypeLimited,
 	}
 }
 
 func (e LootBoxesType) IsValid() error {
 	switch e {
-	case LootBoxesTypeClassic, LootBoxesTypeRare, LootBoxesTypeLimited, LootBoxesTypeSpecial:
+	case LootBoxesTypeClassic, LootBoxesTypeRare, LootBoxesTypeSpecial, LootBoxesTypeLimited:
 		return nil
 	default:
 		return errors.New("enum is not valid")
@@ -125,9 +125,9 @@ func (e LootBoxesType) Ordinal() int {
 		return 0
 	case LootBoxesTypeRare:
 		return 1
-	case LootBoxesTypeLimited:
-		return 2
 	case LootBoxesTypeSpecial:
+		return 2
+	case LootBoxesTypeLimited:
 		return 3
 
 	default:

@@ -23,7 +23,7 @@ func (cmd *inventoryCommand) generator(username string, p *models.Player, page i
 	field.Name = "Cards :"
 
 	// Pagination here
-	total := len(p.R.Cards)
+	total := len(p.R.PlayerCards)
 	maxPage := int(math.Ceil(float64(total)/perPage)) - 1
 
 	if page < 0 {
@@ -34,13 +34,14 @@ func (cmd *inventoryCommand) generator(username string, p *models.Player, page i
 	}
 
 	top := (page + 1) * int(perPage)
-	if top > len(p.R.Cards) {
-		top = len(p.R.Cards)
+	if top > len(p.R.PlayerCards) {
+		top = len(p.R.PlayerCards)
 	}
 
-	displayedCards := p.R.Cards[page*int(perPage) : top]
+	displayedCards := p.R.PlayerCards[page*int(perPage) : top]
 
-	for i, c := range displayedCards {
+	for i, pre := range displayedCards {
+		c := pre.R.Card
 		idx := page*int(perPage) + i + 1
 		field.Value += fmt.Sprintf("`N°%d | %s`\n", idx, utils.Cards.FullString(c))
 	}

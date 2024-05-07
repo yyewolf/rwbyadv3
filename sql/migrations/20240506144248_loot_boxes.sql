@@ -1,5 +1,5 @@
 -- migrate:up
-CREATE TYPE loot_boxes_type AS ENUM ('classic', 'rare', 'limited', 'special');
+CREATE TYPE loot_boxes_type AS ENUM ('classic', 'rare', 'special', 'limited');
 
 CREATE TABLE IF NOT EXISTS loot_boxes (
     id varchar(50) PRIMARY KEY,

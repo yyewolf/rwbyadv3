@@ -17,6 +17,9 @@ import (
 const (
 	commandName        = "open"
 	commandDescription = "Open a lootbox (still in demo)"
+
+	componentId    = "/open/{player_id}/{box_type}"
+	componentIdFmt = "/open/%s/%s"
 )
 
 type openCommand struct {
@@ -32,10 +35,17 @@ func OpenCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 		builder.WithCommandName(commandName),
 		builder.WithDescription(commandDescription),
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
-			h.Command("/open", builder.WithContext(
+			h.Command("/"+commandName, builder.WithContext(
 				cmd.HandleCommand,
 				builder.WithPlayer(),
 				builder.WithPlayerLootBoxes(),
+			))
+
+			h.ButtonComponent(componentId, builder.WithContextD(
+				cmd.HandleInteraction,
+				builder.WithPlayer(),
+				builder.WithPlayerLootBoxes(),
+				builder.WithPlayerSelectedCard(),
 			))
 			return nil
 		}),
@@ -49,9 +59,30 @@ func OpenCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 func (cmd *openCommand) HandleCommand(e *handler.CommandEvent) error {
 	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
 
-	if len(p.R.LootBoxes) == 0 {
+	components := cmd.generator(p)
+
+	return e.CreateMessage(discord.NewMessageCreateBuilder().
+		SetContainerComponents(components).
+		Build(),
+	)
+}
+
+func (cmd *openCommand) HandleInteraction(data discord.ButtonInteractionData, e *handler.ComponentEvent) error {
+	// Get route parameters
+	playerID := e.Vars["player_id"]
+	boxType := models.LootBoxesType(e.Vars["box_type"])
+
+	e.DeferUpdateMessage()
+	if playerID != e.User().ID.String() {
+		return nil
+	}
+
+	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+
+	lootBox, found := utils.Players.TakeFirstLootBoxOf(p, boxType)
+	if !found {
 		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("You don't have any lootboxes :(").
+			SetContent("You don't have any more of these loot boxes :(").
 			SetEphemeral(true).
 			Build(),
 		)
@@ -61,8 +92,6 @@ func (cmd *openCommand) HandleCommand(e *handler.CommandEvent) error {
 	if err != nil {
 		return err
 	}
-
-	lootBox := p.R.LootBoxes[0]
 
 	_, err = lootBox.Delete(context.Background(), tx, false)
 	if err != nil {
@@ -94,10 +123,31 @@ func (cmd *openCommand) HandleCommand(e *handler.CommandEvent) error {
 		return err
 	}
 
+	// If user does not have a selected card, this is it :
+	if p.R.SelectedCard == nil {
+		err = p.SetSelectedCard(context.Background(), tx, false, c)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
 	tx.Commit()
 
-	return e.CreateMessage(discord.NewMessageCreateBuilder().
-		SetContentf("Looted `%s`, you have %d loot boxes left.", utils.Cards.FullString(c), len(p.R.LootBoxes)-1).
+	f, embed, _ := utils.Cards.Message(c)
+
+	_, err = e.CreateFollowupMessage(discord.NewMessageCreateBuilder().
+		SetFiles(f).
+		SetEmbeds(embed).
 		Build(),
 	)
+
+	utils.Players.DeleteBoxFromPlayer(p, lootBox)
+	components := cmd.generator(p)
+	e.UpdateInteractionResponse(
+		discord.NewMessageUpdateBuilder().
+			AddContainerComponents(components).
+			Build(),
+	)
+	return err
 }

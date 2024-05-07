@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/disgoorg/disgo/discord"
+	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/cards"
 	"github.com/yyewolf/rwbyadv3/models"
 )
@@ -31,11 +33,11 @@ func (card Card) GenerateStats(c *models.Card) *models.CardsStat {
 
 func (card Card) FullString(c *models.Card) string {
 	def := card.Template(c)
-	return fmt.Sprintf("%s level %d (%d/%dXP) %s (%.2f%%)", card.RarityString(c.Rarity, c.Buffs), c.Level, c.XP, c.NextLevelXP, def.Name, c.IndividualValue)
+	return fmt.Sprintf("%s level %d (%d/%dXP) %s (%.2f%%)", card.RarityString(c), c.Level, c.XP, c.NextLevelXP, def.Name, c.IndividualValue)
 }
 
-func (card Card) RarityString(rarity, buffs int) (x string) {
-	switch rarity {
+func (card Card) RarityString(c *models.Card) (x string) {
+	switch c.Rarity {
 	case 0: // Common
 		x = "□ Common"
 	case 1: // Uncommon
@@ -50,8 +52,58 @@ func (card Card) RarityString(rarity, buffs int) (x string) {
 		x = "☆ Collector"
 	}
 
-	for i := 0; i < buffs; i++ {
+	for i := 0; i < c.Buffs; i++ {
 		x += "+"
 	}
 	return x
+}
+
+func (card Card) RarityToColor(c *models.Card) int {
+	EmbedColor := 0
+	switch c.Rarity {
+	case 0:
+		EmbedColor = 0x808080
+	case 1:
+		EmbedColor = 0x285300
+	case 2:
+		EmbedColor = 0x00008b
+	case 3:
+		EmbedColor = 0xB22222
+	case 4:
+		EmbedColor = 0x800080
+	case 5:
+		EmbedColor = 0x121212
+	}
+	return EmbedColor
+}
+
+func (card Card) Message(c *models.Card) (*discord.File, discord.Embed, *discord.ContainerComponent) {
+	img, err := cards.GetEmbeddableImage(c.CardType, "battle", "png")
+	if err != nil {
+		logrus.Panic("no image found, safeguard failed :o")
+	}
+
+	f := discord.NewFile("ch.png", "", img)
+
+	def := card.Template(c)
+
+	embed := discord.NewEmbedBuilder().
+		SetTitlef("Level %d %s", c.Level, def.Name).
+		SetColor(card.RarityToColor(c)).
+		AddFields(
+			discord.EmbedField{
+				Name: "**Statistics :**",
+				Value: fmt.Sprintf("Category : **%v**\n", def.Categories) +
+					fmt.Sprintf("XP : %d/%d\n", c.XP, c.NextLevelXP) +
+					fmt.Sprintf("Value : %.2f%%\n", c.IndividualValue) +
+					fmt.Sprintf("Rarity : %s\n", card.RarityString(c)) +
+					fmt.Sprintf("Health : %d\n", c.R.CardsStat.Health) +
+					fmt.Sprintf("Armor : %v\n", c.R.CardsStat.Armor) +
+					fmt.Sprintf("Damage : %v\n", c.R.CardsStat.Damage),
+			},
+		).
+		SetThumbnail("attachment://ch.png").
+		Build()
+
+	return f, embed, nil
 }

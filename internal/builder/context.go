@@ -26,10 +26,11 @@ type Event interface {
 }
 
 type ContextBuilder struct {
-	withPlayer            bool
-	withPlayerGithubStars bool
-	withPlayerCards       bool
-	withPlayerLootBoxes   bool
+	withPlayer             bool
+	withPlayerGithubStars  bool
+	withPlayerCards        bool
+	withPlayerLootBoxes    bool
+	withPlayerSelectedCard bool
 }
 
 type ContextOption func(a *ContextBuilder)
@@ -43,11 +44,23 @@ func FillContext[K Event](cb *ContextBuilder, event K, ctx context.Context) (con
 		}
 
 		if cb.withPlayerCards {
-			mods = append(mods, qm.Load(qm.Rels(models.PlayerRels.Cards, models.CardRels.CardsStat)))
+			mods = append(mods,
+				qm.Load(
+					models.PlayerRels.PlayerCards,
+					qm.OrderBy(models.PlayerCardColumns.Position),
+				),
+				qm.Load(
+					qm.Rels(models.PlayerRels.PlayerCards, models.PlayerCardRels.Card, models.CardRels.CardsStat),
+				),
+			)
 		}
 
 		if cb.withPlayerLootBoxes {
 			mods = append(mods, qm.Load(models.PlayerRels.LootBoxes))
+		}
+
+		if cb.withPlayerSelectedCard {
+			mods = append(mods, qm.Load(models.PlayerRels.SelectedCard))
 		}
 
 		mods = append(mods,
@@ -151,6 +164,12 @@ func WithPlayerGithubStars() func(a *ContextBuilder) {
 func WithPlayerCards() func(a *ContextBuilder) {
 	return func(a *ContextBuilder) {
 		a.withPlayerCards = true
+	}
+}
+
+func WithPlayerSelectedCard() func(a *ContextBuilder) {
+	return func(a *ContextBuilder) {
+		a.withPlayerSelectedCard = true
 	}
 }
 
