@@ -110,14 +110,8 @@ func (a *App) OnReady(_ *events.Ready) {
 
 	// Begin job handler here
 	go func() {
-		err := a.jobHandler.Start()
-		if err == nil {
-			return
-		}
-
-		select {
-		case a.errorChannel <- err:
-		default:
+		for {
+			a.jobHandler.Start()
 		}
 	}()
 
