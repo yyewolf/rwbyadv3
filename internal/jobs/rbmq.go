@@ -110,10 +110,10 @@ func (j *JobHandler) Start() error {
 					job := j.reScheduleQueue[0]
 					err := j.reScheduleJob(job)
 					if err == nil {
-						logrus.WithError(err).Error("failed to reschedule job")
 						j.reScheduleQueue = j.reScheduleQueue[1:]
 						break
 					}
+					logrus.WithError(err).Error("failed to reschedule job")
 					time.Sleep(200 * time.Millisecond)
 				}
 			}
