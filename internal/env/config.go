@@ -60,7 +60,7 @@ type Config struct {
 
 	// App parameters
 	App struct {
-		CardsLocation string `env:"CARDS_LOCATION" envDefault:"/cards"`
+		CardsLocation string `env:"CARDS_LOCATION" envDefault:"/cards/yml"`
 	} `envPrefix:"APP_"`
 }
 
