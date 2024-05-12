@@ -36,7 +36,13 @@ func New(options ...Option) interfaces.JobHandler {
 }
 
 func (j *JobHandler) Start() error {
-	conn, err := amqp.DialConfig("amqp://guest:guest@localhost:5672/", amqp.Config{
+	conn, err := amqp.DialConfig(fmt.Sprintf(
+		"amqp://%s:%s@%s:%s/",
+		j.config.Rbmq.User,
+		j.config.Rbmq.Pass,
+		j.config.Rbmq.Host,
+		j.config.Rbmq.Port,
+	), amqp.Config{
 		Heartbeat: 10 * time.Second,
 	})
 	if err != nil {
