@@ -24,70 +24,189 @@ import (
 
 // Card is an object representing the database table.
 type Card struct {
-	ID        string    `boil:"id" json:"id" toml:"id" yaml:"id"`
-	PlayerID  string    `boil:"player_id" json:"player_id" toml:"player_id" yaml:"player_id"`
-	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	UpdatedAt time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
-	DeletedAt null.Time `boil:"deleted_at" json:"deleted_at,omitempty" toml:"deleted_at" yaml:"deleted_at,omitempty"`
+	ID              string    `boil:"id" json:"id" toml:"id" yaml:"id"`
+	PlayerID        string    `boil:"player_id" json:"player_id" toml:"player_id" yaml:"player_id"`
+	CreatedAt       time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	UpdatedAt       time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	DeletedAt       null.Time `boil:"deleted_at" json:"deleted_at,omitempty" toml:"deleted_at" yaml:"deleted_at,omitempty"`
+	XP              int       `boil:"xp" json:"xp" toml:"xp" yaml:"xp"`
+	NextLevelXP     int       `boil:"next_level_xp" json:"next_level_xp" toml:"next_level_xp" yaml:"next_level_xp"`
+	CardType        string    `boil:"card_type" json:"card_type" toml:"card_type" yaml:"card_type"`
+	IndividualValue float64   `boil:"individual_value" json:"individual_value" toml:"individual_value" yaml:"individual_value"`
+	Rarity          int       `boil:"rarity" json:"rarity" toml:"rarity" yaml:"rarity"`
+	Level           int       `boil:"level" json:"level" toml:"level" yaml:"level"`
+	Buffs           int       `boil:"buffs" json:"buffs" toml:"buffs" yaml:"buffs"`
 
 	R *cardR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L cardL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var CardColumns = struct {
-	ID        string
-	PlayerID  string
-	CreatedAt string
-	UpdatedAt string
-	DeletedAt string
+	ID              string
+	PlayerID        string
+	CreatedAt       string
+	UpdatedAt       string
+	DeletedAt       string
+	XP              string
+	NextLevelXP     string
+	CardType        string
+	IndividualValue string
+	Rarity          string
+	Level           string
+	Buffs           string
 }{
-	ID:        "id",
-	PlayerID:  "player_id",
-	CreatedAt: "created_at",
-	UpdatedAt: "updated_at",
-	DeletedAt: "deleted_at",
+	ID:              "id",
+	PlayerID:        "player_id",
+	CreatedAt:       "created_at",
+	UpdatedAt:       "updated_at",
+	DeletedAt:       "deleted_at",
+	XP:              "xp",
+	NextLevelXP:     "next_level_xp",
+	CardType:        "card_type",
+	IndividualValue: "individual_value",
+	Rarity:          "rarity",
+	Level:           "level",
+	Buffs:           "buffs",
 }
 
 var CardTableColumns = struct {
-	ID        string
-	PlayerID  string
-	CreatedAt string
-	UpdatedAt string
-	DeletedAt string
+	ID              string
+	PlayerID        string
+	CreatedAt       string
+	UpdatedAt       string
+	DeletedAt       string
+	XP              string
+	NextLevelXP     string
+	CardType        string
+	IndividualValue string
+	Rarity          string
+	Level           string
+	Buffs           string
 }{
-	ID:        "cards.id",
-	PlayerID:  "cards.player_id",
-	CreatedAt: "cards.created_at",
-	UpdatedAt: "cards.updated_at",
-	DeletedAt: "cards.deleted_at",
+	ID:              "cards.id",
+	PlayerID:        "cards.player_id",
+	CreatedAt:       "cards.created_at",
+	UpdatedAt:       "cards.updated_at",
+	DeletedAt:       "cards.deleted_at",
+	XP:              "cards.xp",
+	NextLevelXP:     "cards.next_level_xp",
+	CardType:        "cards.card_type",
+	IndividualValue: "cards.individual_value",
+	Rarity:          "cards.rarity",
+	Level:           "cards.level",
+	Buffs:           "cards.buffs",
 }
 
 // Generated where
 
+type whereHelperint struct{ field string }
+
+func (w whereHelperint) EQ(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
+func (w whereHelperint) NEQ(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
+func (w whereHelperint) LT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
+func (w whereHelperint) LTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
+func (w whereHelperint) GT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
+func (w whereHelperint) GTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
+func (w whereHelperint) IN(slice []int) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
+}
+func (w whereHelperint) NIN(slice []int) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
+}
+
+type whereHelperfloat64 struct{ field string }
+
+func (w whereHelperfloat64) EQ(x float64) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.EQ, x) }
+func (w whereHelperfloat64) NEQ(x float64) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.NEQ, x)
+}
+func (w whereHelperfloat64) LT(x float64) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LT, x) }
+func (w whereHelperfloat64) LTE(x float64) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelperfloat64) GT(x float64) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GT, x) }
+func (w whereHelperfloat64) GTE(x float64) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+func (w whereHelperfloat64) IN(slice []float64) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
+}
+func (w whereHelperfloat64) NIN(slice []float64) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
+}
+
 var CardWhere = struct {
-	ID        whereHelperstring
-	PlayerID  whereHelperstring
-	CreatedAt whereHelpertime_Time
-	UpdatedAt whereHelpertime_Time
-	DeletedAt whereHelpernull_Time
+	ID              whereHelperstring
+	PlayerID        whereHelperstring
+	CreatedAt       whereHelpertime_Time
+	UpdatedAt       whereHelpertime_Time
+	DeletedAt       whereHelpernull_Time
+	XP              whereHelperint
+	NextLevelXP     whereHelperint
+	CardType        whereHelperstring
+	IndividualValue whereHelperfloat64
+	Rarity          whereHelperint
+	Level           whereHelperint
+	Buffs           whereHelperint
 }{
-	ID:        whereHelperstring{field: "\"cards\".\"id\""},
-	PlayerID:  whereHelperstring{field: "\"cards\".\"player_id\""},
-	CreatedAt: whereHelpertime_Time{field: "\"cards\".\"created_at\""},
-	UpdatedAt: whereHelpertime_Time{field: "\"cards\".\"updated_at\""},
-	DeletedAt: whereHelpernull_Time{field: "\"cards\".\"deleted_at\""},
+	ID:              whereHelperstring{field: "\"cards\".\"id\""},
+	PlayerID:        whereHelperstring{field: "\"cards\".\"player_id\""},
+	CreatedAt:       whereHelpertime_Time{field: "\"cards\".\"created_at\""},
+	UpdatedAt:       whereHelpertime_Time{field: "\"cards\".\"updated_at\""},
+	DeletedAt:       whereHelpernull_Time{field: "\"cards\".\"deleted_at\""},
+	XP:              whereHelperint{field: "\"cards\".\"xp\""},
+	NextLevelXP:     whereHelperint{field: "\"cards\".\"next_level_xp\""},
+	CardType:        whereHelperstring{field: "\"cards\".\"card_type\""},
+	IndividualValue: whereHelperfloat64{field: "\"cards\".\"individual_value\""},
+	Rarity:          whereHelperint{field: "\"cards\".\"rarity\""},
+	Level:           whereHelperint{field: "\"cards\".\"level\""},
+	Buffs:           whereHelperint{field: "\"cards\".\"buffs\""},
 }
 
 // CardRels is where relationship names are stored.
 var CardRels = struct {
-	Player string
+	Player              string
+	IDCardsStat         string
+	CardsStat           string
+	PlayerCardFavorites string
+	PlayerCards         string
+	PlayerCardsDecks    string
+	SelectedCardPlayers string
 }{
-	Player: "Player",
+	Player:              "Player",
+	IDCardsStat:         "IDCardsStat",
+	CardsStat:           "CardsStat",
+	PlayerCardFavorites: "PlayerCardFavorites",
+	PlayerCards:         "PlayerCards",
+	PlayerCardsDecks:    "PlayerCardsDecks",
+	SelectedCardPlayers: "SelectedCardPlayers",
 }
 
 // cardR is where relationships are stored.
 type cardR struct {
-	Player *Player `boil:"Player" json:"Player" toml:"Player" yaml:"Player"`
+	Player              *Player                 `boil:"Player" json:"Player" toml:"Player" yaml:"Player"`
+	IDCardsStat         *CardsStat              `boil:"IDCardsStat" json:"IDCardsStat" toml:"IDCardsStat" yaml:"IDCardsStat"`
+	CardsStat           *CardsStat              `boil:"CardsStat" json:"CardsStat" toml:"CardsStat" yaml:"CardsStat"`
+	PlayerCardFavorites PlayerCardFavoriteSlice `boil:"PlayerCardFavorites" json:"PlayerCardFavorites" toml:"PlayerCardFavorites" yaml:"PlayerCardFavorites"`
+	PlayerCards         PlayerCardSlice         `boil:"PlayerCards" json:"PlayerCards" toml:"PlayerCards" yaml:"PlayerCards"`
+	PlayerCardsDecks    PlayerCardsDeckSlice    `boil:"PlayerCardsDecks" json:"PlayerCardsDecks" toml:"PlayerCardsDecks" yaml:"PlayerCardsDecks"`
+	SelectedCardPlayers PlayerSlice             `boil:"SelectedCardPlayers" json:"SelectedCardPlayers" toml:"SelectedCardPlayers" yaml:"SelectedCardPlayers"`
 }
 
 // NewStruct creates a new relationship struct
@@ -102,13 +221,55 @@ func (r *cardR) GetPlayer() *Player {
 	return r.Player
 }
 
+func (r *cardR) GetIDCardsStat() *CardsStat {
+	if r == nil {
+		return nil
+	}
+	return r.IDCardsStat
+}
+
+func (r *cardR) GetCardsStat() *CardsStat {
+	if r == nil {
+		return nil
+	}
+	return r.CardsStat
+}
+
+func (r *cardR) GetPlayerCardFavorites() PlayerCardFavoriteSlice {
+	if r == nil {
+		return nil
+	}
+	return r.PlayerCardFavorites
+}
+
+func (r *cardR) GetPlayerCards() PlayerCardSlice {
+	if r == nil {
+		return nil
+	}
+	return r.PlayerCards
+}
+
+func (r *cardR) GetPlayerCardsDecks() PlayerCardsDeckSlice {
+	if r == nil {
+		return nil
+	}
+	return r.PlayerCardsDecks
+}
+
+func (r *cardR) GetSelectedCardPlayers() PlayerSlice {
+	if r == nil {
+		return nil
+	}
+	return r.SelectedCardPlayers
+}
+
 // cardL is where Load methods for each relationship are stored.
 type cardL struct{}
 
 var (
-	cardAllColumns            = []string{"id", "player_id", "created_at", "updated_at", "deleted_at"}
-	cardColumnsWithoutDefault = []string{"id", "player_id"}
-	cardColumnsWithDefault    = []string{"created_at", "updated_at", "deleted_at"}
+	cardAllColumns            = []string{"id", "player_id", "created_at", "updated_at", "deleted_at", "xp", "next_level_xp", "card_type", "individual_value", "rarity", "level", "buffs"}
+	cardColumnsWithoutDefault = []string{"id", "player_id", "next_level_xp", "card_type", "individual_value", "rarity", "level", "buffs"}
+	cardColumnsWithDefault    = []string{"created_at", "updated_at", "deleted_at", "xp"}
 	cardPrimaryKeyColumns     = []string{"id"}
 	cardGeneratedColumns      = []string{}
 )
@@ -449,6 +610,84 @@ func (o *Card) Player(mods ...qm.QueryMod) playerQuery {
 	return Players(queryMods...)
 }
 
+// IDCardsStat pointed to by the foreign key.
+func (o *Card) IDCardsStat(mods ...qm.QueryMod) cardsStatQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"card_id\" = ?", o.ID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return CardsStats(queryMods...)
+}
+
+// CardsStat pointed to by the foreign key.
+func (o *Card) CardsStat(mods ...qm.QueryMod) cardsStatQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"card_id\" = ?", o.ID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return CardsStats(queryMods...)
+}
+
+// PlayerCardFavorites retrieves all the player_card_favorite's PlayerCardFavorites with an executor.
+func (o *Card) PlayerCardFavorites(mods ...qm.QueryMod) playerCardFavoriteQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"player_card_favorites\".\"card_id\"=?", o.ID),
+	)
+
+	return PlayerCardFavorites(queryMods...)
+}
+
+// PlayerCards retrieves all the player_card's PlayerCards with an executor.
+func (o *Card) PlayerCards(mods ...qm.QueryMod) playerCardQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"player_cards\".\"card_id\"=?", o.ID),
+	)
+
+	return PlayerCards(queryMods...)
+}
+
+// PlayerCardsDecks retrieves all the player_cards_deck's PlayerCardsDecks with an executor.
+func (o *Card) PlayerCardsDecks(mods ...qm.QueryMod) playerCardsDeckQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"player_cards_deck\".\"card_id\"=?", o.ID),
+	)
+
+	return PlayerCardsDecks(queryMods...)
+}
+
+// SelectedCardPlayers retrieves all the player's Players with an executor via selected_card_id column.
+func (o *Card) SelectedCardPlayers(mods ...qm.QueryMod) playerQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"players\".\"selected_card_id\"=?", o.ID),
+	)
+
+	return Players(queryMods...)
+}
+
 // LoadPlayer allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for an N-1 relationship.
 func (cardL) LoadPlayer(ctx context.Context, e boil.ContextExecutor, singular bool, maybeCard interface{}, mods queries.Applicator) error {
@@ -570,6 +809,698 @@ func (cardL) LoadPlayer(ctx context.Context, e boil.ContextExecutor, singular bo
 	return nil
 }
 
+// LoadIDCardsStat allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (cardL) LoadIDCardsStat(ctx context.Context, e boil.ContextExecutor, singular bool, maybeCard interface{}, mods queries.Applicator) error {
+	var slice []*Card
+	var object *Card
+
+	if singular {
+		var ok bool
+		object, ok = maybeCard.(*Card)
+		if !ok {
+			object = new(Card)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeCard)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeCard))
+			}
+		}
+	} else {
+		s, ok := maybeCard.(*[]*Card)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeCard)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeCard))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &cardR{}
+		}
+		args[object.ID] = struct{}{}
+
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &cardR{}
+			}
+
+			args[obj.ID] = struct{}{}
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`cards_stats`),
+		qm.WhereIn(`cards_stats.card_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`cards_stats.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load CardsStat")
+	}
+
+	var resultSlice []*CardsStat
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice CardsStat")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for cards_stats")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for cards_stats")
+	}
+
+	if len(cardsStatAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.IDCardsStat = foreign
+		if foreign.R == nil {
+			foreign.R = &cardsStatR{}
+		}
+		foreign.R.IDCard = object
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.ID == foreign.CardID {
+				local.R.IDCardsStat = foreign
+				if foreign.R == nil {
+					foreign.R = &cardsStatR{}
+				}
+				foreign.R.IDCard = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadCardsStat allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-1 relationship.
+func (cardL) LoadCardsStat(ctx context.Context, e boil.ContextExecutor, singular bool, maybeCard interface{}, mods queries.Applicator) error {
+	var slice []*Card
+	var object *Card
+
+	if singular {
+		var ok bool
+		object, ok = maybeCard.(*Card)
+		if !ok {
+			object = new(Card)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeCard)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeCard))
+			}
+		}
+	} else {
+		s, ok := maybeCard.(*[]*Card)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeCard)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeCard))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &cardR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &cardR{}
+			}
+
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`cards_stats`),
+		qm.WhereIn(`cards_stats.card_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`cards_stats.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load CardsStat")
+	}
+
+	var resultSlice []*CardsStat
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice CardsStat")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for cards_stats")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for cards_stats")
+	}
+
+	if len(cardsStatAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.CardsStat = foreign
+		if foreign.R == nil {
+			foreign.R = &cardsStatR{}
+		}
+		foreign.R.Card = object
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.ID == foreign.CardID {
+				local.R.CardsStat = foreign
+				if foreign.R == nil {
+					foreign.R = &cardsStatR{}
+				}
+				foreign.R.Card = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadPlayerCardFavorites allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (cardL) LoadPlayerCardFavorites(ctx context.Context, e boil.ContextExecutor, singular bool, maybeCard interface{}, mods queries.Applicator) error {
+	var slice []*Card
+	var object *Card
+
+	if singular {
+		var ok bool
+		object, ok = maybeCard.(*Card)
+		if !ok {
+			object = new(Card)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeCard)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeCard))
+			}
+		}
+	} else {
+		s, ok := maybeCard.(*[]*Card)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeCard)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeCard))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &cardR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &cardR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`player_card_favorites`),
+		qm.WhereIn(`player_card_favorites.card_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load player_card_favorites")
+	}
+
+	var resultSlice []*PlayerCardFavorite
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice player_card_favorites")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on player_card_favorites")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for player_card_favorites")
+	}
+
+	if len(playerCardFavoriteAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.PlayerCardFavorites = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &playerCardFavoriteR{}
+			}
+			foreign.R.Card = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.CardID {
+				local.R.PlayerCardFavorites = append(local.R.PlayerCardFavorites, foreign)
+				if foreign.R == nil {
+					foreign.R = &playerCardFavoriteR{}
+				}
+				foreign.R.Card = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadPlayerCards allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (cardL) LoadPlayerCards(ctx context.Context, e boil.ContextExecutor, singular bool, maybeCard interface{}, mods queries.Applicator) error {
+	var slice []*Card
+	var object *Card
+
+	if singular {
+		var ok bool
+		object, ok = maybeCard.(*Card)
+		if !ok {
+			object = new(Card)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeCard)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeCard))
+			}
+		}
+	} else {
+		s, ok := maybeCard.(*[]*Card)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeCard)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeCard))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &cardR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &cardR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`player_cards`),
+		qm.WhereIn(`player_cards.card_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load player_cards")
+	}
+
+	var resultSlice []*PlayerCard
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice player_cards")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on player_cards")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for player_cards")
+	}
+
+	if len(playerCardAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.PlayerCards = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &playerCardR{}
+			}
+			foreign.R.Card = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.CardID {
+				local.R.PlayerCards = append(local.R.PlayerCards, foreign)
+				if foreign.R == nil {
+					foreign.R = &playerCardR{}
+				}
+				foreign.R.Card = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadPlayerCardsDecks allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (cardL) LoadPlayerCardsDecks(ctx context.Context, e boil.ContextExecutor, singular bool, maybeCard interface{}, mods queries.Applicator) error {
+	var slice []*Card
+	var object *Card
+
+	if singular {
+		var ok bool
+		object, ok = maybeCard.(*Card)
+		if !ok {
+			object = new(Card)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeCard)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeCard))
+			}
+		}
+	} else {
+		s, ok := maybeCard.(*[]*Card)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeCard)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeCard))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &cardR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &cardR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`player_cards_deck`),
+		qm.WhereIn(`player_cards_deck.card_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load player_cards_deck")
+	}
+
+	var resultSlice []*PlayerCardsDeck
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice player_cards_deck")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on player_cards_deck")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for player_cards_deck")
+	}
+
+	if len(playerCardsDeckAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.PlayerCardsDecks = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &playerCardsDeckR{}
+			}
+			foreign.R.Card = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.CardID {
+				local.R.PlayerCardsDecks = append(local.R.PlayerCardsDecks, foreign)
+				if foreign.R == nil {
+					foreign.R = &playerCardsDeckR{}
+				}
+				foreign.R.Card = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadSelectedCardPlayers allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (cardL) LoadSelectedCardPlayers(ctx context.Context, e boil.ContextExecutor, singular bool, maybeCard interface{}, mods queries.Applicator) error {
+	var slice []*Card
+	var object *Card
+
+	if singular {
+		var ok bool
+		object, ok = maybeCard.(*Card)
+		if !ok {
+			object = new(Card)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeCard)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeCard))
+			}
+		}
+	} else {
+		s, ok := maybeCard.(*[]*Card)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeCard)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeCard))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &cardR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &cardR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`players`),
+		qm.WhereIn(`players.selected_card_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`players.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load players")
+	}
+
+	var resultSlice []*Player
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice players")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on players")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for players")
+	}
+
+	if len(playerAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.SelectedCardPlayers = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &playerR{}
+			}
+			foreign.R.SelectedCard = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.SelectedCardID) {
+				local.R.SelectedCardPlayers = append(local.R.SelectedCardPlayers, foreign)
+				if foreign.R == nil {
+					foreign.R = &playerR{}
+				}
+				foreign.R.SelectedCard = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // SetPlayerG of the card to the related item.
 // Sets o.R.Player to related.
 // Adds o to related.R.Cards.
@@ -620,6 +1551,460 @@ func (o *Card) SetPlayer(ctx context.Context, exec boil.ContextExecutor, insert 
 		}
 	} else {
 		related.R.Cards = append(related.R.Cards, o)
+	}
+
+	return nil
+}
+
+// SetIDCardsStatG of the card to the related item.
+// Sets o.R.IDCardsStat to related.
+// Adds o to related.R.IDCard.
+// Uses the global database handle.
+func (o *Card) SetIDCardsStatG(ctx context.Context, insert bool, related *CardsStat) error {
+	return o.SetIDCardsStat(ctx, boil.GetContextDB(), insert, related)
+}
+
+// SetIDCardsStat of the card to the related item.
+// Sets o.R.IDCardsStat to related.
+// Adds o to related.R.IDCard.
+func (o *Card) SetIDCardsStat(ctx context.Context, exec boil.ContextExecutor, insert bool, related *CardsStat) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE \"cards\" SET %s WHERE %s",
+		strmangle.SetParamNames("\"", "\"", 1, []string{"id"}),
+		strmangle.WhereClause("\"", "\"", 2, cardPrimaryKeyColumns),
+	)
+	values := []interface{}{related.CardID, o.ID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	o.ID = related.CardID
+	if o.R == nil {
+		o.R = &cardR{
+			IDCardsStat: related,
+		}
+	} else {
+		o.R.IDCardsStat = related
+	}
+
+	if related.R == nil {
+		related.R = &cardsStatR{
+			IDCard: o,
+		}
+	} else {
+		related.R.IDCard = o
+	}
+
+	return nil
+}
+
+// SetCardsStatG of the card to the related item.
+// Sets o.R.CardsStat to related.
+// Adds o to related.R.Card.
+// Uses the global database handle.
+func (o *Card) SetCardsStatG(ctx context.Context, insert bool, related *CardsStat) error {
+	return o.SetCardsStat(ctx, boil.GetContextDB(), insert, related)
+}
+
+// SetCardsStat of the card to the related item.
+// Sets o.R.CardsStat to related.
+// Adds o to related.R.Card.
+func (o *Card) SetCardsStat(ctx context.Context, exec boil.ContextExecutor, insert bool, related *CardsStat) error {
+	var err error
+
+	if insert {
+		related.CardID = o.ID
+
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	} else {
+		updateQuery := fmt.Sprintf(
+			"UPDATE \"cards_stats\" SET %s WHERE %s",
+			strmangle.SetParamNames("\"", "\"", 1, []string{"card_id"}),
+			strmangle.WhereClause("\"", "\"", 2, cardsStatPrimaryKeyColumns),
+		)
+		values := []interface{}{o.ID, related.CardID}
+
+		if boil.IsDebug(ctx) {
+			writer := boil.DebugWriterFrom(ctx)
+			fmt.Fprintln(writer, updateQuery)
+			fmt.Fprintln(writer, values)
+		}
+		if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+			return errors.Wrap(err, "failed to update foreign table")
+		}
+
+		related.CardID = o.ID
+	}
+
+	if o.R == nil {
+		o.R = &cardR{
+			CardsStat: related,
+		}
+	} else {
+		o.R.CardsStat = related
+	}
+
+	if related.R == nil {
+		related.R = &cardsStatR{
+			Card: o,
+		}
+	} else {
+		related.R.Card = o
+	}
+	return nil
+}
+
+// AddPlayerCardFavoritesG adds the given related objects to the existing relationships
+// of the card, optionally inserting them as new records.
+// Appends related to o.R.PlayerCardFavorites.
+// Sets related.R.Card appropriately.
+// Uses the global database handle.
+func (o *Card) AddPlayerCardFavoritesG(ctx context.Context, insert bool, related ...*PlayerCardFavorite) error {
+	return o.AddPlayerCardFavorites(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// AddPlayerCardFavorites adds the given related objects to the existing relationships
+// of the card, optionally inserting them as new records.
+// Appends related to o.R.PlayerCardFavorites.
+// Sets related.R.Card appropriately.
+func (o *Card) AddPlayerCardFavorites(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*PlayerCardFavorite) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.CardID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"player_card_favorites\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"card_id"}),
+				strmangle.WhereClause("\"", "\"", 2, playerCardFavoritePrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.PlayerID, rel.CardID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.CardID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &cardR{
+			PlayerCardFavorites: related,
+		}
+	} else {
+		o.R.PlayerCardFavorites = append(o.R.PlayerCardFavorites, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &playerCardFavoriteR{
+				Card: o,
+			}
+		} else {
+			rel.R.Card = o
+		}
+	}
+	return nil
+}
+
+// AddPlayerCardsG adds the given related objects to the existing relationships
+// of the card, optionally inserting them as new records.
+// Appends related to o.R.PlayerCards.
+// Sets related.R.Card appropriately.
+// Uses the global database handle.
+func (o *Card) AddPlayerCardsG(ctx context.Context, insert bool, related ...*PlayerCard) error {
+	return o.AddPlayerCards(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// AddPlayerCards adds the given related objects to the existing relationships
+// of the card, optionally inserting them as new records.
+// Appends related to o.R.PlayerCards.
+// Sets related.R.Card appropriately.
+func (o *Card) AddPlayerCards(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*PlayerCard) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.CardID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"player_cards\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"card_id"}),
+				strmangle.WhereClause("\"", "\"", 2, playerCardPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.PlayerID, rel.CardID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.CardID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &cardR{
+			PlayerCards: related,
+		}
+	} else {
+		o.R.PlayerCards = append(o.R.PlayerCards, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &playerCardR{
+				Card: o,
+			}
+		} else {
+			rel.R.Card = o
+		}
+	}
+	return nil
+}
+
+// AddPlayerCardsDecksG adds the given related objects to the existing relationships
+// of the card, optionally inserting them as new records.
+// Appends related to o.R.PlayerCardsDecks.
+// Sets related.R.Card appropriately.
+// Uses the global database handle.
+func (o *Card) AddPlayerCardsDecksG(ctx context.Context, insert bool, related ...*PlayerCardsDeck) error {
+	return o.AddPlayerCardsDecks(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// AddPlayerCardsDecks adds the given related objects to the existing relationships
+// of the card, optionally inserting them as new records.
+// Appends related to o.R.PlayerCardsDecks.
+// Sets related.R.Card appropriately.
+func (o *Card) AddPlayerCardsDecks(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*PlayerCardsDeck) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.CardID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"player_cards_deck\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"card_id"}),
+				strmangle.WhereClause("\"", "\"", 2, playerCardsDeckPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.PlayerID, rel.CardID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.CardID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &cardR{
+			PlayerCardsDecks: related,
+		}
+	} else {
+		o.R.PlayerCardsDecks = append(o.R.PlayerCardsDecks, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &playerCardsDeckR{
+				Card: o,
+			}
+		} else {
+			rel.R.Card = o
+		}
+	}
+	return nil
+}
+
+// AddSelectedCardPlayersG adds the given related objects to the existing relationships
+// of the card, optionally inserting them as new records.
+// Appends related to o.R.SelectedCardPlayers.
+// Sets related.R.SelectedCard appropriately.
+// Uses the global database handle.
+func (o *Card) AddSelectedCardPlayersG(ctx context.Context, insert bool, related ...*Player) error {
+	return o.AddSelectedCardPlayers(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// AddSelectedCardPlayers adds the given related objects to the existing relationships
+// of the card, optionally inserting them as new records.
+// Appends related to o.R.SelectedCardPlayers.
+// Sets related.R.SelectedCard appropriately.
+func (o *Card) AddSelectedCardPlayers(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Player) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.SelectedCardID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"players\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"selected_card_id"}),
+				strmangle.WhereClause("\"", "\"", 2, playerPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.SelectedCardID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &cardR{
+			SelectedCardPlayers: related,
+		}
+	} else {
+		o.R.SelectedCardPlayers = append(o.R.SelectedCardPlayers, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &playerR{
+				SelectedCard: o,
+			}
+		} else {
+			rel.R.SelectedCard = o
+		}
+	}
+	return nil
+}
+
+// SetSelectedCardPlayersG removes all previously related items of the
+// card replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.SelectedCard's SelectedCardPlayers accordingly.
+// Replaces o.R.SelectedCardPlayers with related.
+// Sets related.R.SelectedCard's SelectedCardPlayers accordingly.
+// Uses the global database handle.
+func (o *Card) SetSelectedCardPlayersG(ctx context.Context, insert bool, related ...*Player) error {
+	return o.SetSelectedCardPlayers(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// SetSelectedCardPlayers removes all previously related items of the
+// card replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.SelectedCard's SelectedCardPlayers accordingly.
+// Replaces o.R.SelectedCardPlayers with related.
+// Sets related.R.SelectedCard's SelectedCardPlayers accordingly.
+func (o *Card) SetSelectedCardPlayers(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Player) error {
+	query := "update \"players\" set \"selected_card_id\" = null where \"selected_card_id\" = $1"
+	values := []interface{}{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.SelectedCardPlayers {
+			queries.SetScanner(&rel.SelectedCardID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.SelectedCard = nil
+		}
+		o.R.SelectedCardPlayers = nil
+	}
+
+	return o.AddSelectedCardPlayers(ctx, exec, insert, related...)
+}
+
+// RemoveSelectedCardPlayersG relationships from objects passed in.
+// Removes related items from R.SelectedCardPlayers (uses pointer comparison, removal does not keep order)
+// Sets related.R.SelectedCard.
+// Uses the global database handle.
+func (o *Card) RemoveSelectedCardPlayersG(ctx context.Context, related ...*Player) error {
+	return o.RemoveSelectedCardPlayers(ctx, boil.GetContextDB(), related...)
+}
+
+// RemoveSelectedCardPlayers relationships from objects passed in.
+// Removes related items from R.SelectedCardPlayers (uses pointer comparison, removal does not keep order)
+// Sets related.R.SelectedCard.
+func (o *Card) RemoveSelectedCardPlayers(ctx context.Context, exec boil.ContextExecutor, related ...*Player) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.SelectedCardID, nil)
+		if rel.R != nil {
+			rel.R.SelectedCard = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("selected_card_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.SelectedCardPlayers {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.SelectedCardPlayers)
+			if ln > 1 && i < ln-1 {
+				o.R.SelectedCardPlayers[i] = o.R.SelectedCardPlayers[ln-1]
+			}
+			o.R.SelectedCardPlayers = o.R.SelectedCardPlayers[:ln-1]
+			break
+		}
 	}
 
 	return nil

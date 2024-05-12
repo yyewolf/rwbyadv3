@@ -86,3 +86,51 @@ func (e AuthGithubStatesType) Ordinal() int {
 		panic(errors.New("enum is not valid"))
 	}
 }
+
+type LootBoxesType string
+
+// Enum values for LootBoxesType
+const (
+	LootBoxesTypeClassic LootBoxesType = "classic"
+	LootBoxesTypeRare    LootBoxesType = "rare"
+	LootBoxesTypeSpecial LootBoxesType = "special"
+	LootBoxesTypeLimited LootBoxesType = "limited"
+)
+
+func AllLootBoxesType() []LootBoxesType {
+	return []LootBoxesType{
+		LootBoxesTypeClassic,
+		LootBoxesTypeRare,
+		LootBoxesTypeSpecial,
+		LootBoxesTypeLimited,
+	}
+}
+
+func (e LootBoxesType) IsValid() error {
+	switch e {
+	case LootBoxesTypeClassic, LootBoxesTypeRare, LootBoxesTypeSpecial, LootBoxesTypeLimited:
+		return nil
+	default:
+		return errors.New("enum is not valid")
+	}
+}
+
+func (e LootBoxesType) String() string {
+	return string(e)
+}
+
+func (e LootBoxesType) Ordinal() int {
+	switch e {
+	case LootBoxesTypeClassic:
+		return 0
+	case LootBoxesTypeRare:
+		return 1
+	case LootBoxesTypeSpecial:
+		return 2
+	case LootBoxesTypeLimited:
+		return 3
+
+	default:
+		panic(errors.New("enum is not valid"))
+	}
+}

@@ -73,7 +73,7 @@ func (cmd *pingCommand) DelayedPongJob(params map[string]interface{}) error {
 		return err
 	}
 
-	_, err = c.Rest().CreateMessage(ch.ID(), discord.NewMessageCreateBuilder().SetContent("Delayed Pong !").Build())
+	_, err = c.Rest().CreateMessage(ch.ID(), discord.NewMessageCreateBuilder().SetContentf("Delayed Pong ! (you used %s)", cmd.app.CommandMention("ping")).Build())
 
 	return err
 }
