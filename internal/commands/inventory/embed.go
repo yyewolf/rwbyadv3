@@ -16,7 +16,7 @@ var (
 func (cmd *inventoryCommand) generator(username string, p *models.Player, page int) (discord.Embed, discord.ContainerComponent) {
 	embed := discord.NewEmbedBuilder()
 	embed.SetTitlef("%s's inventory :", username)
-	embed.SetDescription("To select a character, please use `/select`.")
+	embed.SetDescriptionf("To select a character, please use %s.", cmd.app.CommandMention("select"))
 	embed.SetColor(0x00ff00)
 
 	var field discord.EmbedField

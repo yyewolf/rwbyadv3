@@ -9,6 +9,7 @@ import (
 	"github.com/disgoorg/disgo/handler"
 	"github.com/disgoorg/disgo/rest"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/models"
 )
 
@@ -26,6 +27,8 @@ type Event interface {
 }
 
 type ContextBuilder struct {
+	app interfaces.App
+
 	withPlayer             bool
 	withPlayerGithubStars  bool
 	withPlayerCards        bool
@@ -72,7 +75,7 @@ func FillContext[K Event](cb *ContextBuilder, event K, ctx context.Context) (con
 		if err != nil {
 			event.CreateMessage(
 				discord.NewMessageCreateBuilder().
-					SetContentf("You cannot use this command yet... Try using `/begin` first !").
+					SetContentf("You cannot use this command yet... Try using %s first !", cb.app.CommandMention("begin")).
 					SetEphemeral(true).
 					Build(),
 			)
@@ -85,7 +88,7 @@ func FillContext[K Event](cb *ContextBuilder, event K, ctx context.Context) (con
 	return ctx, nil
 }
 
-func WithContext[K Event](handler func(e *K) error, opts ...ContextOption) func(e *K) error {
+func WithContext[K Event](app interfaces.App, handler func(e *K) error, opts ...ContextOption) func(e *K) error {
 	// Context builder
 	var cb ContextBuilder
 
@@ -117,7 +120,7 @@ func WithContext[K Event](handler func(e *K) error, opts ...ContextOption) func(
 	}
 }
 
-func WithContextD[D any, K Event](handler func(d D, e *K) error, opts ...ContextOption) func(d D, e *K) error {
+func WithContextD[D any, K Event](app interfaces.App, handler func(d D, e *K) error, opts ...ContextOption) func(d D, e *K) error {
 	// Context builder
 	var cb ContextBuilder
 

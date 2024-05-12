@@ -31,6 +31,7 @@ func PreprodCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command 
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
 
 			h.Command("/preprod/lootbox", builder.WithContext(
+				app,
 				cmd.DoLootBox,
 				builder.WithPlayer(),
 				builder.WithPlayerLootBoxes(),

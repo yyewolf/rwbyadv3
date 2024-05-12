@@ -27,6 +27,7 @@ func ProfileCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command 
 		builder.WithDescription(commandDescription),
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
 			h.Command("/"+commandName, builder.WithContext(
+				app,
 				cmd.HandleCommand,
 				builder.WithPlayer(),
 				builder.WithPlayerGithubStars(),

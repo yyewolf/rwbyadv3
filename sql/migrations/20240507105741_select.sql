@@ -4,14 +4,14 @@ ADD COLUMN selected_card_id VARCHAR(50) REFERENCES cards (id);
 
 CREATE TABLE IF NOT EXISTS player_cards_deck (
     player_id VARCHAR(50) REFERENCES players (id),
-    card_id VARCHAR(50) REFERENCES cards (id),
+    card_id VARCHAR(50) REFERENCES cards (id) ON DELETE CASCADE,
     position INT NOT NULL,
     PRIMARY KEY (player_id, card_id)
 );
 
 CREATE TABLE IF NOT EXISTS player_card_favorites (
     player_id VARCHAR(50) REFERENCES players (id),
-    card_id VARCHAR(50) REFERENCES cards (id),
+    card_id VARCHAR(50) REFERENCES cards (id) ON DELETE CASCADE,
     position INT NOT NULL,
     PRIMARY KEY (player_id, card_id)
 );

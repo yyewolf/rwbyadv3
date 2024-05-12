@@ -16,7 +16,7 @@ import (
 
 const (
 	commandName        = "open"
-	commandDescription = "Open a lootbox (still in demo)"
+	commandDescription = "Open a lootbox"
 
 	componentId    = "/open/{player_id}/{box_type}"
 	componentIdFmt = "/open/%s/%s"
@@ -36,12 +36,14 @@ func OpenCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 		builder.WithDescription(commandDescription),
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
 			h.Command("/"+commandName, builder.WithContext(
+				app,
 				cmd.HandleCommand,
 				builder.WithPlayer(),
 				builder.WithPlayerLootBoxes(),
 			))
 
 			h.ButtonComponent(componentId, builder.WithContextD(
+				app,
 				cmd.HandleInteraction,
 				builder.WithPlayer(),
 				builder.WithPlayerLootBoxes(),

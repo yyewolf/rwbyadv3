@@ -9,7 +9,7 @@ ADD COLUMN level INT NOT NULL,
 ADD COLUMN buffs INT NOT NULL;
 
 CREATE TABLE IF NOT EXISTS cards_stats (
-    card_id VARCHAR(50) PRIMARY KEY REFERENCES cards (id),
+    card_id VARCHAR(50) PRIMARY KEY REFERENCES cards (id) ON DELETE CASCADE,
 
     health INT NOT NULL,
     armor INT NOT NULL,

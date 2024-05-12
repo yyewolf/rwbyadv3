@@ -307,7 +307,7 @@ ALTER TABLE ONLY public.cards
 --
 
 ALTER TABLE ONLY public.cards_stats
-    ADD CONSTRAINT cards_stats_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id);
+    ADD CONSTRAINT cards_stats_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id) ON DELETE CASCADE;
 
 
 --
@@ -347,7 +347,7 @@ ALTER TABLE ONLY public.loot_boxes
 --
 
 ALTER TABLE ONLY public.player_card_favorites
-    ADD CONSTRAINT player_card_favorites_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id);
+    ADD CONSTRAINT player_card_favorites_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id) ON DELETE CASCADE;
 
 
 --
@@ -371,7 +371,7 @@ ALTER TABLE ONLY public.player_cards
 --
 
 ALTER TABLE ONLY public.player_cards_deck
-    ADD CONSTRAINT player_cards_deck_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id);
+    ADD CONSTRAINT player_cards_deck_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id) ON DELETE CASCADE;
 
 
 --

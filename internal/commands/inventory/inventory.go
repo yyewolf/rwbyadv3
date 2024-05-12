@@ -34,12 +34,14 @@ func InventoryCommand(ms *builder.MenuStore, app interfaces.App) *builder.Comman
 		builder.WithDescription(commandDescription),
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
 			h.Command("/"+commandName, builder.WithContext(
+				app,
 				cmd.HandleCommand,
 				builder.WithPlayer(),
 				builder.WithPlayerCards(),
 			))
 
 			h.ButtonComponent("/"+componentId, builder.WithContextD(
+				app,
 				cmd.HandleInteraction,
 				builder.WithPlayer(),
 				builder.WithPlayerCards(),
