@@ -21,6 +21,7 @@ require (
 	github.com/volatiletech/sqlboiler/v4 v4.16.2
 	github.com/volatiletech/strmangle v0.0.6
 	golang.org/x/oauth2 v0.19.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

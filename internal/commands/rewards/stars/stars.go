@@ -34,6 +34,7 @@ func StarCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 		builder.WithDescription(commandDescription),
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
 			h.Command("/"+commandName, builder.WithContext(
+				app,
 				cmd.HandleCommand,
 				builder.WithPlayer(),
 				builder.WithPlayerGithubStars(),
@@ -48,16 +49,6 @@ func StarCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 }
 
 func (cmd *starCommand) HandleCommand(e *handler.CommandEvent) error {
-	authError := e.Ctx.Value(builder.ErrorKey)
-	if authError != nil {
-		return e.Respond(
-			discord.InteractionResponseTypeCreateMessage,
-			discord.NewMessageCreateBuilder().
-				SetContentf("You do not have an account yet...").
-				SetEphemeral(true),
-		)
-	}
-
 	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
 	s := p.R.GetGithubStar()
 	if s.HasStarred {

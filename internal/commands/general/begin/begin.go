@@ -30,10 +30,7 @@ func BeginCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 		builder.WithCommandName(commandName),
 		builder.WithDescription(commandDescription),
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
-			h.Command("/"+commandName, builder.WithContext(
-				cmd.HandleCommand,
-				builder.WithPlayer(),
-			))
+			h.Command("/"+commandName, cmd.HandleCommand)
 			return nil
 		}),
 		builder.WithSlashCommand(discord.SlashCommandCreate{
@@ -44,16 +41,6 @@ func BeginCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 }
 
 func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
-	authError := e.Ctx.Value(builder.ErrorKey)
-	if authError == nil {
-		return e.Respond(
-			discord.InteractionResponseTypeCreateMessage,
-			discord.NewMessageCreateBuilder().
-				SetContentf("You already have an account :o").
-				SetEphemeral(true),
-		)
-	}
-
 	tx, err := boil.BeginTx(e.Ctx, nil)
 	if err != nil {
 		return err
@@ -65,7 +52,15 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 	p.SetGithubStar(context.Background(), tx, true, &models.GithubStar{
 		PlayerID: e.User().ID.String(),
 	})
-	p.Insert(context.Background(), tx, boil.Infer())
+	err = p.Insert(context.Background(), tx, boil.Infer())
+	if err != nil {
+		return e.Respond(
+			discord.InteractionResponseTypeCreateMessage,
+			discord.NewMessageCreateBuilder().
+				SetContentf("You already have an account!").
+				SetEphemeral(true),
+		)
+	}
 
 	err = tx.Commit()
 	if err != nil {
@@ -73,7 +68,7 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 		return e.Respond(
 			discord.InteractionResponseTypeCreateMessage,
 			discord.NewMessageCreateBuilder().
-				SetContentf("An error occured.").
+				SetContentf("An error occured :(").
 				SetEphemeral(true),
 		)
 	}

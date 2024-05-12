@@ -15,7 +15,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/yyewolf/rwbyadv3/internal/app"
+	"github.com/yyewolf/rwbyadv3/internal/cards"
 	"github.com/yyewolf/rwbyadv3/internal/env"
+	"github.com/yyewolf/rwbyadv3/internal/hooks"
 )
 
 func main() {
@@ -39,6 +41,10 @@ func main() {
 	}
 
 	boil.SetDB(db)
+
+	hooks.RegisterHooks()
+
+	cards.ParseCards(c.App.CardsLocation)
 
 	app := app.New(
 		app.WithConfig(c),
