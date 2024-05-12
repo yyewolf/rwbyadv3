@@ -39,6 +39,9 @@ type App struct {
 	// jobs stuff
 	jobHandler interfaces.JobHandler
 
+	// command mentions
+	commandMentions map[string]string
+
 	// graceful shutdown
 	shutdown     chan struct{}
 	errorChannel chan error
@@ -103,6 +106,8 @@ func (a *App) OnReady(_ *events.Ready) {
 
 	a.ms = commands.RegisterCommands(a)
 
+	a.loadCommandMentions()
+
 	// Begin job handler here
 	go func() {
 		err := a.jobHandler.Start()
@@ -145,4 +150,8 @@ func (a *App) Github() *repo.GithubClient {
 
 func (a *App) JobHandler() interfaces.JobHandler {
 	return a.jobHandler
+}
+
+func (a *App) CommandMention(c string) string {
+	return a.commandMentions[c]
 }

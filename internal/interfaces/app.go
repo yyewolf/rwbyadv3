@@ -17,6 +17,9 @@ type App interface {
 	Client() bot.Client
 	JobHandler() JobHandler
 
+	// Commands
+	CommandMention(c string) string
+
 	// Github
 	// NewGithubIssue(params repo.NewIssueParams) (*github.Issue, error)
 	Github() *repo.GithubClient
