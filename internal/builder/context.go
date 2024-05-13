@@ -4,10 +4,14 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"runtime"
+	"strings"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
 	"github.com/disgoorg/disgo/rest"
+	"github.com/disgoorg/snowflake/v2"
+	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/models"
@@ -38,40 +42,51 @@ type ContextBuilder struct {
 
 type ContextOption func(a *ContextBuilder)
 
-func FillContext[K Event](cb *ContextBuilder, event K, ctx context.Context) (context.Context, error) {
-	if cb.withPlayer {
-		var mods []qm.QueryMod
+func FillPlayerContext(cb *ContextBuilder, userID snowflake.ID, ctx context.Context) (context.Context, error) {
+	var mods []qm.QueryMod
 
-		if cb.withPlayerGithubStars {
-			mods = append(mods, qm.Load(models.PlayerRels.GithubStar))
-		}
+	if cb.withPlayerGithubStars {
+		mods = append(mods, qm.Load(models.PlayerRels.GithubStar))
+	}
 
-		if cb.withPlayerCards {
-			mods = append(mods,
-				qm.Load(
-					models.PlayerRels.PlayerCards,
-					qm.OrderBy(models.PlayerCardColumns.Position),
-				),
-				qm.Load(
-					qm.Rels(models.PlayerRels.PlayerCards, models.PlayerCardRels.Card, models.CardRels.CardsStat),
-				),
-			)
-		}
-
-		if cb.withPlayerLootBoxes {
-			mods = append(mods, qm.Load(models.PlayerRels.LootBoxes))
-		}
-
-		if cb.withPlayerSelectedCard {
-			mods = append(mods, qm.Load(models.PlayerRels.SelectedCard))
-		}
-
+	if cb.withPlayerCards {
 		mods = append(mods,
-			qm.Select("*"),
-			qm.Where(models.PlayerColumns.ID+"=?", event.User().ID),
+			qm.Load(
+				models.PlayerRels.PlayerCards,
+				qm.OrderBy(models.PlayerCardColumns.Position),
+			),
+			qm.Load(
+				qm.Rels(models.PlayerRels.PlayerCards, models.PlayerCardRels.Card, models.CardRels.CardsStat),
+			),
 		)
+	}
 
-		p, err := models.Players(mods...).OneG(ctx)
+	if cb.withPlayerLootBoxes {
+		mods = append(mods, qm.Load(models.PlayerRels.LootBoxes))
+	}
+
+	if cb.withPlayerSelectedCard {
+		mods = append(mods, qm.Load(models.PlayerRels.SelectedCard))
+	}
+
+	mods = append(mods,
+		qm.Select("*"),
+		qm.Where(models.PlayerColumns.ID+"=?", userID),
+	)
+
+	p, err := models.Players(mods...).OneG(ctx)
+	if err != nil {
+		return ctx, errors.New("auth error")
+	}
+
+	ctx = context.WithValue(ctx, PlayerKey, p)
+	return ctx, nil
+}
+
+func FillContextReply[K Event](cb *ContextBuilder, event K, ctx context.Context) (context.Context, error) {
+	var err error
+	if cb.withPlayer {
+		ctx, err = FillPlayerContext(cb, event.User().ID, ctx)
 		if err != nil {
 			event.CreateMessage(
 				discord.NewMessageCreateBuilder().
@@ -81,11 +96,19 @@ func FillContext[K Event](cb *ContextBuilder, event K, ctx context.Context) (con
 			)
 			return ctx, errors.New("auth error")
 		}
-
-		ctx = context.WithValue(ctx, PlayerKey, p)
 	}
 
 	return ctx, nil
+}
+
+func getFuncClear(i interface{}) string {
+	fullName := runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+	unclearPart := strings.Split(fullName, "/commands")[1]
+	prefix := strings.Split(unclearPart, ".(")[0]
+	suffix := strings.Split(unclearPart, ").")[1]
+	suffix = strings.Split(suffix, "-")[0]
+
+	return prefix + "/" + suffix
 }
 
 func WithContext[K Event](app interfaces.App, handler func(e *K) error, opts ...ContextOption) func(e *K) error {
@@ -96,6 +119,8 @@ func WithContext[K Event](app interfaces.App, handler func(e *K) error, opts ...
 		opt(&cb)
 	}
 
+	funcName := getFuncClear(handler)
+
 	return func(e *K) error {
 		// Firstly, we extract the context
 		// Try not to use to much reflection
@@ -104,12 +129,22 @@ func WithContext[K Event](app interfaces.App, handler func(e *K) error, opts ...
 			return errors.New("invalid handler passed")
 		}
 
+		logrus.
+			WithField("func", funcName).
+			WithField("user_id", (*e).User().ID).
+			Info("command")
+
 		switch v := ctxVal.Interface().(type) {
 		default:
 			return errors.New("invalid handler passed")
 		case context.Context:
-			v, err := FillContext(&cb, *e, v)
+			v, err := FillContextReply(&cb, *e, v)
 			if err != nil {
+				logrus.
+					WithField("func", funcName).
+					WithField("user_id", (*e).User().ID).
+					WithError(err).
+					Error("command")
 				return nil
 			}
 
@@ -128,6 +163,8 @@ func WithContextD[D any, K Event](app interfaces.App, handler func(d D, e *K) er
 		opt(&cb)
 	}
 
+	funcName := getFuncClear(handler)
+
 	return func(d D, e *K) error {
 		// Firstly, we extract the context
 		// Try not to use to much reflection
@@ -136,12 +173,22 @@ func WithContextD[D any, K Event](app interfaces.App, handler func(d D, e *K) er
 			return errors.New("invalid handler passed")
 		}
 
+		logrus.
+			WithField("func", funcName).
+			WithField("user_id", (*e).User().ID).
+			Info("command")
+
 		switch v := ctxVal.Interface().(type) {
 		default:
 			return errors.New("invalid handler passed")
 		case context.Context:
-			v, err := FillContext(&cb, *e, v)
+			v, err := FillContextReply(&cb, *e, v)
 			if err != nil {
+				logrus.
+					WithField("func", funcName).
+					WithField("user_id", (*e).User().ID).
+					WithError(err).
+					Error("command")
 				return nil
 			}
 
@@ -180,4 +227,16 @@ func WithPlayerLootBoxes() func(a *ContextBuilder) {
 	return func(a *ContextBuilder) {
 		a.withPlayerLootBoxes = true
 	}
+}
+
+func GetContext(ctx context.Context, app interfaces.App, userID snowflake.ID, opts ...ContextOption) (context.Context, error) {
+	// Context builder
+	var cb ContextBuilder
+	cb.app = app
+
+	for _, opt := range opts {
+		opt(&cb)
+	}
+
+	return FillPlayerContext(&cb, userID, ctx)
 }

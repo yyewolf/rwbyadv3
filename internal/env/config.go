@@ -60,7 +60,8 @@ type Config struct {
 
 	// App parameters
 	App struct {
-		CardsLocation string `env:"CARDS_LOCATION" envDefault:"/cards"`
+		CardsLocation string `env:"CARDS_LOCATION" envDefault:"/cards/yml"`
+		BotColor      int    `env:"BOT_COLOR" envDefault:"3859607"`
 	} `envPrefix:"APP_"`
 }
 

@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/sirupsen/logrus"
@@ -87,17 +88,23 @@ func (card Card) Message(c *models.Card) (*discord.File, discord.Embed, *discord
 
 	def := card.Template(c)
 
+	inline := true
+
 	embed := discord.NewEmbedBuilder().
-		SetTitlef("Level %d %s", c.Level, def.Name).
+		SetTitlef("Level %d %s (%d/%d XP)", c.Level, def.Name, c.XP, c.NextLevelXP).
 		SetColor(card.RarityToColor(c)).
 		AddFields(
 			discord.EmbedField{
-				Name: "**Statistics :**",
-				Value: fmt.Sprintf("Category : **%v**\n", def.Categories) +
-					fmt.Sprintf("XP : %d/%d\n", c.XP, c.NextLevelXP) +
-					fmt.Sprintf("Value : %.2f%%\n", c.IndividualValue) +
+				Name:   "**General :**",
+				Inline: &inline,
+				Value: fmt.Sprintf("Category : **%v**\n", strings.Join(def.Categories, ", ")) +
 					fmt.Sprintf("Rarity : %s\n", card.RarityString(c)) +
-					fmt.Sprintf("Health : %d\n", c.R.CardsStat.Health) +
+					fmt.Sprintf("Value : %.2f%%\n", c.IndividualValue),
+			},
+			discord.EmbedField{
+				Name:   "**Stats :**",
+				Inline: &inline,
+				Value: fmt.Sprintf("Health : %d\n", c.R.CardsStat.Health) +
 					fmt.Sprintf("Armor : %v\n", c.R.CardsStat.Armor) +
 					fmt.Sprintf("Damage : %v\n", c.R.CardsStat.Damage),
 			},

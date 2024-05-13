@@ -37,8 +37,8 @@ func HelpCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 		builder.WithCommandName(commandName),
 		builder.WithDescription(commandDescription),
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
-			h.Command("/"+commandName, cmd.HandleCommand)
-			h.SelectMenuComponent("/"+componentId, cmd.HandleInteraction)
+			h.Command("/"+commandName, builder.WithContext(app, cmd.HandleCommand))
+			h.SelectMenuComponent("/"+componentId, builder.WithContextD(app, cmd.HandleInteraction))
 			return nil
 		}),
 		builder.WithSlashCommand(discord.SlashCommandCreate{

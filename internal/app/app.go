@@ -14,6 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/commands"
+	botEvent "github.com/yyewolf/rwbyadv3/internal/commands/events"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/jobs"
@@ -67,10 +68,11 @@ func New(options ...Option) interfaces.App {
 	c, err := disgo.New(app.config.Discord.Token,
 		bot.WithLogger(slog.New(sloglogrus.Option{Level: slog.Level(logrus.GetLevel()), Logger: logrus.StandardLogger()}.NewLogrusHandler())),
 		bot.WithGatewayConfigOpts(
-			gateway.WithIntents(gateway.IntentGuilds),
+			gateway.WithIntents(gateway.IntentsNonPrivileged),
 		),
 		bot.WithCacheConfigOpts(cache.WithCaches(cache.FlagGuilds)),
 		bot.WithEventListenerFunc(app.OnReady),
+		bot.WithEventListenerFunc(botEvent.OnMessage(app)),
 		bot.WithEventListeners(app.handler),
 	)
 	if err != nil {

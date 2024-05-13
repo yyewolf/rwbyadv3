@@ -137,6 +137,7 @@ func (cmd *openCommand) HandleInteraction(data discord.ButtonInteractionData, e 
 	tx.Commit()
 
 	f, embed, _ := utils.Cards.Message(c)
+	embed.Footer = cmd.app.Footer()
 
 	_, err = e.CreateFollowupMessage(discord.NewMessageCreateBuilder().
 		SetFiles(f).

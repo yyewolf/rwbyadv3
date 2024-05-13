@@ -47,7 +47,7 @@ func (cmd *profileCommand) HandleCommand(e *handler.CommandEvent) error {
 	return e.Respond(
 		discord.InteractionResponseTypeCreateMessage,
 		discord.NewMessageCreateBuilder().
-			SetContentf("Loaded : %+#v", p).
+			SetContentf("Raw data : %+#v", p).
 			SetEphemeral(true),
 	)
 }

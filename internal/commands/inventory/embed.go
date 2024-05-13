@@ -17,14 +17,15 @@ func (cmd *inventoryCommand) generator(username string, p *models.Player, page i
 	embed := discord.NewEmbedBuilder()
 	embed.SetTitlef("%s's inventory :", username)
 	embed.SetDescriptionf("To select a character, please use %s.", cmd.app.CommandMention("select"))
-	embed.SetColor(0x00ff00)
-
-	var field discord.EmbedField
-	field.Name = "Cards :"
+	embed.SetColor(cmd.app.Config().App.BotColor)
+	embed.SetEmbedFooter(cmd.app.Footer())
 
 	// Pagination here
 	total := len(p.R.PlayerCards)
 	maxPage := int(math.Ceil(float64(total)/perPage)) - 1
+
+	var field discord.EmbedField
+	field.Name = fmt.Sprintf("Cards (page %d/%d) :", page+1, maxPage+1)
 
 	if page < 0 {
 		page = maxPage
@@ -46,8 +47,12 @@ func (cmd *inventoryCommand) generator(username string, p *models.Player, page i
 		field.Value += fmt.Sprintf("`N°%d | %s`\n", idx, utils.Cards.FullString(c))
 	}
 
+	if len(displayedCards) == 0 {
+		field.Name = "Cards :"
+		field.Value = "You have no cards to be shown."
+	}
+
 	embed.AddFields(field)
-	embed.SetFooterTextf("Page %d/%d", page+1, maxPage+1)
 
 	customID := fmt.Sprintf("/inventory/%s/%d", p.ID, page)
 

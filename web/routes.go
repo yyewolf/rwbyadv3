@@ -5,6 +5,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/web/auth"
+	"github.com/yyewolf/rwbyadv3/web/metrics"
 )
 
 type WebApp struct {
@@ -32,6 +33,7 @@ func NewWebApp(opts ...Option) *WebApp {
 
 func (w *WebApp) RegisterRoutes() {
 	auth.NewAuthHandler(w.app, w.Group("/auth"))
+	metrics.NewMetricsHandler(w.app, w.Group("/metrics"))
 }
 
 func (w *WebApp) Start() error {

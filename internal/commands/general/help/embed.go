@@ -15,8 +15,9 @@ func (cmd *helpCommand) generateEmbed() {
 
 	for _, menu := range menus {
 		embed := &discord.Embed{
-			Title: fmt.Sprintf("%s %s commands :", menu.Emoji.Name, menu.Name),
-			Color: 0x00ff00,
+			Title:  fmt.Sprintf("%s %s commands :", menu.Emoji.Name, menu.Name),
+			Color:  cmd.app.Config().App.BotColor,
+			Footer: cmd.app.Footer(),
 		}
 
 		for _, command := range menu.Commands {
