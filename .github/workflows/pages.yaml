@@ -58,6 +58,9 @@ jobs:
             else
               echo "Site build failed for $branch"
             fi
+            if $branch == 'main'; then
+              cp -r ./site/$branch/* ./site
+            fi
           done
           
 
