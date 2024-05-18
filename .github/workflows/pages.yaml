@@ -46,13 +46,13 @@ jobs:
       - name: Build
       # Create a /site directory and build for every branch
         run: |
-          mkdir /site
+          mkdir ./site
           branches = ['develop', 'beta', 'main']
           for branch in branches
           do
             git checkout $branch
-            mkdocs build -d /site/$branch 
-            if [ -d /site/$branch ]; then
+            mkdocs build -d ./site/$branch 
+            if [ -d ./site/$branch ]; then
               echo "Site built successfully for $branch"
             else
               echo "Site build failed for $branch"
@@ -65,4 +65,4 @@ jobs:
         if: github.ref == 'refs/heads/main'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: /site
+          publish_dir: ./site
