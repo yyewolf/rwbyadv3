@@ -32,3 +32,6 @@ sqlboiler.toml
 
 # Templ
 *_templ.go
+
+# Docs
+venv/
