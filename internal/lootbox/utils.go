@@ -15,4 +15,36 @@ var (
 		WithIVDie(stats.NormalLootDie),
 		WithRarityDie(stats.NormalLootExp),
 	)
+
+	RareLootBox = NewLootbox(
+		WithFilter(
+			filters.NewFilter(
+				filters.All(),
+			),
+		),
+		WithIVDie(stats.RareLootDie),
+		WithRarityDie(stats.RareLootExp),
+	)
+
+	// TODO: remove this and fix where it was used to implement correct filters
+	SpecialLootBox = NewLootbox(
+		WithFilter(
+			filters.NewFilter(
+				filters.All(),
+			),
+		),
+		WithIVDie(stats.LimitedLootDie),
+		WithRarityDie(stats.LimitedLootExp),
+	)
+
+	// TODO: remove this and fix where it was used to implement correct filters
+	LimitedLootBox = NewLootbox(
+		WithFilter(
+			filters.NewFilter(
+				filters.All(),
+			),
+		),
+		WithIVDie(stats.LimitedLootDie),
+		WithRarityDie(stats.LimitedLootExp),
+	)
 )

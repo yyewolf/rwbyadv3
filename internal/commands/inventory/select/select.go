@@ -27,7 +27,6 @@ func SelectCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 
 	cmd.app = app
 
-	var min = 0
 	return builder.NewCommand(
 		builder.WithCommandName(commandName),
 		builder.WithDescription(commandDescription),
@@ -47,7 +46,7 @@ func SelectCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 				discord.ApplicationCommandOptionInt{
 					Name:        "card",
 					Description: "Which card do you want to select ?",
-					MinValue:    &min,
+					MinValue:    utils.Optional(0),
 					Required:    true,
 				},
 			},

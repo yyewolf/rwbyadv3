@@ -33,10 +33,13 @@ func RegisterCommands(app interfaces.App) *builder.MenuStore {
 		logrus.Fatal("Couldn't load commands")
 	}
 
-	app.Client().Rest().SetGlobalCommands(
+	_, err = app.Client().Rest().SetGlobalCommands(
 		app.Client().ApplicationID(),
 		createCommands,
 	)
+	if err != nil {
+		logrus.WithError(err).Error("couldn't register commands")
+	}
 
 	return ms
 }

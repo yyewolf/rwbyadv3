@@ -29,6 +29,11 @@ type Player struct {
 	UpdatedAt      time.Time   `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 	DeletedAt      null.Time   `boil:"deleted_at" json:"deleted_at,omitempty" toml:"deleted_at" yaml:"deleted_at,omitempty"`
 	SelectedCardID null.String `boil:"selected_card_id" json:"selected_card_id,omitempty" toml:"selected_card_id" yaml:"selected_card_id,omitempty"`
+	Liens          int64       `boil:"liens" json:"liens" toml:"liens" yaml:"liens"`
+	Level          int         `boil:"level" json:"level" toml:"level" yaml:"level"`
+	XP             int64       `boil:"xp" json:"xp" toml:"xp" yaml:"xp"`
+	NextLevelXP    int64       `boil:"next_level_xp" json:"next_level_xp" toml:"next_level_xp" yaml:"next_level_xp"`
+	BackpackLevel  int         `boil:"backpack_level" json:"backpack_level" toml:"backpack_level" yaml:"backpack_level"`
 
 	R *playerR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L playerL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -40,12 +45,22 @@ var PlayerColumns = struct {
 	UpdatedAt      string
 	DeletedAt      string
 	SelectedCardID string
+	Liens          string
+	Level          string
+	XP             string
+	NextLevelXP    string
+	BackpackLevel  string
 }{
 	ID:             "id",
 	CreatedAt:      "created_at",
 	UpdatedAt:      "updated_at",
 	DeletedAt:      "deleted_at",
 	SelectedCardID: "selected_card_id",
+	Liens:          "liens",
+	Level:          "level",
+	XP:             "xp",
+	NextLevelXP:    "next_level_xp",
+	BackpackLevel:  "backpack_level",
 }
 
 var PlayerTableColumns = struct {
@@ -54,12 +69,22 @@ var PlayerTableColumns = struct {
 	UpdatedAt      string
 	DeletedAt      string
 	SelectedCardID string
+	Liens          string
+	Level          string
+	XP             string
+	NextLevelXP    string
+	BackpackLevel  string
 }{
 	ID:             "players.id",
 	CreatedAt:      "players.created_at",
 	UpdatedAt:      "players.updated_at",
 	DeletedAt:      "players.deleted_at",
 	SelectedCardID: "players.selected_card_id",
+	Liens:          "players.liens",
+	Level:          "players.level",
+	XP:             "players.xp",
+	NextLevelXP:    "players.next_level_xp",
+	BackpackLevel:  "players.backpack_level",
 }
 
 // Generated where
@@ -70,12 +95,22 @@ var PlayerWhere = struct {
 	UpdatedAt      whereHelpertime_Time
 	DeletedAt      whereHelpernull_Time
 	SelectedCardID whereHelpernull_String
+	Liens          whereHelperint64
+	Level          whereHelperint
+	XP             whereHelperint64
+	NextLevelXP    whereHelperint64
+	BackpackLevel  whereHelperint
 }{
 	ID:             whereHelperstring{field: "\"players\".\"id\""},
 	CreatedAt:      whereHelpertime_Time{field: "\"players\".\"created_at\""},
 	UpdatedAt:      whereHelpertime_Time{field: "\"players\".\"updated_at\""},
 	DeletedAt:      whereHelpernull_Time{field: "\"players\".\"deleted_at\""},
 	SelectedCardID: whereHelpernull_String{field: "\"players\".\"selected_card_id\""},
+	Liens:          whereHelperint64{field: "\"players\".\"liens\""},
+	Level:          whereHelperint{field: "\"players\".\"level\""},
+	XP:             whereHelperint64{field: "\"players\".\"xp\""},
+	NextLevelXP:    whereHelperint64{field: "\"players\".\"next_level_xp\""},
+	BackpackLevel:  whereHelperint{field: "\"players\".\"backpack_level\""},
 }
 
 // PlayerRels is where relationship names are stored.
@@ -186,9 +221,9 @@ func (r *playerR) GetPlayerCardsDecks() PlayerCardsDeckSlice {
 type playerL struct{}
 
 var (
-	playerAllColumns            = []string{"id", "created_at", "updated_at", "deleted_at", "selected_card_id"}
+	playerAllColumns            = []string{"id", "created_at", "updated_at", "deleted_at", "selected_card_id", "liens", "level", "xp", "next_level_xp", "backpack_level"}
 	playerColumnsWithoutDefault = []string{"id"}
-	playerColumnsWithDefault    = []string{"created_at", "updated_at", "deleted_at", "selected_card_id"}
+	playerColumnsWithDefault    = []string{"created_at", "updated_at", "deleted_at", "selected_card_id", "liens", "level", "xp", "next_level_xp", "backpack_level"}
 	playerPrimaryKeyColumns     = []string{"id"}
 	playerGeneratedColumns      = []string{}
 )

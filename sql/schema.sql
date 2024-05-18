@@ -177,7 +177,12 @@ CREATE TABLE public.players (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     deleted_at timestamp with time zone,
-    selected_card_id character varying(50)
+    selected_card_id character varying(50),
+    liens bigint DEFAULT 500 NOT NULL,
+    level integer DEFAULT 1 NOT NULL,
+    xp bigint DEFAULT 0 NOT NULL,
+    next_level_xp bigint DEFAULT 20 NOT NULL,
+    backpack_level integer DEFAULT 1 NOT NULL
 );
 
 
@@ -414,4 +419,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240503174603'),
     ('20240505092653'),
     ('20240506144248'),
-    ('20240507105741');
+    ('20240507105741'),
+    ('20240517132427');

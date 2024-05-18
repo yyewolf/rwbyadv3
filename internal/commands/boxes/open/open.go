@@ -101,16 +101,19 @@ func (cmd *openCommand) HandleInteraction(data discord.ButtonInteractionData, e 
 		return err
 	}
 
-	// var c *models.Card
+	var c *models.Card
 
-	// switch lootBox.Type {
-	// case models.LootBoxesTypeClassic:
-	// case models.LootBoxesTypeRare:
-	// case models.LootBoxesTypeLimited:
-	// case models.LootBoxesTypeSpecial:
-	// }
+	switch lootBox.Type {
+	case models.LootBoxesTypeClassic:
+		c = lootbox.NormalLootBox.PickCard(cards.Cards)
+	case models.LootBoxesTypeRare:
+		c = lootbox.RareLootBox.PickCard(cards.Cards)
+	case models.LootBoxesTypeLimited:
+		c = lootbox.LimitedLootBox.PickCard(cards.Cards)
+	case models.LootBoxesTypeSpecial:
+		c = lootbox.SpecialLootBox.PickCard(cards.Cards)
+	}
 
-	c := lootbox.NormalLootBox.PickCard(cards.Cards)
 	c.PlayerID = e.User().ID.String()
 
 	err = c.Insert(context.Background(), tx, boil.Infer())
