@@ -47,8 +47,7 @@ jobs:
       # Create a /site directory and build for every branch
         run: |
           mkdir ./site
-          export branches="develop beta main"
-          for branch in branches
+          for branch in develop beta main;
           do
             git checkout $branch
             mkdocs build -d ./site/$branch 
