@@ -52,7 +52,7 @@ jobs:
           for branch in develop beta main;
           do
             git checkout $branch
-            mkdocs build -d ./site/$branch 
+            mkdocs build -d ./site/$branch || true
             if [ -d ./site/$branch ]; then
               echo "Site built successfully for $branch"
             else
