@@ -114,6 +114,7 @@ func getFuncClear(i interface{}) string {
 func WithContext[K Event](app interfaces.App, handler func(e *K) error, opts ...ContextOption) func(e *K) error {
 	// Context builder
 	var cb ContextBuilder
+	cb.app = app
 
 	for _, opt := range opts {
 		opt(&cb)
@@ -158,6 +159,7 @@ func WithContext[K Event](app interfaces.App, handler func(e *K) error, opts ...
 func WithContextD[D any, K Event](app interfaces.App, handler func(d D, e *K) error, opts ...ContextOption) func(d D, e *K) error {
 	// Context builder
 	var cb ContextBuilder
+	cb.app = app
 
 	for _, opt := range opts {
 		opt(&cb)

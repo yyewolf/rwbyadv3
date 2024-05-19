@@ -13,6 +13,7 @@ RUN apk --no-cache add ca-certificates && update-ca-certificates
 FROM scratch
 COPY --from=builder /app/rwbyadv3 .
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY cards /cards
 COPY sql /sql
 USER 1000
 ENTRYPOINT ["/rwbyadv3"]
