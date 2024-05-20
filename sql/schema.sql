@@ -10,6 +10,15 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: auth_discord_states_type; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.auth_discord_states_type AS ENUM (
+    'login'
+);
+
+
+--
 -- Name: auth_github_states_type; Type: TYPE; Schema: public; Owner: -
 --
 
@@ -33,6 +42,36 @@ CREATE TYPE public.loot_boxes_type AS ENUM (
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
+
+--
+-- Name: auth_cookies; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.auth_cookies (
+    id character varying(100) NOT NULL,
+    player_id character varying(50) NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone
+);
+
+
+--
+-- Name: auth_discord_states; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.auth_discord_states (
+    state character varying(50) NOT NULL,
+    player_id character varying(50),
+    redirect_uri text NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    type public.auth_discord_states_type NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone
+);
+
 
 --
 -- Name: auth_github_states; Type: TABLE; Schema: public; Owner: -
@@ -196,6 +235,22 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: auth_cookies auth_cookies_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auth_cookies
+    ADD CONSTRAINT auth_cookies_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: auth_discord_states auth_discord_states_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auth_discord_states
+    ADD CONSTRAINT auth_discord_states_pkey PRIMARY KEY (state);
+
+
+--
 -- Name: auth_github_states auth_github_states_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -289,6 +344,22 @@ ALTER TABLE ONLY public.players
 
 ALTER TABLE ONLY public.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: auth_cookies auth_cookies_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auth_cookies
+    ADD CONSTRAINT auth_cookies_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+
+
+--
+-- Name: auth_discord_states auth_discord_states_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auth_discord_states
+    ADD CONSTRAINT auth_discord_states_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
 
 
 --
@@ -420,4 +491,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240505092653'),
     ('20240506144248'),
     ('20240507105741'),
-    ('20240517132427');
+    ('20240517132427'),
+    ('20240519111300');
