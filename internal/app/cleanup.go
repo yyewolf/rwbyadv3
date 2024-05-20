@@ -29,6 +29,14 @@ func (a *App) CleanupJob(params map[string]interface{}) error {
 		q := models.NewQuery(mods...)
 		queries.SetDelete(q)
 		q.Exec(boil.GetDB())
+
+		mods = []qm.QueryMod{
+			qm.From(`"` + table + `"`),
+			qm.Where(`expires_at < NOW()`),
+		}
+		q = models.NewQuery(mods...)
+		queries.SetDelete(q)
+		q.Exec(boil.GetDB())
 	}
 
 	return nil

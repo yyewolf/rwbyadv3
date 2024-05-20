@@ -51,6 +51,42 @@ func makeCacheKey(cols boil.Columns, nzDefaults []string) string {
 	return str
 }
 
+type AuthDiscordStatesType string
+
+// Enum values for AuthDiscordStatesType
+const (
+	AuthDiscordStatesTypeLogin AuthDiscordStatesType = "login"
+)
+
+func AllAuthDiscordStatesType() []AuthDiscordStatesType {
+	return []AuthDiscordStatesType{
+		AuthDiscordStatesTypeLogin,
+	}
+}
+
+func (e AuthDiscordStatesType) IsValid() error {
+	switch e {
+	case AuthDiscordStatesTypeLogin:
+		return nil
+	default:
+		return errors.New("enum is not valid")
+	}
+}
+
+func (e AuthDiscordStatesType) String() string {
+	return string(e)
+}
+
+func (e AuthDiscordStatesType) Ordinal() int {
+	switch e {
+	case AuthDiscordStatesTypeLogin:
+		return 0
+
+	default:
+		panic(errors.New("enum is not valid"))
+	}
+}
+
 type AuthGithubStatesType string
 
 // Enum values for AuthGithubStatesType

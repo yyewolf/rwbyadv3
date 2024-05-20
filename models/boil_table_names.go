@@ -4,6 +4,8 @@
 package models
 
 var TableNames = struct {
+	AuthCookies         string
+	AuthDiscordStates   string
 	AuthGithubStates    string
 	Cards               string
 	CardsStats          string
@@ -15,6 +17,8 @@ var TableNames = struct {
 	PlayerCardsDeck     string
 	Players             string
 }{
+	AuthCookies:         "auth_cookies",
+	AuthDiscordStates:   "auth_discord_states",
 	AuthGithubStates:    "auth_github_states",
 	Cards:               "cards",
 	CardsStats:          "cards_stats",

@@ -24,6 +24,12 @@ type Config struct {
 	Discord struct {
 		Token string       `env:"TOKEN" envDefault:""`
 		AppID snowflake.ID `env:"APP_ID" envDefault:""`
+
+		App struct {
+			ClientID     string `env:"CLIENT_ID" envDefault:""`
+			ClientSecret string `env:"CLIENT_SECRET" envDefault:""`
+			BaseURI      string `env:"BASE_URI" envDefault:""`
+		} `envPrefix:"APP_"`
 	} `envPrefix:"DISCORD_"`
 
 	// Github

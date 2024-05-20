@@ -86,7 +86,7 @@ func SuccessPage(c echo.Context, text string) error {
 		"",
 		true,
 		true,
-		success.Success(text, ""),
+		success.Success(text, "", ""),
 	))
 }
 
@@ -94,6 +94,12 @@ func (h *GithubAuthHandler) BeginAuth() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Get state from query
 		s := c.QueryParam("s")
+
+		_, err := models.FindAuthGithubStateG(context.Background(), s)
+		if err != nil {
+			logrus.WithField("state", s).Error("state not found in DB")
+			return ErrorPage(c, http.StatusForbidden)
+		}
 
 		state := ImproveState(s)
 		c.SetCookie(&http.Cookie{
