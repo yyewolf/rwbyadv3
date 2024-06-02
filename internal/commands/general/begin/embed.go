@@ -57,7 +57,7 @@ func (cmd *beginCommand) pageOne(e *discord.EmbedBuilder) {
 		"Open-Source",
 		utils.Joinln(
 			"RWBY Adventures is also [open-source](https://github/yyewolf/rwbyadv3).",
-			"A [documentation]() is also available for technical help and command insights.",
+			"A [documentation](https://yyewolf.github.io/rwbyadv3/main/) is also available for technical help and command insights.",
 			"The documentation can be used to go further in-depth with the game mechanics.",
 		),
 		false,
