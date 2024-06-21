@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
+	"github.com/yyewolf/rwbyadv3/internal/jobs"
 )
 
 const (
@@ -26,7 +27,7 @@ func PingCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 
 	cmd.app = app
 	cmd.jobHandler = app.JobHandler()
-	cmd.jobHandler.RegisterJobKey("delayed_pong", cmd.DelayedPongJob)
+	cmd.jobHandler.OnEvent(jobs.JobDelayedPong, cmd.DelayedPongJob)
 
 	return builder.NewCommand(
 		builder.WithCommandName(commandName),
@@ -45,7 +46,7 @@ func PingCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 func (cmd *pingCommand) HandleCommand(e *handler.CommandEvent) error {
 	// Create delayed pong in 10 seconds
 	_, err := cmd.jobHandler.ScheduleJob(
-		"delayed_pong",
+		jobs.JobDelayedPong,
 		e.ID().String(),
 		time.Now().Add(10*time.Second),
 		map[string]interface{}{"user_id": e.User().ID.String()},

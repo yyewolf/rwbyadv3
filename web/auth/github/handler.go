@@ -97,7 +97,7 @@ func (h *GithubAuthHandler) BeginAuth() echo.HandlerFunc {
 
 		_, err := models.FindAuthGithubStateG(context.Background(), s)
 		if err != nil {
-			logrus.WithField("state", s).Error("state not found in DB")
+			logrus.WithField("state", s).Debug("state not found in DB")
 			return ErrorPage(c, http.StatusForbidden)
 		}
 
@@ -124,7 +124,7 @@ func (h *GithubAuthHandler) Callback() echo.HandlerFunc {
 		s := ReverseState(oauthState.Value)
 		state, err := models.FindAuthGithubStateG(context.Background(), s)
 		if err != nil {
-			logrus.WithField("state", s).Error("state not found in DB")
+			logrus.WithField("state", s).Debug("state not found in DB")
 			return ErrorPage(c, http.StatusForbidden)
 		}
 
@@ -132,7 +132,7 @@ func (h *GithubAuthHandler) Callback() echo.HandlerFunc {
 
 		token, err := h.c.Exchange(context.Background(), c.FormValue("code"))
 		if err != nil {
-			logrus.WithError(err).Error("error invalid code")
+			logrus.WithError(err).Debug("error invalid code")
 			return ErrorPage(c, http.StatusForbidden)
 		}
 
@@ -173,7 +173,7 @@ func (h *GithubAuthHandler) CallbackCheckStars(state *models.AuthGithubState, to
 					Build(),
 			)
 
-			logrus.WithField("state", state.State).Error("user has not starred")
+			logrus.WithField("state", state.State).Debug("user has not starred")
 			return ErrorPage(c, http.StatusInternalServerError)
 		}
 

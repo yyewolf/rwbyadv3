@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	perPage = 20.0
+	perPage = 10.0
 )
 
 func (cmd *inventoryCommand) generator(username string, p *models.Player, page int) (discord.Embed, discord.ContainerComponent) {
@@ -21,11 +21,11 @@ func (cmd *inventoryCommand) generator(username string, p *models.Player, page i
 	embed.SetEmbedFooter(cmd.app.Footer())
 
 	// Pagination here
-	total := len(p.R.PlayerCards)
+	cards := utils.Players.AvailableCards(p)
+	total := len(cards)
 	maxPage := int(math.Ceil(float64(total)/perPage)) - 1
 
 	var field discord.EmbedField
-	field.Name = fmt.Sprintf("Cards (page %d/%d) :", page+1, maxPage+1)
 
 	if page < 0 {
 		page = maxPage
@@ -35,14 +35,15 @@ func (cmd *inventoryCommand) generator(username string, p *models.Player, page i
 	}
 
 	top := (page + 1) * int(perPage)
-	if top > len(p.R.PlayerCards) {
-		top = len(p.R.PlayerCards)
+	if top > len(cards) {
+		top = len(cards)
 	}
 
-	displayedCards := p.R.PlayerCards[page*int(perPage) : top]
+	field.Name = fmt.Sprintf("Cards (page %d/%d) :", page+1, maxPage+1)
 
-	for i, pre := range displayedCards {
-		c := pre.R.Card
+	displayedCards := cards[page*int(perPage) : top]
+
+	for i, c := range displayedCards {
 		idx := page*int(perPage) + i + 1
 		field.Value += fmt.Sprintf("`N°%d | %s`\n", idx, utils.Cards.FullString(c))
 	}
@@ -57,8 +58,8 @@ func (cmd *inventoryCommand) generator(username string, p *models.Player, page i
 	customID := fmt.Sprintf("/inventory/%s/%d", p.ID, page)
 
 	return embed.Build(), discord.NewActionRow(
-		discord.NewButton(discord.ButtonStyleSecondary, "◀️ Prev", customID+"/"+componentActionPrev, ""),
-		discord.NewButton(discord.ButtonStyleSecondary, "🔄 Refresh", customID+"/"+componentActionRefresh, ""),
-		discord.NewButton(discord.ButtonStyleSecondary, "▶️ Next", customID+"/"+componentActionNext, ""),
+		discord.NewSecondaryButton("◀️ Prev", customID+"/"+componentActionPrev),
+		discord.NewSecondaryButton("🔄 Refresh", customID+"/"+componentActionRefresh),
+		discord.NewSecondaryButton("▶️ Next", customID+"/"+componentActionNext),
 	)
 }

@@ -1,0 +1,36 @@
+package market
+
+import "github.com/yyewolf/rwbyadv3/web/templates/layout"
+import "github.com/yyewolf/rwbyadv3/web/templates/css"
+
+templ Main() {
+	@layout.MarketBase(
+		"Home",
+		false,
+		[]string{},
+		[]string{},
+	) {
+		<div hx-ext="sse" sse-connect="/market/api/sse">
+			Listings :
+			<div id="listing-container" class="container gap-5 flex flex-row overflow-x-auto p-4" sse-swap="latest_listings" hx-get="/market/api/latest/listings" hx-trigger="load">
+				<div class="htmx-indicator">
+					Loading...
+				</div>
+			</div>
+		</div>
+		<script>
+			const container = document.getElementById("listing-container");
+			// where "container" is the id of the container
+			container.addEventListener("wheel", function (e) {
+				if (e.deltaY > 0) {
+					container.scrollLeft += 100;
+					e.preventDefault();
+				} else {
+					container.scrollLeft -= 100;
+					e.preventDefault();
+				}rainbow
+			});
+		</script>
+		@css.Style()
+	}
+}

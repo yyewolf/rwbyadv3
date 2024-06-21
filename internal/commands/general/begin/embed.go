@@ -37,8 +37,8 @@ func (cmd *beginCommand) generator(p *models.Player, page int) (discord.Embed, d
 	customID := fmt.Sprintf("/begin/%s/%d", p.ID, page)
 
 	return embed.Build(), discord.NewActionRow(
-		discord.NewButton(discord.ButtonStyleSecondary, "◀️ Prev", customID+"/"+componentActionPrev, ""),
-		discord.NewButton(discord.ButtonStyleSecondary, "▶️ Next", customID+"/"+componentActionNext, ""),
+		discord.NewSecondaryButton("◀️ Prev", customID+"/"+componentActionPrev),
+		discord.NewSecondaryButton("▶️ Next", customID+"/"+componentActionNext),
 	)
 }
 

@@ -1,13 +1,14 @@
 package jobs
 
-import "github.com/rabbitmq/amqp091-go"
+import (
+	"github.com/rabbitmq/amqp091-go"
+)
 
 func (j *JobHandler) Init() error {
 	ch, err := j.conn.Channel()
 	if err != nil {
 		return err
 	}
-	defer ch.Close()
 
 	err = ch.ExchangeDeclare(
 		j.config.Rbmq.Jobs.Exchange,
@@ -36,15 +37,17 @@ func (j *JobHandler) Init() error {
 		return err
 	}
 
-	err = ch.QueueBind(
-		j.config.Rbmq.Jobs.Queue,
-		"job",
-		j.config.Rbmq.Jobs.Exchange,
-		false,
-		nil,
-	)
-	if err != nil {
-		return err
+	for key := range j.jobTypes {
+		err = j.ch.QueueBind(
+			j.config.Rbmq.Jobs.Queue,
+			string(key),
+			j.config.Rbmq.Jobs.Exchange,
+			false,
+			nil,
+		)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

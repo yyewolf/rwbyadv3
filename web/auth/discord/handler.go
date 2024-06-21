@@ -32,7 +32,7 @@ type DiscordAuthHandler struct {
 	*echo.Group
 }
 
-func NewDiscordAuthHandler(app interfaces.App, g *echo.Group) {
+func NewDiscordAuthHandler(app interfaces.App, g *echo.Group) *DiscordAuthHandler {
 	cfg := app.Config()
 
 	redirectUri, err := url.JoinPath(cfg.Discord.App.BaseURI, "/callback")
@@ -58,6 +58,8 @@ func NewDiscordAuthHandler(app interfaces.App, g *echo.Group) {
 
 	g.GET("/", h.BeginAuth())
 	g.GET("/callback", h.Callback())
+
+	return h
 }
 
 func ImproveState(s string) string {
@@ -107,6 +109,8 @@ func (h *DiscordAuthHandler) BeginAuth() echo.HandlerFunc {
 			switch w {
 			case "main":
 				state.RedirectURI = "/"
+			case "market":
+				state.RedirectURI = "/market"
 			default:
 				return ErrorPage(c, http.StatusForbidden)
 			}
@@ -118,7 +122,7 @@ func (h *DiscordAuthHandler) BeginAuth() echo.HandlerFunc {
 		} else {
 			_, err := models.FindAuthDiscordStateG(context.Background(), s)
 			if err != nil {
-				logrus.WithField("state", s).Error("state not found in DB")
+				logrus.WithField("state", s).Debug("state not found in DB")
 				return ErrorPage(c, http.StatusForbidden)
 			}
 		}
@@ -138,9 +142,8 @@ func (h *DiscordAuthHandler) BeginAuth() echo.HandlerFunc {
 
 		state := ImproveState(s)
 		c.SetCookie(&http.Cookie{
-			Name:    "oauthstate",
-			Value:   state,
-			Expires: time.Now().Add(365 * 24 * time.Hour),
+			Name:  "oauthstate",
+			Value: state,
 		})
 		u := h.c.AuthCodeURL(state)
 
@@ -159,7 +162,7 @@ func (h *DiscordAuthHandler) Callback() echo.HandlerFunc {
 		s := ReverseState(oauthState.Value)
 		state, err := models.FindAuthDiscordStateG(context.Background(), s)
 		if err != nil {
-			logrus.WithField("state", s).Error("state not found in DB")
+			logrus.WithField("state", s).Debug("state not found in DB")
 			return ErrorPage(c, http.StatusForbidden)
 		}
 
@@ -167,7 +170,7 @@ func (h *DiscordAuthHandler) Callback() echo.HandlerFunc {
 
 		token, err := h.c.Exchange(context.Background(), c.FormValue("code"))
 		if err != nil {
-			logrus.WithError(err).Error("error invalid code")
+			logrus.WithError(err).Debug("error invalid code")
 			return ErrorPage(c, http.StatusForbidden)
 		}
 
@@ -188,7 +191,7 @@ func (h *DiscordAuthHandler) CallbackLogin(state *models.AuthDiscordState, token
 			return ErrorPage(c, http.StatusInternalServerError)
 		}
 
-		sessionID := utils.GetCookieId()
+		sessionID := utils.GenerateNewCookieId()
 
 		// Create a session
 		session := &models.AuthCookie{

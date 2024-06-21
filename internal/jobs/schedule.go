@@ -43,7 +43,7 @@ func (j *JobHandler) ScheduleJob(key interfaces.JobKey, jobID string, runAt time
 	err = j.ch.PublishWithContext(
 		context.Background(),
 		j.config.Rbmq.Jobs.Exchange,
-		"job",
+		string(key),
 		false,
 		false,
 		amqp091.Publishing{
@@ -106,7 +106,7 @@ func (j *JobHandler) reScheduleJob(job *models.Job) error {
 	err = j.ch.PublishWithContext(
 		context.Background(),
 		j.config.Rbmq.Jobs.Exchange,
-		"job",
+		job.Jobkey,
 		false,
 		false,
 		amqp091.Publishing{
@@ -174,7 +174,7 @@ func (j *JobHandler) ScheduleRecurringJob(key interfaces.JobKey, runAt time.Time
 	err = j.ch.PublishWithContext(
 		context.Background(),
 		j.config.Rbmq.Jobs.Exchange,
-		"job",
+		string(key),
 		false,
 		false,
 		amqp091.Publishing{

@@ -42,14 +42,14 @@ func main() {
 
 	boil.SetDB(db)
 
-	hooks.RegisterHooks()
-
 	cards.ParseCards(c.App.CardsLocation)
 
 	app := app.New(
 		app.WithConfig(c),
 		app.WithWeb(),
 	)
+
+	hooks.RegisterHooks(app)
 
 	go app.Start()
 

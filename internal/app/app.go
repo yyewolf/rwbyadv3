@@ -93,9 +93,10 @@ func New(options ...Option) interfaces.App {
 	}
 
 	// Jobs
-	app.jobHandler.RegisterJobKey("cleanup_db", app.CleanupJob)
+	app.jobHandler.OnEvent(jobs.JobCleanupDb, app.CleanupJob)
+	app.jobHandler.OnEvent(jobs.NotifySendDm, app.SendDMJob)
 	app.jobHandler.ScheduleRecurringJob(
-		"cleanup_db",
+		jobs.JobCleanupDb,
 		time.Date(2024, 1, 1, 1, 1, 0, 0, time.Local),
 		24*time.Hour,
 	)

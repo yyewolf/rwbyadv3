@@ -15,12 +15,12 @@ type Card struct{}
 
 var Cards Card
 
-func (Card) Template(c *models.Card) *cards.Card {
+func (Card) Primitive(c *models.Card) *cards.Card {
 	return cards.Cards[c.CardType]
 }
 
 func (card Card) GenerateStats(c *models.Card) *models.CardsStat {
-	def := card.Template(c)
+	def := card.Primitive(c)
 
 	return &models.CardsStat{
 		CardID:  c.ID,
@@ -33,7 +33,7 @@ func (card Card) GenerateStats(c *models.Card) *models.CardsStat {
 }
 
 func (card Card) FullString(c *models.Card) string {
-	def := card.Template(c)
+	def := card.Primitive(c)
 	return fmt.Sprintf("%s level %d (%d/%dXP) %s (%.2f%%)", card.RarityString(c), c.Level, c.XP, c.NextLevelXP, def.Name, c.IndividualValue)
 }
 
@@ -62,18 +62,18 @@ func (card Card) RarityString(c *models.Card) (x string) {
 func (card Card) RarityToColor(c *models.Card) int {
 	EmbedColor := 0
 	switch c.Rarity {
-	case 0:
+	case 0: // Common
 		EmbedColor = 0x808080
-	case 1:
-		EmbedColor = 0x285300
-	case 2:
-		EmbedColor = 0x00008b
-	case 3:
-		EmbedColor = 0xB22222
-	case 4:
-		EmbedColor = 0x800080
-	case 5:
-		EmbedColor = 0x121212
+	case 1: // Uncommon
+		EmbedColor = 0x7CFC00
+	case 2: // Rare
+		EmbedColor = 0x87CEEB
+	case 3: // Very Rare
+		EmbedColor = 0xBA55D3
+	case 4: // Legendary
+		EmbedColor = 0xFFD700
+	case 5: // Collector
+		EmbedColor = 0xFF0000
 	}
 	return EmbedColor
 }
@@ -86,7 +86,7 @@ func (card Card) Message(c *models.Card) (*discord.File, discord.Embed, *discord
 
 	f := discord.NewFile("ch.png", "", img)
 
-	def := card.Template(c)
+	def := card.Primitive(c)
 
 	inline := true
 
@@ -113,4 +113,8 @@ func (card Card) Message(c *models.Card) (*discord.File, discord.Embed, *discord
 		Build()
 
 	return f, embed, nil
+}
+
+func (card Card) IconURI(c *models.Card) string {
+	return cards.MustGetImageURI(c.CardType, "icon", "webp")
 }
