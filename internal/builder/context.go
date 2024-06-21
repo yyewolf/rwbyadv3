@@ -76,6 +76,7 @@ func FillPlayerContext(cb *ContextBuilder, userID snowflake.ID, ctx context.Cont
 
 	p, err := models.Players(mods...).OneG(ctx)
 	if err != nil {
+		logrus.WithError(err).Error("error when fetching player")
 		return ctx, errors.New("auth error")
 	}
 

@@ -1,0 +1,19 @@
+package market
+
+templ Success(message string) {
+	<div x-data="{ open: true }" class="flex flex-row w-full fixed top-16 justify-center">
+		<div
+			x-init="setTimeout(() => open = false, 3000)"
+			x-show="open"
+			x-transition
+			class="w-1/2 left-0 right-0 bg-green-500 text-white py-4 px-6 z-20 flex justify-between rounded-xl"
+		>
+			<span>{ message } </span>
+			<button @click="open = false" class="text-white">
+				<svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+				</svg>
+			</button>
+		</div>
+	</div>
+}

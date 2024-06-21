@@ -7,7 +7,18 @@ import (
 	"github.com/yyewolf/rwbyadv3/web/auth/github"
 )
 
+var (
+	DiscordHandler *discord.DiscordAuthHandler
+)
+
 func NewAuthHandler(app interfaces.App, g *echo.Group) {
 	github.NewGithubAuthHandler(app, g.Group("/github"))
-	discord.NewDiscordAuthHandler(app, g.Group("/discord"))
+	DiscordHandler = discord.NewDiscordAuthHandler(app, g.Group("/discord"))
+
+	g.GET("/discord", func(c echo.Context) error {
+		return c.Redirect(302, "/discord/")
+	})
+	g.GET("/github", func(c echo.Context) error {
+		return c.Redirect(302, "/github/")
+	})
 }

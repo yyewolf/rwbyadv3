@@ -35,3 +35,12 @@ sqlboiler.toml
 
 # Docs
 venv/
+
+# NodeJS
+node_modules/
+
+# Air
+bin/*
+tmp/
+
+!.gitkeep

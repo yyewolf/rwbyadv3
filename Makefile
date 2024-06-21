@@ -1,0 +1,2 @@
+live:
+	air --build.cmd "go generate && go build -o bin/bot cmd/bot/main.go" --build.bin "./bin/bot" --build.exclude_dir "models,node_modules" --build.exclude_dir "models,node_modules" --build.exclude_regex "_templ\\.go" --build.include_ext ".templ"

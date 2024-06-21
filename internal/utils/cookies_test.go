@@ -6,9 +6,9 @@ import (
 )
 
 func TestCookieToken(t *testing.T) {
-	fmt.Println(GetCookieId())
-	fmt.Println(GetCookieId())
-	fmt.Println(GetCookieId())
-	fmt.Println(GetCookieId())
-	fmt.Println(GetCookieId())
+	fmt.Println(GenerateNewCookieId())
+	fmt.Println(GenerateNewCookieId())
+	fmt.Println(GenerateNewCookieId())
+	fmt.Println(GenerateNewCookieId())
+	fmt.Println(GenerateNewCookieId())
 }

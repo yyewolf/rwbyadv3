@@ -1,0 +1,149 @@
+package market
+
+import (
+	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/astaxie/beego/utils/pagination"
+	"github.com/xeonx/timeago"
+	"github.com/yyewolf/rwbyadv3/internal/utils"
+	"fmt"
+	"strconv"
+	"github.com/yyewolf/rwbyadv3/web/templates/icons"
+)
+
+templ Listing(listing *models.Listing) {
+	<div class="container flex flex-col justify-between rounded-xl bg-[#f7f5f9] px-5 py-8 w-[172px] h-full relative gap-4">
+		<div class="text-lg rounded-xl font-bold icon-container">
+			<svg height="100%" width="100%" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+				<rect
+					rx="8"
+					ry="8"
+					class="line"
+					x="1"
+					y="1.2"
+					height="98"
+					width="98"
+					stroke={ fmt.Sprintf("#%06v", strconv.FormatInt(int64(utils.Cards.RarityToColor(listing.R.Card)), 16)) }
+					stroke-linejoin="round"
+				></rect>
+			</svg>
+			<img class="icon rounded-xl border-black border-2" src={ utils.Cards.IconURI(listing.R.Card) }/>
+		</div>
+		<div class="flex flex-col justify-between">
+			<div class="text-lg font-bold overflow-hidden text-ellipsis whitespace-nowrap" title={ utils.Cards.Primitive(listing.R.Card).Name }>
+				{ utils.Cards.Primitive(listing.R.Card).Name }
+			</div>
+			// Stats
+			<div class="flex justify-between gap-2">
+				<div class="flex flex-col">
+					<div class="text-sm text-gray-500">
+						Value
+					</div>
+					<div class="text-sm text-gray-500">
+						Level
+					</div>
+					<div class="text-sm text-gray-500">
+						Rarity
+					</div>
+				</div>
+				<div class="flex flex-col">
+					<div class="text-sm">
+						{ fmt.Sprintf("%.02f", listing.R.Card.IndividualValue) }%
+					</div>
+					<div class="text-sm">
+						{ fmt.Sprintf("%d", listing.R.Card.Level) }
+					</div>
+					<div class="flex flex-row h-full items-center">
+						for i := 0; i < 5; i++ {
+							if i < listing.R.Card.Rarity {
+								<span class="w-4 h-4 fill-yellow-500">
+									@icons.Star()
+								</span>
+							} else {
+								<span class="w-4 h-4 fill-gray-300">
+									@icons.Star()
+								</span>
+							}
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+		// button to purchase
+		<div class="flex justify-center">
+			<button
+				@click="modal = true"
+				hx-get={ fmt.Sprintf("/market/api/listings/%s/modal", listing.ID) }
+				hx-target="#modals-here"
+				hx-trigger="click"
+				class="bg-[#b5fcc6] border-2 border-[#f7f5f9] rounded-xl text-md font-bold px-2 py-1 w-32"
+			>
+				{ fmt.Sprintf("%d", listing.Price) }Ⱡ
+			</button>
+		</div>
+		<span class="absolute bottom-2 right-2 text-sm text-gray-500">
+			{ timeago.English.Format(listing.CreatedAt) }
+		</span>
+	</div>
+}
+
+templ ListingModal(listing *models.Listing) {
+	<div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+		<div class="sm:flex sm:items-start">
+			<div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+				<h3 class="text-lg leading-6 font-medium text-gray-900 flex flex-row items-center gap-2" id="modal-title">
+					<svg class="h-4 w-4" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">
+						<circle fill={ fmt.Sprintf("#%06v", strconv.FormatInt(int64(utils.Cards.RarityToColor(listing.R.Card)), 16)) } cx="5" cy="5" r="4" stroke="black" stroke-width="0.25"></circle>
+					</svg>
+					{ utils.Cards.Primitive(listing.R.Card).Name } ({ fmt.Sprintf("%.02f", listing.R.Card.IndividualValue) }%)
+				</h3>
+				<div class="mt-2">
+					Would you like to purchase this card ?
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="bg-gray-50 gap-4 sm:gap-1 px-4 py-3 sm:px-6 flex flex-row-reverse">
+		<button
+			@click="modal = false"
+			type="button"
+			class="w-auto inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+		>
+			Close
+		</button>
+		<button
+			@click="modal = false"
+			type="button"
+			class="w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:w-auto sm:text-sm"
+			hx-post={ fmt.Sprintf("/market/api/listings/%s", listing.ID) }
+		>
+			Purchase
+		</button>
+	</div>
+}
+
+templ Listings(listings []*models.Listing, pagination *pagination.Paginator) {
+	for i, listing := range listings {
+		if i == len(listings) - 1 {
+			<div
+				class=""
+				hx-get={ pagination.PageLinkNext() }
+				hx-trigger="intersect once"
+				hx-swap="afterend"
+			>
+				@Listing(listing)
+			</div>
+		} else {
+			<div>
+				@Listing(listing)
+			</div>
+		}
+	}
+}
+
+templ LatestListings(listings []*models.Listing) {
+	for _, listing := range listings {
+		<div>
+			@Listing(listing)
+		</div>
+	}
+}
