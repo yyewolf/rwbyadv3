@@ -1,3 +1,12 @@
+FROM node:20.12-alpine AS web-builder
+RUN apk add --no-cache make
+WORKDIR /app
+COPY Makefile .
+COPY static static
+COPY package.json package-lock.json .
+RUN npm install
+RUN make assets
+
 FROM golang:1.22-alpine AS builder
 WORKDIR /app
 ENV CGO_ENABLED=0
@@ -6,6 +15,7 @@ RUN --mount=type=ssh go mod download && go mod verify
 COPY . .
 RUN go install github.com/a-h/templ/cmd/templ@latest
 RUN go generate templ.go
+COPY --from=web-builder /app/static /app/static
 RUN go build -o /app/rwbyadv3 /app/cmd/bot/main.go
 
 RUN apk --no-cache add ca-certificates && update-ca-certificates
