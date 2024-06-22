@@ -8,4 +8,5 @@ import (
 
 func NewCDNHandler(app interfaces.App, g *echo.Group) {
 	g.StaticFS("/cards", echo.MustSubFS(rwbyadv3.GetCardFS(), "cards/img"))
+	g.StaticFS("/static", echo.MustSubFS(rwbyadv3.GetStaticFS(), "static/dist"))
 }
