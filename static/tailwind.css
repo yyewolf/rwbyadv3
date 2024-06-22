@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+    @font-face {
+        font-family: 'Baloo 2';
+        src: url('/cdn/static/fonts/baloo2.ttf') format('truetype');
+    }
+
+    html {
+        font-family: "Baloo 2", system-ui, sans-serif;
+    }
+}
 
 .icon-container {
     position: relative;

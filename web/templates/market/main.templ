@@ -9,11 +9,36 @@ templ Main() {
 		[]string{},
 		[]string{},
 	) {
-		<div hx-ext="sse" sse-connect="/market/api/sse">
-			Listings :
-			<div id="listing-container" class="container gap-5 flex flex-row overflow-x-auto p-4" sse-swap="latest_listings" hx-get="/market/api/latest/listings" hx-trigger="load">
-				<div class="htmx-indicator">
-					Loading...
+		<div
+			name="container"
+			hx-ext="sse"
+			sse-connect="/market/api/sse"
+			class="container mx-auto lg:px-32 px-12"
+		>
+			<div name="latest-listings-section">
+				<a
+					class="p-4 text-2xl font-bold flex flex-row w-full justify-between items-center"
+				>
+					<span>Latest Auctions</span>
+					<span class="text-sm font-semibold text-[#ac8cb5]">VIEW ALL</span>
+				</a>
+				<div id="listing-container" class="container gap-5 flex flex-row overflow-x-auto p-4" sse-swap="latest_listings" hx-get="/market/api/latest/listings" hx-trigger="load">
+					<div class="htmx-indicator">
+						Loading...
+					</div>
+				</div>
+			</div>
+			<div name="latest-listings-section">
+				<a
+					class="p-4 text-2xl font-bold flex flex-row w-full justify-between items-center"
+				>
+					<span>Latest Listings</span>
+					<span class="text-sm font-semibold text-[#ac8cb5]">VIEW ALL</span>
+				</a>
+				<div id="listing-container" class="container gap-5 flex flex-row overflow-x-auto p-4" sse-swap="latest_listings" hx-get="/market/api/latest/listings" hx-trigger="load">
+					<div class="htmx-indicator">
+						Loading...
+					</div>
 				</div>
 			</div>
 		</div>
@@ -27,7 +52,7 @@ templ Main() {
 				} else {
 					container.scrollLeft -= 100;
 					e.preventDefault();
-				}rainbow
+				}
 			});
 		</script>
 	}
