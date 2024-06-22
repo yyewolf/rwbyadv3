@@ -30,7 +30,7 @@ templ MarketBase(title string, isError bool, errMsgs, sucMsgs []string) {
 		<body x-data="{ modal: false }" class="sample-transition" hx-boost="true">
 			@navigation.Navbar(false, "/")
 			<div id="message"></div>
-			<main class={ templ.KV("pt-40 px-20", !isError) }>
+			<main class={ templ.KV("pt-10 px-5 lg:pt-20 lg:px-20", !isError) }>
 				{ children... }
 			</main>
 			<div
