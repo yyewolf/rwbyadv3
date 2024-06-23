@@ -42,3 +42,33 @@ func (A) DispatchRemoveListing(app interfaces.App, listing *models.Listing) {
 		},
 	)
 }
+
+func (A) DispatchNewAuction(app interfaces.App, auction *models.Auction) {
+	app.JobHandler().SendEvent(
+		jobs.EventNewAuction,
+		uuid.NewString(),
+		map[string]interface{}{
+			"auction": auction,
+		},
+	)
+}
+
+func (A) DispatchRemoveAuction(app interfaces.App, auction *models.Auction) {
+	app.JobHandler().SendEvent(
+		jobs.EventRemoveAuction,
+		uuid.NewString(),
+		map[string]interface{}{
+			"auction": auction,
+		},
+	)
+}
+
+func (A) DispatchNewBid(app interfaces.App, bid *models.AuctionsBid) {
+	app.JobHandler().SendEvent(
+		jobs.EventBidAuction,
+		uuid.NewString(),
+		map[string]interface{}{
+			"bid": bid,
+		},
+	)
+}

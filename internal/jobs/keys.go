@@ -1,6 +1,7 @@
 package jobs
 
 const (
+	JobEndAuction  = "end_auction"
 	JobCleanupDb   = "cleanup_db"
 	JobDelayedPong = "delayed_pong"
 
@@ -10,4 +11,7 @@ const (
 	// Events
 	EventNewListing    = "new_listing"
 	EventRemoveListing = "remove_listing"
+	EventNewAuction    = "new_auction"
+	EventRemoveAuction = "remove_auction"
+	EventBidAuction    = "bid_auction"
 )

@@ -131,10 +131,12 @@ func (h *MarketApiHandler) PurchaseListing(c echo.Context) error {
 	card := listing.R.Card
 	card.PlayerID = buyer.ID
 	card.Available = true
+	utils.Cards.SetLocation(card, "inventory")
 
 	card.Update(context.Background(), tx, boil.Whitelist(
 		models.CardColumns.PlayerID,
 		models.CardColumns.Available,
+		models.CardColumns.Metadata,
 	))
 
 	// Remove listing
@@ -166,5 +168,5 @@ func (h *MarketApiHandler) PurchaseListing(c echo.Context) error {
 	)
 
 	c.Response().Header().Add("HX-Retarget", "#message")
-	return templates.RenderView(c, market.Success("GG."))
+	return templates.RenderView(c, market.Success("You successfully purchased the listing !"))
 }

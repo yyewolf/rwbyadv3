@@ -1,58 +1,53 @@
-package listings
+package auctions
 
 import (
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
+	"github.com/yyewolf/rwbyadv3/internal/jobs"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 )
 
 const (
-	commandName        = "listings"
-	commandDescription = "Listings"
+	commandName        = "auctions"
+	commandDescription = "Auctions"
 
-	componentId            = "listings/{player_id}/{page}/{action}"
+	componentId            = "auctions/{player_id}/{page}/{action}"
 	componentActionPrev    = "prev"
 	componentActionRefresh = "refresh"
 	componentActionNext    = "next"
 )
 
-type listingsCommand struct {
+type auctionsCommand struct {
 	app interfaces.App
 }
 
-func ListingsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
-	var cmd listingsCommand
+func AuctionsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
+	var cmd auctionsCommand
 
 	cmd.app = app
+	cmd.app.JobHandler().OnEvent(jobs.JobEndAuction, cmd.AuctionEnd)
 
 	return builder.NewCommand(
 		builder.WithCommandName(commandName),
 		builder.WithDescription(commandDescription),
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
-			h.Command("/listings/add", builder.WithContext(
+			h.Command("/auctions/add", builder.WithContext(
 				app,
-				cmd.AddListing,
+				cmd.AddAuction,
 				builder.WithPlayer(),
 				builder.WithPlayerCards(),
 			))
-			h.Command("/listings/remove", builder.WithContext(
+			h.Command("/auctions/list", builder.WithContext(
 				app,
-				cmd.RemoveListing,
-				builder.WithPlayer(),
-				builder.WithPlayerCards(),
-			))
-
-			h.Command("/listings/list", builder.WithContext(
-				app,
-				cmd.GetListings,
+				cmd.GetAuctions,
 				builder.WithPlayer(),
 				builder.WithPlayerCards(),
 			))
 			h.ButtonComponent("/"+componentId, builder.WithContextD(
 				app,
-				cmd.HandleGetListingsInteraction,
+				cmd.HandleGetAuctionsInteraction,
 				builder.WithPlayer(),
 				builder.WithPlayerCards(),
 			))
@@ -73,28 +68,41 @@ func ListingsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command
 							Required:    true,
 						},
 						discord.ApplicationCommandOptionInt{
-							Name:        "price",
-							Description: "At what price do you wish to sell it ?",
-							MinValue:    utils.Optional(1),
+							Name:        "duration",
+							Description: "How much time should the auction run for ?",
 							Required:    true,
+							Choices: []discord.ApplicationCommandOptionChoiceInt{
+								{
+									Name:  "1 minute",
+									Value: 0,
+								},
+								{
+									Name:  "12 hours",
+									Value: 12,
+								},
+								{
+									Name:  "a day",
+									Value: 24,
+								},
+								{
+									Name:  "two days",
+									Value: 24 * 2,
+								},
+								{
+									Name:  "three days",
+									Value: 24 * 3,
+								},
+								{
+									Name:  "a week",
+									Value: 24 * 7,
+								},
+							},
 						},
 					},
 				},
 				&discord.ApplicationCommandOptionSubCommand{
 					Name:        "list",
 					Description: "List all the listings in the market",
-				},
-				&discord.ApplicationCommandOptionSubCommand{
-					Name:        "remove",
-					Description: "Remove a listing from the market",
-					Options: []discord.ApplicationCommandOption{
-						discord.ApplicationCommandOptionInt{
-							Name:        "card",
-							Description: "Which card do you want to remove from the market ?",
-							MinValue:    utils.Optional(0),
-							Required:    true,
-						},
-					},
 				},
 			},
 		}),

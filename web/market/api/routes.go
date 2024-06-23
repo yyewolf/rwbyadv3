@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 
-	"github.com/a-h/templ"
 	"github.com/labstack/echo/v4"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
@@ -12,7 +11,6 @@ import (
 	"github.com/yyewolf/rwbyadv3/models"
 	"github.com/yyewolf/rwbyadv3/web/auth"
 	"github.com/yyewolf/rwbyadv3/web/auth/discord"
-	"github.com/yyewolf/rwbyadv3/web/templates/market"
 )
 
 type MarketApiHandler struct {
@@ -20,6 +18,7 @@ type MarketApiHandler struct {
 
 	listeners      utils.Listeners
 	latestListings []*models.Listing
+	latestAuctions []*models.Auction
 }
 
 func RegisterAPIRoutes(app interfaces.App, g *echo.Group) {
@@ -27,30 +26,35 @@ func RegisterAPIRoutes(app interfaces.App, g *echo.Group) {
 
 	app.JobHandler().OnEvent(jobs.EventNewListing, handler.OnAddListing)
 	app.JobHandler().OnEvent(jobs.EventRemoveListing, handler.OnRemoveListing)
+	app.JobHandler().OnEvent(jobs.EventNewAuction, handler.OnAddAuction)
+	app.JobHandler().OnEvent(jobs.EventRemoveAuction, handler.OnRemoveAuction)
+	app.JobHandler().OnEvent(jobs.EventBidAuction, handler.OnNewBid)
 
-	handler.Reload()
+	handler.ReloadListings()
+	handler.ReloadAuctions()
 
 	// SSE
 	g.GET("/sse", handler.SSE)
 
 	// Main page routes
 	g.GET("/latest/listings", handler.GetLatestListings)
-	g.GET("/latest/auctions", echo.WrapHandler(templ.Handler(market.Main())))
+	g.GET("/latest/auctions", handler.GetLatestAuctions)
 
 	// Listings routes
 	g.GET("/listings", handler.GetListings)
-	g.GET("/listings/:listingId", echo.WrapHandler(templ.Handler(market.Main())))
-
+	// g.GET("/listings/:listingId", echo.WrapHandler(templ.Handler(market.Main()))) Not required, maybe later :D
 	g.POST("/listings/:listingId", handler.PurchaseListing, auth.DiscordHandler.RequireAuth(discord.WithRedirect("market")))
 	g.GET("/listings/:listingId/modal", handler.GetListingModal, auth.DiscordHandler.RequireAuth(discord.WithRedirect("market")))
 
 	// Auctions routes
-	g.GET("/auctions", echo.WrapHandler(templ.Handler(market.Main())))
-	g.GET("/auctions/:auctionId", echo.WrapHandler(templ.Handler(market.Main())))
-	g.POST("/auctions/:auctionId/bid", echo.WrapHandler(templ.Handler(market.Main())))
+	g.GET("/auctions", handler.GetAuctions)
+	g.GET("/auctions/:auctionId", handler.GetAuction)
+	g.GET("/auctions/:auctionId/price", handler.GetAuctionPrice)
+	g.POST("/auctions/:auctionId", handler.BidOnAuction, auth.DiscordHandler.RequireAuth(discord.WithRedirect("market")))
+	g.GET("/auctions/:auctionId/modal", handler.GetAuctionModal, auth.DiscordHandler.RequireAuth(discord.WithRedirect("market")))
 }
 
-func (h *MarketApiHandler) Reload() {
+func (h *MarketApiHandler) ReloadListings() {
 	listings, _ := models.Listings(
 		qm.Limit(10),
 		qm.Load(
@@ -63,4 +67,19 @@ func (h *MarketApiHandler) Reload() {
 	).AllG(context.Background())
 
 	h.latestListings = listings
+}
+
+func (h *MarketApiHandler) ReloadAuctions() {
+	auctions, _ := models.Auctions(
+		qm.Limit(10),
+		qm.Load(
+			models.AuctionRels.Player,
+		),
+		qm.Load(
+			qm.Rels(models.AuctionRels.Card, models.CardRels.CardsStat),
+		),
+		qm.OrderBy(models.AuctionColumns.CreatedAt+" DESC"),
+	).AllG(context.Background())
+
+	h.latestAuctions = auctions
 }

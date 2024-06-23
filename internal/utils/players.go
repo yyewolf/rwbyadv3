@@ -42,17 +42,97 @@ func (Player) AvailableCards(p *models.Player) []*models.Card {
 }
 
 func (Player) GetAvailableCard(p *models.Player, i int) (*models.Card, bool) {
-	var cards []*models.Card
+	var at int
 	for _, pc := range p.R.PlayerCards {
 		if !pc.R.Card.Available {
 			continue
 		}
+		if at == i {
+			return pc.R.Card, true
+		}
+		at++
+	}
+	return nil, false
+}
+
+func (Player) MarketListings(p *models.Player) []*models.Card {
+	var cards []*models.Card
+	for _, pc := range p.R.PlayerCards {
+		if pc.R.Card.Available {
+			continue
+		}
+
+		// Get metadata
+		meta := Cards.GetMeta(pc.R.Card)
+		if meta.Location != "listings" {
+			continue
+		}
+
 		cards = append(cards, pc.R.Card)
 	}
-	if len(cards) < i-1 {
-		return nil, false
+	return cards
+}
+
+func (Player) GetMarketListing(p *models.Player, i int) (*models.Card, bool) {
+	var at int
+	for _, pc := range p.R.PlayerCards {
+		if !pc.R.Card.Available {
+			continue
+		}
+
+		// Get metadata
+		meta := Cards.GetMeta(pc.R.Card)
+		if meta.Location != "listings" {
+			continue
+		}
+
+		if at == i {
+			return pc.R.Card, true
+		}
+
+		at++
 	}
-	return cards[i], true
+	return nil, false
+}
+
+func (Player) MarketAuctions(p *models.Player) []*models.Card {
+	var cards []*models.Card
+	for _, pc := range p.R.PlayerCards {
+		if pc.R.Card.Available {
+			continue
+		}
+
+		// Get metadata
+		meta := Cards.GetMeta(pc.R.Card)
+		if meta.Location != "auctions" {
+			continue
+		}
+
+		cards = append(cards, pc.R.Card)
+	}
+	return cards
+}
+
+func (Player) GetMarketAuction(p *models.Player, i int) (*models.Card, bool) {
+	var at int
+	for _, pc := range p.R.PlayerCards {
+		if !pc.R.Card.Available {
+			continue
+		}
+
+		// Get metadata
+		meta := Cards.GetMeta(pc.R.Card)
+		if meta.Location != "auctions" {
+			continue
+		}
+
+		if at == i {
+			return pc.R.Card, true
+		}
+
+		at++
+	}
+	return nil, false
 }
 
 func (Player) AvailableBalance(p *models.Player) int64 {

@@ -38,8 +38,33 @@ func listingsAfterDelete(app interfaces.App) func(ctx context.Context, exec boil
 	}
 }
 
+func auctionsAfterInsert(app interfaces.App) func(ctx context.Context, exec boil.ContextExecutor, c *models.Auction) error {
+	return func(ctx context.Context, exec boil.ContextExecutor, c *models.Auction) error {
+		utils.App.DispatchNewAuction(app, c)
+		return nil
+	}
+}
+
+func auctionsAfterDelete(app interfaces.App) func(ctx context.Context, exec boil.ContextExecutor, c *models.Auction) error {
+	return func(ctx context.Context, exec boil.ContextExecutor, c *models.Auction) error {
+		utils.App.DispatchRemoveAuction(app, c)
+		return nil
+	}
+}
+
+func bidAfterInsertOrUpdate(app interfaces.App) func(ctx context.Context, exec boil.ContextExecutor, c *models.AuctionsBid) error {
+	return func(ctx context.Context, exec boil.ContextExecutor, c *models.AuctionsBid) error {
+		utils.App.DispatchNewBid(app, c)
+		return nil
+	}
+}
+
 func RegisterHooks(app interfaces.App) {
 	models.AddCardHook(boil.AfterInsertHook, cardAfterInsert)
 	models.AddListingHook(boil.AfterInsertHook, listingsAfterInsert(app))
 	models.AddListingHook(boil.AfterDeleteHook, listingsAfterDelete(app))
+	models.AddAuctionHook(boil.AfterInsertHook, auctionsAfterInsert(app))
+	models.AddAuctionHook(boil.AfterDeleteHook, auctionsAfterDelete(app))
+	models.AddAuctionsBidHook(boil.AfterInsertHook, bidAfterInsertOrUpdate(app))
+	models.AddAuctionsBidHook(boil.AfterUpdateHook, bidAfterInsertOrUpdate(app))
 }

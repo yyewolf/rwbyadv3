@@ -10,7 +10,7 @@ assets:
 	@echo "\033[0;31mBuilding htmx-sse...\033[0m"
 	cp node_modules/htmx-ext-sse/sse.js static/dist/htmx-ext-sse.js
 	@echo "\033[0;31mBuilding alpinejs...\033[0m"
-	cp node_modules/alpinejs/dist/cdn.min.js static/dist/cdn.min.js
+	cp node_modules/alpinejs/dist/cdn.min.js static/dist/alpinejs.min.js
 	@echo "\033[0;31mBuilding hyperscript...\033[0m"
 	cp node_modules/hyperscript.org/dist/_hyperscript.min.js static/dist/_hyperscript.min.js
 	@echo "\033[0;31mBuilding fonts...\033[0m"

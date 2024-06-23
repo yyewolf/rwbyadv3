@@ -19,25 +19,27 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"github.com/volatiletech/sqlboiler/v4/queries/qmhelper"
+	"github.com/volatiletech/sqlboiler/v4/types"
 	"github.com/volatiletech/strmangle"
 )
 
 // Card is an object representing the database table.
 type Card struct {
-	ID              string    `boil:"id" json:"id" toml:"id" yaml:"id"`
-	PlayerID        string    `boil:"player_id" json:"player_id" toml:"player_id" yaml:"player_id"`
-	CreatedAt       time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	UpdatedAt       time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
-	DeletedAt       null.Time `boil:"deleted_at" json:"deleted_at,omitempty" toml:"deleted_at" yaml:"deleted_at,omitempty"`
-	XP              int       `boil:"xp" json:"xp" toml:"xp" yaml:"xp"`
-	NextLevelXP     int       `boil:"next_level_xp" json:"next_level_xp" toml:"next_level_xp" yaml:"next_level_xp"`
-	CardType        string    `boil:"card_type" json:"card_type" toml:"card_type" yaml:"card_type"`
-	IndividualValue float64   `boil:"individual_value" json:"individual_value" toml:"individual_value" yaml:"individual_value"`
-	Rarity          int       `boil:"rarity" json:"rarity" toml:"rarity" yaml:"rarity"`
-	Level           int       `boil:"level" json:"level" toml:"level" yaml:"level"`
-	Buffs           int       `boil:"buffs" json:"buffs" toml:"buffs" yaml:"buffs"`
-	Available       bool      `boil:"available" json:"available" toml:"available" yaml:"available"`
-	OwnedAt         time.Time `boil:"owned_at" json:"owned_at" toml:"owned_at" yaml:"owned_at"`
+	ID              string     `boil:"id" json:"id" toml:"id" yaml:"id"`
+	PlayerID        string     `boil:"player_id" json:"player_id" toml:"player_id" yaml:"player_id"`
+	CreatedAt       time.Time  `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	UpdatedAt       time.Time  `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	DeletedAt       null.Time  `boil:"deleted_at" json:"deleted_at,omitempty" toml:"deleted_at" yaml:"deleted_at,omitempty"`
+	XP              int        `boil:"xp" json:"xp" toml:"xp" yaml:"xp"`
+	NextLevelXP     int        `boil:"next_level_xp" json:"next_level_xp" toml:"next_level_xp" yaml:"next_level_xp"`
+	CardType        string     `boil:"card_type" json:"card_type" toml:"card_type" yaml:"card_type"`
+	IndividualValue float64    `boil:"individual_value" json:"individual_value" toml:"individual_value" yaml:"individual_value"`
+	Rarity          int        `boil:"rarity" json:"rarity" toml:"rarity" yaml:"rarity"`
+	Level           int        `boil:"level" json:"level" toml:"level" yaml:"level"`
+	Buffs           int        `boil:"buffs" json:"buffs" toml:"buffs" yaml:"buffs"`
+	Metadata        types.JSON `boil:"metadata" json:"metadata" toml:"metadata" yaml:"metadata"`
+	Available       bool       `boil:"available" json:"available" toml:"available" yaml:"available"`
+	OwnedAt         time.Time  `boil:"owned_at" json:"owned_at" toml:"owned_at" yaml:"owned_at"`
 
 	R *cardR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L cardL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -56,6 +58,7 @@ var CardColumns = struct {
 	Rarity          string
 	Level           string
 	Buffs           string
+	Metadata        string
 	Available       string
 	OwnedAt         string
 }{
@@ -71,6 +74,7 @@ var CardColumns = struct {
 	Rarity:          "rarity",
 	Level:           "level",
 	Buffs:           "buffs",
+	Metadata:        "metadata",
 	Available:       "available",
 	OwnedAt:         "owned_at",
 }
@@ -88,6 +92,7 @@ var CardTableColumns = struct {
 	Rarity          string
 	Level           string
 	Buffs           string
+	Metadata        string
 	Available       string
 	OwnedAt         string
 }{
@@ -103,6 +108,7 @@ var CardTableColumns = struct {
 	Rarity:          "cards.rarity",
 	Level:           "cards.level",
 	Buffs:           "cards.buffs",
+	Metadata:        "cards.metadata",
 	Available:       "cards.available",
 	OwnedAt:         "cards.owned_at",
 }
@@ -138,6 +144,27 @@ func (w whereHelperfloat64) NIN(slice []float64) qm.QueryMod {
 	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
 }
 
+type whereHelpertypes_JSON struct{ field string }
+
+func (w whereHelpertypes_JSON) EQ(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.EQ, x)
+}
+func (w whereHelpertypes_JSON) NEQ(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.NEQ, x)
+}
+func (w whereHelpertypes_JSON) LT(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpertypes_JSON) LTE(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpertypes_JSON) GT(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpertypes_JSON) GTE(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+
 type whereHelperbool struct{ field string }
 
 func (w whereHelperbool) EQ(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
@@ -160,6 +187,7 @@ var CardWhere = struct {
 	Rarity          whereHelperint
 	Level           whereHelperint
 	Buffs           whereHelperint
+	Metadata        whereHelpertypes_JSON
 	Available       whereHelperbool
 	OwnedAt         whereHelpertime_Time
 }{
@@ -175,6 +203,7 @@ var CardWhere = struct {
 	Rarity:          whereHelperint{field: "\"cards\".\"rarity\""},
 	Level:           whereHelperint{field: "\"cards\".\"level\""},
 	Buffs:           whereHelperint{field: "\"cards\".\"buffs\""},
+	Metadata:        whereHelpertypes_JSON{field: "\"cards\".\"metadata\""},
 	Available:       whereHelperbool{field: "\"cards\".\"available\""},
 	OwnedAt:         whereHelpertime_Time{field: "\"cards\".\"owned_at\""},
 }
@@ -287,9 +316,9 @@ func (r *cardR) GetSelectedCardPlayers() PlayerSlice {
 type cardL struct{}
 
 var (
-	cardAllColumns            = []string{"id", "player_id", "created_at", "updated_at", "deleted_at", "xp", "next_level_xp", "card_type", "individual_value", "rarity", "level", "buffs", "available", "owned_at"}
+	cardAllColumns            = []string{"id", "player_id", "created_at", "updated_at", "deleted_at", "xp", "next_level_xp", "card_type", "individual_value", "rarity", "level", "buffs", "metadata", "available", "owned_at"}
 	cardColumnsWithoutDefault = []string{"id", "player_id", "next_level_xp", "card_type", "individual_value", "rarity", "level", "buffs"}
-	cardColumnsWithDefault    = []string{"created_at", "updated_at", "deleted_at", "xp", "available", "owned_at"}
+	cardColumnsWithDefault    = []string{"created_at", "updated_at", "deleted_at", "xp", "metadata", "available", "owned_at"}
 	cardPrimaryKeyColumns     = []string{"id"}
 	cardGeneratedColumns      = []string{}
 )
