@@ -4,6 +4,7 @@ WORKDIR /app
 COPY Makefile .
 COPY static static
 COPY package.json package-lock.json .
+COPY tailwind.config.js .
 RUN npm install
 RUN make assets
 
