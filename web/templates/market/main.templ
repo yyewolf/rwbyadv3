@@ -15,14 +15,14 @@ templ Main() {
 			sse-connect="/market/api/sse"
 			class="container mx-auto lg:px-32 px-12"
 		>
-			<div name="latest-listings-section">
+			<div name="latest-auctions-section">
 				<a
 					class="p-4 text-2xl font-bold flex flex-row w-full justify-between items-center"
 				>
 					<span>Latest Auctions</span>
 					<span class="text-sm font-semibold text-[#ac8cb5]">VIEW ALL</span>
 				</a>
-				<div id="listing-container" class="container gap-5 flex flex-row overflow-x-auto p-4" sse-swap="latest_listings" hx-get="/market/api/latest/listings" hx-trigger="load">
+				<div id="auction-container" class="container gap-5 flex flex-row overflow-x-auto p-4" sse-swap="latest_auctions" hx-get="/market/api/latest/auctions" hx-trigger="load">
 					<div class="htmx-indicator">
 						Loading...
 					</div>

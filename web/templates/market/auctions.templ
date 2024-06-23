@@ -1,0 +1,209 @@
+package market
+
+import (
+	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/astaxie/beego/utils/pagination"
+	"github.com/yyewolf/rwbyadv3/internal/utils"
+	"fmt"
+	"strconv"
+	"github.com/yyewolf/rwbyadv3/web/templates/icons"
+)
+
+templ Auction(auction *models.Auction) {
+	<div class="container flex flex-col justify-between rounded-xl bg-[#f7f5f9] px-5 py-8 w-[172px] h-full relative gap-4">
+		<div class="text-lg rounded-xl font-bold icon-container">
+			<svg height="100%" width="100%" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+				<rect
+					rx="8"
+					ry="8"
+					class="line"
+					x="1"
+					y="1.2"
+					height="98"
+					width="98"
+					stroke={ fmt.Sprintf("#%06v", strconv.FormatInt(int64(utils.Cards.RarityToColor(auction.R.Card)), 16)) }
+					stroke-linejoin="round"
+				></rect>
+			</svg>
+			<img class="icon rounded-xl border-black border-2" src={ utils.Cards.IconURI(auction.R.Card) }/>
+		</div>
+		<div class="flex flex-col justify-between">
+			<div class="text-lg font-bold overflow-hidden text-ellipsis whitespace-nowrap" title={ utils.Cards.Primitive(auction.R.Card).Name }>
+				{ utils.Cards.Primitive(auction.R.Card).Name }
+			</div>
+			// Stats
+			<div class="flex justify-between gap-2">
+				<div class="flex flex-col">
+					<div class="text-sm text-gray-500">
+						Value
+					</div>
+					<div class="text-sm text-gray-500">
+						Level
+					</div>
+					<div class="text-sm text-gray-500">
+						Rarity
+					</div>
+				</div>
+				<div class="flex flex-col">
+					<div class="text-sm">
+						{ fmt.Sprintf("%.02f", auction.R.Card.IndividualValue) }%
+					</div>
+					<div class="text-sm">
+						{ fmt.Sprintf("%d", auction.R.Card.Level) }
+					</div>
+					<div class="flex flex-row h-full items-center">
+						for i := 0; i < 5; i++ {
+							if i < auction.R.Card.Rarity {
+								<span class="w-4 h-4 fill-yellow-500">
+									@icons.Star()
+								</span>
+							} else {
+								<span class="w-4 h-4 fill-gray-300">
+									@icons.Star()
+								</span>
+							}
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+		// button to purchase
+		<div
+			x-data={ fmt.Sprintf("{ ends_at: %d, days: 0, hours: 0, minutes: 0, seconds: 0, timeout: 0 }", auction.EndsAt.UnixMilli()) }
+			class="flex flex-col justify-center"
+		>
+			<button
+				@click="modal = true"
+				hx-get={ fmt.Sprintf("/market/api/auctions/%s/modal", auction.ID) }
+				hx-target="#modals-here"
+				hx-trigger="click"
+				class="bg-[#b5fcc6] border-2 border-[#f7f5f9] rounded-xl text-md font-bold px-2 py-1 w-32"
+			>
+				<span
+					id={ fmt.Sprintf("auction_%s_price", auction.ID) }
+					hx-get={ fmt.Sprintf("/market/api/auctions/%s/price", auction.ID) }
+					hx-trigger={ fmt.Sprintf("sse:auction_%s_bid", auction.ID) }
+					hx-target="this"
+				>
+					{ fmt.Sprintf("%v", utils.Auctions.GetPrice(auction)) }Ⱡ
+				</span>
+			</button>
+			<span
+				x-init="(function tick() {
+                    const now = new Date().getTime();
+                    const distance = ends_at - now;
+                    days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    timeout = setTimeout(tick, 1000);
+                })()"
+				hx-on:htmx:before-swap="window.clearTimeout(timeout)"
+				class="text-sm flex flex-row gap-1 justify-center font-medium"
+			>
+				<template x-if="days > 0">
+					<span x-text="days+'d'"></span>
+				</template>
+				<template x-if="hours > 0 || days > 0">
+					<span x-text="hours+'h'"></span>
+				</template>
+				<template x-if="minutes > 0 || hours > 0 || days > 0">
+					<span x-text="minutes+'m'"></span>
+				</template>
+				<template x-if="seconds > 0 || minutes > 0 || hours > 0 || days > 0">
+					<span x-text="seconds+'s'"></span>
+				</template>
+				left
+			</span>
+		</div>
+	</div>
+}
+
+templ AuctionAmount(amount int64) {
+	{ fmt.Sprintf("%v", amount) }Ⱡ
+}
+
+templ AuctionModal(auction *models.Auction) {
+	<form hx-post={ fmt.Sprintf("/market/api/auctions/%s", auction.ID) }>
+		<div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+			<div class="sm:flex sm:items-start">
+				<div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+					<h3 class="text-lg leading-6 font-medium text-gray-900 flex flex-row items-center gap-2" id="modal-title">
+						<svg class="h-4 w-4" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">
+							<circle fill={ fmt.Sprintf("#%06v", strconv.FormatInt(int64(utils.Cards.RarityToColor(auction.R.Card)), 16)) } cx="5" cy="5" r="4" stroke="black" stroke-width="0.25"></circle>
+						</svg>
+						{ utils.Cards.Primitive(auction.R.Card).Name } ({ fmt.Sprintf("%.02f", auction.R.Card.IndividualValue) }%)
+					</h3>
+					<div
+						hx-ext="sse"
+						sse-connect="/market/api/sse"
+						class="flex flex-row gap-2"
+					>
+						Going for :
+						<span
+							class="font-bold"
+							sse-swap={ fmt.Sprintf("auction_%s_bid", auction.ID) }
+						>
+							{ fmt.Sprintf("%v", utils.Auctions.GetPrice(auction)) }Ⱡ
+						</span>
+					</div>
+					<div class="mt-2">
+						How much would you like to bid on this card ?
+					</div>
+					<div class="mt-2">
+						<input
+							type="number"
+							class="w-32 border-2 border-gray-300 rounded-md"
+							placeholder="Amount"
+							name="bid"
+						/>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="bg-gray-50 gap-4 sm:gap-1 px-4 py-3 sm:px-6 flex flex-row-reverse">
+			<button
+				@click="modal = false"
+				type="button"
+				class="w-auto inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+			>
+				Close
+			</button>
+			<button
+				@click="modal = false"
+				type="submit"
+				class="w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:w-auto sm:text-sm"
+			>
+				Bid
+			</button>
+		</div>
+	</form>
+}
+
+templ Auctions(auctions []*models.Auction, pagination *pagination.Paginator) {
+	for i, auction := range auctions {
+		if i == len(auctions) - 1 {
+			<div
+				class=""
+				hx-get={ pagination.PageLinkNext() }
+				hx-trigger="intersect once"
+				hx-swap="afterend"
+			>
+				@Auction(auction)
+			</div>
+		} else {
+			<div>
+				@Auction(auction)
+			</div>
+		}
+	}
+}
+
+templ LatestAuctions(auctions []*models.Auction) {
+	for _, auction := range auctions {
+		<div>
+			@Auction(auction)
+		</div>
+	}
+}

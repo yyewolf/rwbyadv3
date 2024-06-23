@@ -118,3 +118,24 @@ func (card Card) Message(c *models.Card) (*discord.File, discord.Embed, *discord
 func (card Card) IconURI(c *models.Card) string {
 	return cards.MustGetImageURI(c.CardType, "icon", "webp")
 }
+
+type CardMetadata struct {
+	Location string
+}
+
+func (card Card) SetLocation(c *models.Card, location string) {
+	meta := card.GetMeta(c)
+	meta.Location = location
+	card.SaveMeta(c, meta)
+}
+
+func (card Card) GetMeta(c *models.Card) *CardMetadata {
+	var meta CardMetadata
+	// Load
+	c.Metadata.Unmarshal(&meta)
+	return &meta
+}
+
+func (card Card) SaveMeta(c *models.Card, meta *CardMetadata) {
+	c.Metadata.Marshal(&meta)
+}

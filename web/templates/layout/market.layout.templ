@@ -23,13 +23,16 @@ templ MarketBase(title string, isError bool, errMsgs, sucMsgs []string) {
 			// <script src="https://unpkg.com/alpinejs" defer></script>
 			<script src="/cdn/static/htmx.min.js" defer></script>
 			<script src="/cdn/static/htmx-ext-sse.js" defer></script>
-			<script src="/cdn/static/cdn.min.js" defer></script>
+			<script src="/cdn/static/alpinejs.min.js" defer></script>
 			<script src="/cdn/static/_hyperscript.min.js" defer></script>
 			<link rel="stylesheet" href="/cdn/static/tailwind.css"/>
 		</head>
 		<body x-data="{ modal: false }" class="sample-transition" hx-boost="true">
 			@navigation.Navbar(false, "/")
-			<div id="message"></div>
+			<div
+				class="fixed z-10 inset-x-0 top-0"
+				id="message"
+			></div>
 			<main class={ templ.KV("pt-10 px-5 lg:pt-20 lg:px-20", !isError) }>
 				{ children... }
 			</main>

@@ -4,8 +4,9 @@ ADD COLUMN liens_bidded bigint NOT NULL DEFAULT 0,
 ADD COLUMN username varchar(50) NOT NULL DEFAULT '';
 
 ALTER TABLE cards
+ADD COLUMN metadata jsonb NOT NULL DEFAULT '{}',
 ADD COLUMN available BOOLEAN NOT NULL DEFAULT True,
-ADD owned_at timestamptz NOT NULL DEFAULT now();
+ADD COLUMN owned_at timestamptz NOT NULL DEFAULT now();
 
 CREATE TABLE IF NOT EXISTS listings (
     id varchar(50) PRIMARY KEY,
@@ -50,6 +51,7 @@ DROP TABLE auctions;
 DROP TABLE listings;
 
 ALTER TABLE cards
+DROP COLUMN metadata,
 DROP COLUMN available,
 DROP COLUMN owned_at;
 

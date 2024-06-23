@@ -135,6 +135,7 @@ CREATE TABLE public.cards (
     rarity integer NOT NULL,
     level integer NOT NULL,
     buffs integer NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     available boolean DEFAULT true NOT NULL,
     owned_at timestamp with time zone DEFAULT now() NOT NULL
 );
