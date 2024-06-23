@@ -1,10 +1,7 @@
 FROM node:20.12-alpine AS web-builder
 RUN apk add --no-cache make
 WORKDIR /app
-COPY Makefile .
-COPY static static
-COPY package.json package-lock.json .
-COPY tailwind.config.js .
+COPY . .
 RUN npm install
 RUN make assets
 
