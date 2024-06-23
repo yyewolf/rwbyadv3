@@ -57,21 +57,6 @@ func (cmd *pingCommand) HandleCommand(e *handler.CommandEvent) error {
 		log.Fatalln("Unable to execute workflow", err)
 	}
 
-	err = cmd.app.Temporal().TerminateWorkflow(context.Background(), "delayed_pong_"+e.ID().String(), "", "rescheduled")
-	if err != nil {
-		log.Fatalln("Unable to execute workflow", err)
-	}
-	workflowOptions = client.StartWorkflowOptions{
-		ID:         "delayed_pong_" + e.ID().String(),
-		TaskQueue:  "worker",
-		StartDelay: 10 * time.Second,
-	}
-
-	_, err = cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.DelayedPongWorkflow, e.User().ID.String())
-	if err != nil {
-		log.Fatalln("Unable to execute workflow", err)
-	}
-
 	return e.Respond(
 		discord.InteractionResponseTypeCreateMessage,
 		discord.NewMessageCreateBuilder().

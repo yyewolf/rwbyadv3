@@ -2,6 +2,7 @@ package auctions
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/disgoorg/disgo/discord"
@@ -9,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
+	"github.com/yyewolf/rwbyadv3/internal/jobs"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/models"
 	"go.temporal.io/sdk/client"
@@ -33,6 +35,7 @@ func AuctionsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command
 
 	cmd.app = app
 	cmd.ReconcileAuctions()
+	app.EventHandler().OnEvent(jobs.EventRescheduleAuction, cmd.RescheduleAuction)
 	app.Worker().RegisterWorkflow(cmd.AuctionEnd)
 
 	return builder.NewCommand(
@@ -123,7 +126,7 @@ func (cmd *auctionsCommand) ReconcileAuctions() {
 	for i, auction := range auctions {
 		// Trigger workflow
 		workflowOptions := client.StartWorkflowOptions{
-			ID:         "end_auction_" + auction.ID,
+			ID:         fmt.Sprintf("end_auction_%d_%s", auction.TimeExtensions, auction.ID),
 			TaskQueue:  "worker",
 			StartDelay: time.Duration(i) * time.Second,
 		}

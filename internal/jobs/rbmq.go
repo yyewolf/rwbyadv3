@@ -58,6 +58,11 @@ func (j *JobHandler) Start() error {
 	j.conn = conn
 	j.ch = ch
 
+	err = j.Init()
+	if err != nil {
+		return err
+	}
+
 	go func() {
 		for {
 			j.Listen()

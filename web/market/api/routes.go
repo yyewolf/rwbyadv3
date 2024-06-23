@@ -26,7 +26,9 @@ func RegisterAPIRoutes(app interfaces.App, g *echo.Group) {
 
 	app.EventHandler().OnEvent(jobs.EventNewListing, handler.OnAddListing)
 	app.EventHandler().OnEvent(jobs.EventRemoveListing, handler.OnRemoveListing)
+
 	app.EventHandler().OnEvent(jobs.EventNewAuction, handler.OnAddAuction)
+	app.EventHandler().OnEvent(jobs.EventUpdateAuction, handler.OnUpdateAuction)
 	app.EventHandler().OnEvent(jobs.EventRemoveAuction, handler.OnRemoveAuction)
 	app.EventHandler().OnEvent(jobs.EventBidAuction, handler.OnNewBid)
 
@@ -50,6 +52,7 @@ func RegisterAPIRoutes(app interfaces.App, g *echo.Group) {
 	g.GET("/auctions", handler.GetAuctions)
 	g.GET("/auctions/:auctionId", handler.GetAuction)
 	g.GET("/auctions/:auctionId/price", handler.GetAuctionPrice)
+	g.GET("/auctions/:auctionId/timer", handler.GetAuctionTimeleft)
 	g.POST("/auctions/:auctionId", handler.BidOnAuction, auth.DiscordHandler.RequireAuth(discord.WithRedirect("market")))
 	g.GET("/auctions/:auctionId/modal", handler.GetAuctionModal, auth.DiscordHandler.RequireAuth(discord.WithRedirect("market")))
 }

@@ -2,6 +2,8 @@ package auctions
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/disgoorg/disgo/discord"
@@ -14,6 +16,24 @@ import (
 	"github.com/yyewolf/rwbyadv3/models"
 	"go.temporal.io/sdk/client"
 )
+
+func (cmd *auctionsCommand) RescheduleAuction(params map[string]interface{}) error {
+	var auction = new(models.Auction)
+	b, _ := json.Marshal(params["auction"])
+	json.Unmarshal(b, auction)
+
+	workflowOptions := client.StartWorkflowOptions{
+		ID:         fmt.Sprintf("end_auction_%d_%s", auction.TimeExtensions, auction.ID),
+		TaskQueue:  "worker",
+		StartDelay: time.Until(auction.EndsAt),
+	}
+
+	_, err := cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.AuctionEnd, auction.ID)
+	if err != nil {
+		logrus.WithError(err).Error("failed to schedule delayed end auction job")
+	}
+	return err
+}
 
 func (cmd *auctionsCommand) AddAuction(e *handler.CommandEvent) error {
 	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
@@ -78,7 +98,7 @@ func (cmd *auctionsCommand) AddAuction(e *handler.CommandEvent) error {
 
 	// Schedule end
 	workflowOptions := client.StartWorkflowOptions{
-		ID:         "end_auction_" + auction.ID,
+		ID:         fmt.Sprintf("end_auction_%d_%s", auction.TimeExtensions, auction.ID),
 		TaskQueue:  "worker",
 		StartDelay: time.Until(auction.EndsAt),
 	}

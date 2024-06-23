@@ -14,12 +14,6 @@ func (a *App) Start() {
 	go func() {
 		for {
 			a.jobHandler.Start()
-
-			err := a.jobHandler.Init()
-			if err != nil {
-				logrus.WithField("error", err).Error("Failed to initialize job handler")
-				return
-			}
 		}
 	}()
 

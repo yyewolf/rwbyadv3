@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
@@ -13,6 +14,7 @@ import (
 )
 
 func (h *MarketApiHandler) OnAddAuction(params map[string]interface{}) error {
+	time.Sleep(100 * time.Millisecond) // Wait for the auction to be inserted into the database
 	var auction = new(models.Auction)
 	b, _ := json.Marshal(params["auction"])
 	json.Unmarshal(b, auction)
@@ -74,4 +76,30 @@ func (h *MarketApiHandler) OnNewBid(params map[string]interface{}) error {
 	})
 
 	return nil
+}
+
+func (h *MarketApiHandler) OnUpdateAuction(params map[string]interface{}) error {
+	var auction = new(models.Auction)
+	b, _ := json.Marshal(params["auction"])
+	json.Unmarshal(b, auction)
+
+	h.listeners.Broadcast(&utils.Event{
+		Event: []byte(fmt.Sprintf("auction_%s_update", auction.ID)),
+		Data:  []byte("cc"),
+	})
+
+	var found bool
+	for _, l := range h.latestAuctions {
+		if l.ID == auction.ID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil
+	}
+
+	h.ReloadAuctions()
+
+	return h.SendLatestAuctions()
 }

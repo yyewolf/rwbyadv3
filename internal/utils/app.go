@@ -52,10 +52,29 @@ func (A) DispatchNewAuction(app interfaces.App, auction *models.Auction) {
 		},
 	)
 }
+func (A) DispatchUpdateAuction(app interfaces.App, auction *models.Auction) {
+	app.EventHandler().SendEvent(
+		jobs.EventUpdateAuction,
+		uuid.NewString(),
+		map[string]interface{}{
+			"auction": auction,
+		},
+	)
+}
 
 func (A) DispatchRemoveAuction(app interfaces.App, auction *models.Auction) {
 	app.EventHandler().SendEvent(
 		jobs.EventRemoveAuction,
+		uuid.NewString(),
+		map[string]interface{}{
+			"auction": auction,
+		},
+	)
+}
+
+func (A) DispatchRescheduleAuction(app interfaces.App, auction *models.Auction) {
+	app.EventHandler().SendEvent(
+		jobs.EventRescheduleAuction,
 		uuid.NewString(),
 		map[string]interface{}{
 			"auction": auction,
