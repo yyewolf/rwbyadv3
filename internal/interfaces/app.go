@@ -6,6 +6,8 @@ import (
 	"github.com/disgoorg/disgo/handler"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/repo"
+	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/worker"
 )
 
 type App interface {
@@ -16,7 +18,11 @@ type App interface {
 	Config() *env.Config
 	Handler() *handler.Mux
 	Client() bot.Client
-	JobHandler() JobHandler
+	EventHandler() JobHandler
+
+	// Temporal
+	Temporal() client.Client
+	Worker() worker.Worker
 
 	// Commands
 	CommandMention(c string) string

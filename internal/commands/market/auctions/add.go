@@ -10,9 +10,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
-	"github.com/yyewolf/rwbyadv3/internal/jobs"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/models"
+	"go.temporal.io/sdk/client"
 )
 
 func (cmd *auctionsCommand) AddAuction(e *handler.CommandEvent) error {
@@ -77,12 +77,13 @@ func (cmd *auctionsCommand) AddAuction(e *handler.CommandEvent) error {
 	}
 
 	// Schedule end
-	_, err = cmd.app.JobHandler().ScheduleJob(
-		jobs.JobEndAuction,
-		e.ID().String(),
-		auction.EndsAt,
-		map[string]interface{}{"auction_id": auction.ID},
-	)
+	workflowOptions := client.StartWorkflowOptions{
+		ID:         "end_auction_" + auction.ID,
+		TaskQueue:  "worker",
+		StartDelay: time.Until(auction.EndsAt),
+	}
+
+	_, err = cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.AuctionEnd, auction.ID)
 	if err != nil {
 		logrus.WithError(err).Error("failed to schedule delayed end auction job")
 		tx.Rollback()

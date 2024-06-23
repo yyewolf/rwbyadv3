@@ -68,11 +68,6 @@ func (j *JobHandler) Start() error {
 		}
 	}()
 
-	err = j.Init()
-	if err != nil {
-		return err
-	}
-
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
@@ -118,6 +113,15 @@ func (j *JobHandler) Start() error {
 				}
 			}
 		}
+	}
+}
+
+func (j *JobHandler) WaitAvailable() {
+	for {
+		if j.conn != nil {
+			return
+		}
+		time.Sleep(1 * time.Second)
 	}
 }
 
