@@ -16,6 +16,16 @@ func (j *JobHandler) OnEvent(key interfaces.JobKey, f func(params map[string]int
 	}
 
 	j.jobTypes[key] = f
+
+	if j.ch != nil {
+		j.ch.QueueBind(
+			j.config.Rbmq.Jobs.Queue,
+			string(key),
+			j.config.Rbmq.Jobs.Exchange,
+			false,
+			nil,
+		)
+	}
 }
 
 func (j *JobHandler) CancelJob(key interfaces.JobKey, jobID string) error {

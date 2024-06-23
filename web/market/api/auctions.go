@@ -2,7 +2,10 @@ package api
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"strconv"
+	"time"
 
 	"github.com/astaxie/beego/utils/pagination"
 	"github.com/disgoorg/disgo/discord"
@@ -63,6 +66,29 @@ func (h *MarketApiHandler) GetAuctionPrice(c echo.Context) error {
 	}
 
 	return templates.RenderView(c, market.AuctionAmount(utils.Auctions.GetPrice(auction)))
+}
+
+func (h *MarketApiHandler) GetAuctionTimeleft(c echo.Context) error {
+	auctionID := c.Param("auctionId")
+	auction, err := models.Auctions(
+		qm.Where(models.AuctionColumns.EndsAt+" > NOW()"),
+		qm.Where(models.AuctionColumns.ID+"=?", auctionID),
+		qm.Load(
+			models.AuctionRels.AuctionsBids,
+			qm.OrderBy(models.AuctionsBidColumns.Price+" DESC"),
+		),
+		qm.Load(
+			models.AuctionRels.Player,
+		),
+		qm.Load(
+			qm.Rels(models.AuctionRels.Card, models.CardRels.CardsStat),
+		),
+	).OneG(context.Background())
+	if err != nil {
+		return err
+	}
+
+	return templates.RenderView(c, market.AuctionTimeleft(auction))
 }
 
 func (h *MarketApiHandler) GetAuctions(c echo.Context) error {
@@ -238,7 +264,33 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 		return templates.RenderView(c, market.Error("An error occured."))
 	}
 
-	tx.Commit()
+	delay := 600.0
+	if auction.TimeExtensions < 7 {
+		delay = delay / (math.Pow(2, float64(auction.TimeExtensions)))
+	} else {
+		delay = 5
+	}
+
+	reschedule := false
+
+	// Handle time extensions
+	if time.Now().After(auction.EndsAt.Add(-time.Duration(delay) * time.Second)) {
+		reschedule = true
+		// Terminate workflow
+		h.app.Temporal().TerminateWorkflow(context.Background(), fmt.Sprintf("end_auction_%d_%s", auction.TimeExtensions, auction.ID), "", "rescheduled")
+
+		// Calculate new end time
+		auction.TimeExtensions++
+		auction.EndsAt = auction.EndsAt.Add(time.Duration(delay) * time.Second)
+
+		auction.Update(context.Background(), tx, boil.Whitelist(models.AuctionColumns.EndsAt, models.AuctionColumns.TimeExtensions))
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		c.Response().Header().Add("HX-Retarget", "#message")
+		return templates.RenderView(c, market.Error("An error occured."))
+	}
 
 	cardDescription := utils.Cards.FullString(auction.R.Card)
 
@@ -252,6 +304,24 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 		).
 		Build(),
 	)
+
+	if latestBid.PlayerID != bidder.ID {
+		utils.App.SendDM(h.app, latestBid.PlayerID, discord.NewMessageCreateBuilder().
+			SetEmbeds(
+				discord.NewEmbedBuilder().
+					SetTitle("Auction Outbid").
+					SetColor(h.app.Config().App.BotColor).
+					SetDescriptionf("You have been outbid on `%s` by **%d** Liens.", cardDescription, bidAmount).
+					Build(),
+			).
+			Build(),
+		)
+	}
+
+	if reschedule {
+		// Reschedule workflow and update auction
+		utils.App.DispatchRescheduleAuction(h.app, auction)
+	}
 
 	c.Response().Header().Add("HX-Retarget", "#message")
 	return templates.RenderView(c, market.Success("You successfully bid on the listing !"))

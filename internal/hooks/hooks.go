@@ -45,6 +45,13 @@ func auctionsAfterInsert(app interfaces.App) func(ctx context.Context, exec boil
 	}
 }
 
+func auctionsAfterUpdate(app interfaces.App) func(ctx context.Context, exec boil.ContextExecutor, c *models.Auction) error {
+	return func(ctx context.Context, exec boil.ContextExecutor, c *models.Auction) error {
+		utils.App.DispatchUpdateAuction(app, c)
+		return nil
+	}
+}
+
 func auctionsAfterDelete(app interfaces.App) func(ctx context.Context, exec boil.ContextExecutor, c *models.Auction) error {
 	return func(ctx context.Context, exec boil.ContextExecutor, c *models.Auction) error {
 		utils.App.DispatchRemoveAuction(app, c)
@@ -65,6 +72,7 @@ func RegisterHooks(app interfaces.App) {
 	models.AddListingHook(boil.AfterDeleteHook, listingsAfterDelete(app))
 	models.AddAuctionHook(boil.AfterInsertHook, auctionsAfterInsert(app))
 	models.AddAuctionHook(boil.AfterDeleteHook, auctionsAfterDelete(app))
+	models.AddAuctionHook(boil.AfterUpdateHook, auctionsAfterUpdate(app))
 	models.AddAuctionsBidHook(boil.AfterInsertHook, bidAfterInsertOrUpdate(app))
 	models.AddAuctionsBidHook(boil.AfterUpdateHook, bidAfterInsertOrUpdate(app))
 }

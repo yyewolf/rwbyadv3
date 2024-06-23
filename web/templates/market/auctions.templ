@@ -69,7 +69,6 @@ templ Auction(auction *models.Auction) {
 		</div>
 		// button to purchase
 		<div
-			x-data={ fmt.Sprintf("{ ends_at: %d, days: 0, hours: 0, minutes: 0, seconds: 0, timeout: 0 }", auction.EndsAt.UnixMilli()) }
 			class="flex flex-col justify-center"
 		>
 			<button
@@ -88,8 +87,25 @@ templ Auction(auction *models.Auction) {
 					{ fmt.Sprintf("%v", utils.Auctions.GetPrice(auction)) }Ⱡ
 				</span>
 			</button>
-			<span
-				x-init="(function tick() {
+			@AuctionTimeleft(auction)
+		</div>
+	</div>
+}
+
+templ AuctionAmount(amount int64) {
+	{ fmt.Sprintf("%v", amount) }Ⱡ
+}
+
+templ AuctionTimeleft(auction *models.Auction) {
+	<div
+		hx-get={ fmt.Sprintf("/market/api/auctions/%s/timer", auction.ID) }
+		hx-trigger={ fmt.Sprintf("sse:auction_%s_update", auction.ID) }
+		hx-target="this"
+		x-data={ fmt.Sprintf("{ ends_at: %d, days: 0, hours: 0, minutes: 0, seconds: 0, timeout: 0 }", auction.EndsAt.UnixMilli()) }
+		hx-swap="outerHTML"
+	>
+		<span
+			x-init="(function tick() {
                     const now = new Date().getTime();
                     const distance = ends_at - now;
                     days = Math.floor(distance / (1000 * 60 * 60 * 24));
@@ -99,29 +115,29 @@ templ Auction(auction *models.Auction) {
 
                     timeout = setTimeout(tick, 1000);
                 })()"
-				hx-on:htmx:before-swap="window.clearTimeout(timeout)"
-				class="text-sm flex flex-row gap-1 justify-center font-medium"
-			>
-				<template x-if="days > 0">
-					<span x-text="days+'d'"></span>
-				</template>
-				<template x-if="hours > 0 || days > 0">
-					<span x-text="hours+'h'"></span>
-				</template>
-				<template x-if="minutes > 0 || hours > 0 || days > 0">
-					<span x-text="minutes+'m'"></span>
-				</template>
-				<template x-if="seconds > 0 || minutes > 0 || hours > 0 || days > 0">
-					<span x-text="seconds+'s'"></span>
-				</template>
+			hx-on:htmx:before-swap="window.clearTimeout(timeout)"
+			class="text-sm flex flex-row gap-1 justify-center font-medium"
+		>
+			<template x-if="days > 0">
+				<span x-text="days+'d'"></span>
+			</template>
+			<template x-if="hours > 0 || days > 0">
+				<span x-text="hours+'h'"></span>
+			</template>
+			<template x-if="minutes > 0 || hours > 0 || days > 0">
+				<span x-text="minutes+'m'"></span>
+			</template>
+			<template x-if="seconds > 0 || minutes > 0 || hours > 0 || days > 0">
+				<span x-text="seconds+'s'"></span>
 				left
-			</span>
-		</div>
+			</template>
+			<template x-if="hours == 0 && days == 0 && minutes == 0 && seconds == 0">
+				<span>
+					Will end soon!
+				</span>
+			</template>
+		</span>
 	</div>
-}
-
-templ AuctionAmount(amount int64) {
-	{ fmt.Sprintf("%v", amount) }Ⱡ
 }
 
 templ AuctionModal(auction *models.Auction) {

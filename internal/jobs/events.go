@@ -20,7 +20,7 @@ func (j *JobHandler) SendEvent(key interfaces.JobKey, jobID string, params map[s
 	job := &models.Job{
 		ID:     jobID,
 		Jobkey: string(key),
-		RunAt:  time.Now(),
+		RunAt:  time.Now().Add(100 * time.Millisecond),
 		Params: p,
 	}
 
