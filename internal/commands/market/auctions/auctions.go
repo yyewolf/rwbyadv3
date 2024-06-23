@@ -127,7 +127,7 @@ func (cmd *auctionsCommand) ReconcileAuctions() {
 		// Trigger workflow
 		workflowOptions := client.StartWorkflowOptions{
 			ID:         fmt.Sprintf("end_auction_%d_%s", auction.TimeExtensions, auction.ID),
-			TaskQueue:  "worker",
+			TaskQueue:  cmd.app.Config().Temporal.TaskQueue,
 			StartDelay: time.Duration(i) * time.Second,
 		}
 

@@ -102,7 +102,7 @@ func New(options ...Option) interfaces.App {
 	app.Worker().RegisterWorkflow(app.CleanupJob)
 	workflowOptions := client.StartWorkflowOptions{
 		ID:           "cleanup_db",
-		TaskQueue:    "worker",
+		TaskQueue:    app.config.Temporal.TaskQueue,
 		CronSchedule: "0 0 * * *",
 	}
 	app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, app.CleanupJob)

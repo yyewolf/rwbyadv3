@@ -61,8 +61,9 @@ type Config struct {
 
 	// Temporal
 	Temporal struct {
-		Host string `env:"HOST" envDefault:"localhost"`
-		Port string `env:"PORT" envDefault:"7233"`
+		Host      string `env:"HOST" envDefault:"localhost"`
+		Port      string `env:"PORT" envDefault:"7233"`
+		TaskQueue string `env:"TASK_QUEUE" envDefault:"worker-dev"`
 	} `envPrefix:"TEMPORAL_"`
 
 	// Web

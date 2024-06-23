@@ -48,7 +48,7 @@ func (cmd *pingCommand) HandleCommand(e *handler.CommandEvent) error {
 	// Create delayed pong in 10 seconds
 	workflowOptions := client.StartWorkflowOptions{
 		ID:         "delayed_pong_" + e.ID().String(),
-		TaskQueue:  "worker",
+		TaskQueue:  cmd.app.Config().Temporal.TaskQueue,
 		StartDelay: 5 * time.Second,
 	}
 

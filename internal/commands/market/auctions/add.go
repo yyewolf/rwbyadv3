@@ -24,7 +24,7 @@ func (cmd *auctionsCommand) RescheduleAuction(params map[string]interface{}) err
 
 	workflowOptions := client.StartWorkflowOptions{
 		ID:         fmt.Sprintf("end_auction_%d_%s", auction.TimeExtensions, auction.ID),
-		TaskQueue:  "worker",
+		TaskQueue:  cmd.app.Config().Temporal.TaskQueue,
 		StartDelay: time.Until(auction.EndsAt),
 	}
 
@@ -99,7 +99,7 @@ func (cmd *auctionsCommand) AddAuction(e *handler.CommandEvent) error {
 	// Schedule end
 	workflowOptions := client.StartWorkflowOptions{
 		ID:         fmt.Sprintf("end_auction_%d_%s", auction.TimeExtensions, auction.ID),
-		TaskQueue:  "worker",
+		TaskQueue:  cmd.app.Config().Temporal.TaskQueue,
 		StartDelay: time.Until(auction.EndsAt),
 	}
 
