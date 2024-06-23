@@ -9,13 +9,23 @@ import (
 	"github.com/yyewolf/rwbyadv3/models"
 )
 
-func (j *JobHandler) RegisterJobKey(key interfaces.JobKey, f func(params map[string]interface{}) error) {
+func (j *JobHandler) OnEvent(key interfaces.JobKey, f func(params map[string]interface{}) error) {
 	_, found := j.jobTypes[key]
 	if found {
 		logrus.Fatal("a job with this key already exists")
 	}
 
 	j.jobTypes[key] = f
+
+	if j.ch != nil {
+		j.ch.QueueBind(
+			j.config.Rbmq.Jobs.Queue,
+			string(key),
+			j.config.Rbmq.Jobs.Exchange,
+			false,
+			nil,
+		)
+	}
 }
 
 func (j *JobHandler) CancelJob(key interfaces.JobKey, jobID string) error {
@@ -33,6 +43,7 @@ func (j *JobHandler) CancelJob(key interfaces.JobKey, jobID string) error {
 }
 
 func (j *JobHandler) handleJob(job *models.Job) {
+	logrus.WithField("job_key", job.Jobkey).Debug("handling job")
 	job.Errored = true
 	exists, err := models.JobExistsG(context.Background(), job.ID, job.Jobkey)
 	if err != nil {

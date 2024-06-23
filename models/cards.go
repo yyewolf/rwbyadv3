@@ -19,23 +19,27 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"github.com/volatiletech/sqlboiler/v4/queries/qmhelper"
+	"github.com/volatiletech/sqlboiler/v4/types"
 	"github.com/volatiletech/strmangle"
 )
 
 // Card is an object representing the database table.
 type Card struct {
-	ID              string    `boil:"id" json:"id" toml:"id" yaml:"id"`
-	PlayerID        string    `boil:"player_id" json:"player_id" toml:"player_id" yaml:"player_id"`
-	CreatedAt       time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	UpdatedAt       time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
-	DeletedAt       null.Time `boil:"deleted_at" json:"deleted_at,omitempty" toml:"deleted_at" yaml:"deleted_at,omitempty"`
-	XP              int       `boil:"xp" json:"xp" toml:"xp" yaml:"xp"`
-	NextLevelXP     int       `boil:"next_level_xp" json:"next_level_xp" toml:"next_level_xp" yaml:"next_level_xp"`
-	CardType        string    `boil:"card_type" json:"card_type" toml:"card_type" yaml:"card_type"`
-	IndividualValue float64   `boil:"individual_value" json:"individual_value" toml:"individual_value" yaml:"individual_value"`
-	Rarity          int       `boil:"rarity" json:"rarity" toml:"rarity" yaml:"rarity"`
-	Level           int       `boil:"level" json:"level" toml:"level" yaml:"level"`
-	Buffs           int       `boil:"buffs" json:"buffs" toml:"buffs" yaml:"buffs"`
+	ID              string     `boil:"id" json:"id" toml:"id" yaml:"id"`
+	PlayerID        string     `boil:"player_id" json:"player_id" toml:"player_id" yaml:"player_id"`
+	CreatedAt       time.Time  `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	UpdatedAt       time.Time  `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	DeletedAt       null.Time  `boil:"deleted_at" json:"deleted_at,omitempty" toml:"deleted_at" yaml:"deleted_at,omitempty"`
+	XP              int        `boil:"xp" json:"xp" toml:"xp" yaml:"xp"`
+	NextLevelXP     int        `boil:"next_level_xp" json:"next_level_xp" toml:"next_level_xp" yaml:"next_level_xp"`
+	CardType        string     `boil:"card_type" json:"card_type" toml:"card_type" yaml:"card_type"`
+	IndividualValue float64    `boil:"individual_value" json:"individual_value" toml:"individual_value" yaml:"individual_value"`
+	Rarity          int        `boil:"rarity" json:"rarity" toml:"rarity" yaml:"rarity"`
+	Level           int        `boil:"level" json:"level" toml:"level" yaml:"level"`
+	Buffs           int        `boil:"buffs" json:"buffs" toml:"buffs" yaml:"buffs"`
+	Metadata        types.JSON `boil:"metadata" json:"metadata" toml:"metadata" yaml:"metadata"`
+	Available       bool       `boil:"available" json:"available" toml:"available" yaml:"available"`
+	OwnedAt         time.Time  `boil:"owned_at" json:"owned_at" toml:"owned_at" yaml:"owned_at"`
 
 	R *cardR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L cardL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -54,6 +58,9 @@ var CardColumns = struct {
 	Rarity          string
 	Level           string
 	Buffs           string
+	Metadata        string
+	Available       string
+	OwnedAt         string
 }{
 	ID:              "id",
 	PlayerID:        "player_id",
@@ -67,6 +74,9 @@ var CardColumns = struct {
 	Rarity:          "rarity",
 	Level:           "level",
 	Buffs:           "buffs",
+	Metadata:        "metadata",
+	Available:       "available",
+	OwnedAt:         "owned_at",
 }
 
 var CardTableColumns = struct {
@@ -82,6 +92,9 @@ var CardTableColumns = struct {
 	Rarity          string
 	Level           string
 	Buffs           string
+	Metadata        string
+	Available       string
+	OwnedAt         string
 }{
 	ID:              "cards.id",
 	PlayerID:        "cards.player_id",
@@ -95,32 +108,12 @@ var CardTableColumns = struct {
 	Rarity:          "cards.rarity",
 	Level:           "cards.level",
 	Buffs:           "cards.buffs",
+	Metadata:        "cards.metadata",
+	Available:       "cards.available",
+	OwnedAt:         "cards.owned_at",
 }
 
 // Generated where
-
-type whereHelperint struct{ field string }
-
-func (w whereHelperint) EQ(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
-func (w whereHelperint) NEQ(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
-func (w whereHelperint) LT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
-func (w whereHelperint) LTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
-func (w whereHelperint) GT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
-func (w whereHelperint) GTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
-func (w whereHelperint) IN(slice []int) qm.QueryMod {
-	values := make([]interface{}, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
-}
-func (w whereHelperint) NIN(slice []int) qm.QueryMod {
-	values := make([]interface{}, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
-}
 
 type whereHelperfloat64 struct{ field string }
 
@@ -151,6 +144,36 @@ func (w whereHelperfloat64) NIN(slice []float64) qm.QueryMod {
 	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
 }
 
+type whereHelpertypes_JSON struct{ field string }
+
+func (w whereHelpertypes_JSON) EQ(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.EQ, x)
+}
+func (w whereHelpertypes_JSON) NEQ(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.NEQ, x)
+}
+func (w whereHelpertypes_JSON) LT(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpertypes_JSON) LTE(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpertypes_JSON) GT(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpertypes_JSON) GTE(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+
+type whereHelperbool struct{ field string }
+
+func (w whereHelperbool) EQ(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
+func (w whereHelperbool) NEQ(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
+func (w whereHelperbool) LT(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
+func (w whereHelperbool) LTE(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
+func (w whereHelperbool) GT(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
+func (w whereHelperbool) GTE(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
+
 var CardWhere = struct {
 	ID              whereHelperstring
 	PlayerID        whereHelperstring
@@ -164,6 +187,9 @@ var CardWhere = struct {
 	Rarity          whereHelperint
 	Level           whereHelperint
 	Buffs           whereHelperint
+	Metadata        whereHelpertypes_JSON
+	Available       whereHelperbool
+	OwnedAt         whereHelpertime_Time
 }{
 	ID:              whereHelperstring{field: "\"cards\".\"id\""},
 	PlayerID:        whereHelperstring{field: "\"cards\".\"player_id\""},
@@ -177,6 +203,9 @@ var CardWhere = struct {
 	Rarity:          whereHelperint{field: "\"cards\".\"rarity\""},
 	Level:           whereHelperint{field: "\"cards\".\"level\""},
 	Buffs:           whereHelperint{field: "\"cards\".\"buffs\""},
+	Metadata:        whereHelpertypes_JSON{field: "\"cards\".\"metadata\""},
+	Available:       whereHelperbool{field: "\"cards\".\"available\""},
+	OwnedAt:         whereHelpertime_Time{field: "\"cards\".\"owned_at\""},
 }
 
 // CardRels is where relationship names are stored.
@@ -184,6 +213,8 @@ var CardRels = struct {
 	Player              string
 	IDCardsStat         string
 	CardsStat           string
+	Auctions            string
+	Listings            string
 	PlayerCardFavorites string
 	PlayerCards         string
 	PlayerCardsDecks    string
@@ -192,6 +223,8 @@ var CardRels = struct {
 	Player:              "Player",
 	IDCardsStat:         "IDCardsStat",
 	CardsStat:           "CardsStat",
+	Auctions:            "Auctions",
+	Listings:            "Listings",
 	PlayerCardFavorites: "PlayerCardFavorites",
 	PlayerCards:         "PlayerCards",
 	PlayerCardsDecks:    "PlayerCardsDecks",
@@ -203,6 +236,8 @@ type cardR struct {
 	Player              *Player                 `boil:"Player" json:"Player" toml:"Player" yaml:"Player"`
 	IDCardsStat         *CardsStat              `boil:"IDCardsStat" json:"IDCardsStat" toml:"IDCardsStat" yaml:"IDCardsStat"`
 	CardsStat           *CardsStat              `boil:"CardsStat" json:"CardsStat" toml:"CardsStat" yaml:"CardsStat"`
+	Auctions            AuctionSlice            `boil:"Auctions" json:"Auctions" toml:"Auctions" yaml:"Auctions"`
+	Listings            ListingSlice            `boil:"Listings" json:"Listings" toml:"Listings" yaml:"Listings"`
 	PlayerCardFavorites PlayerCardFavoriteSlice `boil:"PlayerCardFavorites" json:"PlayerCardFavorites" toml:"PlayerCardFavorites" yaml:"PlayerCardFavorites"`
 	PlayerCards         PlayerCardSlice         `boil:"PlayerCards" json:"PlayerCards" toml:"PlayerCards" yaml:"PlayerCards"`
 	PlayerCardsDecks    PlayerCardsDeckSlice    `boil:"PlayerCardsDecks" json:"PlayerCardsDecks" toml:"PlayerCardsDecks" yaml:"PlayerCardsDecks"`
@@ -233,6 +268,20 @@ func (r *cardR) GetCardsStat() *CardsStat {
 		return nil
 	}
 	return r.CardsStat
+}
+
+func (r *cardR) GetAuctions() AuctionSlice {
+	if r == nil {
+		return nil
+	}
+	return r.Auctions
+}
+
+func (r *cardR) GetListings() ListingSlice {
+	if r == nil {
+		return nil
+	}
+	return r.Listings
 }
 
 func (r *cardR) GetPlayerCardFavorites() PlayerCardFavoriteSlice {
@@ -267,9 +316,9 @@ func (r *cardR) GetSelectedCardPlayers() PlayerSlice {
 type cardL struct{}
 
 var (
-	cardAllColumns            = []string{"id", "player_id", "created_at", "updated_at", "deleted_at", "xp", "next_level_xp", "card_type", "individual_value", "rarity", "level", "buffs"}
+	cardAllColumns            = []string{"id", "player_id", "created_at", "updated_at", "deleted_at", "xp", "next_level_xp", "card_type", "individual_value", "rarity", "level", "buffs", "metadata", "available", "owned_at"}
 	cardColumnsWithoutDefault = []string{"id", "player_id", "next_level_xp", "card_type", "individual_value", "rarity", "level", "buffs"}
-	cardColumnsWithDefault    = []string{"created_at", "updated_at", "deleted_at", "xp"}
+	cardColumnsWithDefault    = []string{"created_at", "updated_at", "deleted_at", "xp", "metadata", "available", "owned_at"}
 	cardPrimaryKeyColumns     = []string{"id"}
 	cardGeneratedColumns      = []string{}
 )
@@ -630,6 +679,34 @@ func (o *Card) CardsStat(mods ...qm.QueryMod) cardsStatQuery {
 	queryMods = append(queryMods, mods...)
 
 	return CardsStats(queryMods...)
+}
+
+// Auctions retrieves all the auction's Auctions with an executor.
+func (o *Card) Auctions(mods ...qm.QueryMod) auctionQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"auctions\".\"card_id\"=?", o.ID),
+	)
+
+	return Auctions(queryMods...)
+}
+
+// Listings retrieves all the listing's Listings with an executor.
+func (o *Card) Listings(mods ...qm.QueryMod) listingQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"listings\".\"card_id\"=?", o.ID),
+	)
+
+	return Listings(queryMods...)
 }
 
 // PlayerCardFavorites retrieves all the player_card_favorite's PlayerCardFavorites with an executor.
@@ -1038,6 +1115,234 @@ func (cardL) LoadCardsStat(ctx context.Context, e boil.ContextExecutor, singular
 				local.R.CardsStat = foreign
 				if foreign.R == nil {
 					foreign.R = &cardsStatR{}
+				}
+				foreign.R.Card = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAuctions allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (cardL) LoadAuctions(ctx context.Context, e boil.ContextExecutor, singular bool, maybeCard interface{}, mods queries.Applicator) error {
+	var slice []*Card
+	var object *Card
+
+	if singular {
+		var ok bool
+		object, ok = maybeCard.(*Card)
+		if !ok {
+			object = new(Card)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeCard)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeCard))
+			}
+		}
+	} else {
+		s, ok := maybeCard.(*[]*Card)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeCard)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeCard))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &cardR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &cardR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`auctions`),
+		qm.WhereIn(`auctions.card_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`auctions.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load auctions")
+	}
+
+	var resultSlice []*Auction
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice auctions")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on auctions")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for auctions")
+	}
+
+	if len(auctionAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.Auctions = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &auctionR{}
+			}
+			foreign.R.Card = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.CardID {
+				local.R.Auctions = append(local.R.Auctions, foreign)
+				if foreign.R == nil {
+					foreign.R = &auctionR{}
+				}
+				foreign.R.Card = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadListings allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (cardL) LoadListings(ctx context.Context, e boil.ContextExecutor, singular bool, maybeCard interface{}, mods queries.Applicator) error {
+	var slice []*Card
+	var object *Card
+
+	if singular {
+		var ok bool
+		object, ok = maybeCard.(*Card)
+		if !ok {
+			object = new(Card)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeCard)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeCard))
+			}
+		}
+	} else {
+		s, ok := maybeCard.(*[]*Card)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeCard)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeCard))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &cardR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &cardR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`listings`),
+		qm.WhereIn(`listings.card_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`listings.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load listings")
+	}
+
+	var resultSlice []*Listing
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice listings")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on listings")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for listings")
+	}
+
+	if len(listingAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.Listings = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &listingR{}
+			}
+			foreign.R.Card = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.CardID {
+				local.R.Listings = append(local.R.Listings, foreign)
+				if foreign.R == nil {
+					foreign.R = &listingR{}
 				}
 				foreign.R.Card = local
 				break
@@ -1665,6 +1970,130 @@ func (o *Card) SetCardsStat(ctx context.Context, exec boil.ContextExecutor, inse
 		}
 	} else {
 		related.R.Card = o
+	}
+	return nil
+}
+
+// AddAuctionsG adds the given related objects to the existing relationships
+// of the card, optionally inserting them as new records.
+// Appends related to o.R.Auctions.
+// Sets related.R.Card appropriately.
+// Uses the global database handle.
+func (o *Card) AddAuctionsG(ctx context.Context, insert bool, related ...*Auction) error {
+	return o.AddAuctions(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// AddAuctions adds the given related objects to the existing relationships
+// of the card, optionally inserting them as new records.
+// Appends related to o.R.Auctions.
+// Sets related.R.Card appropriately.
+func (o *Card) AddAuctions(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Auction) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.CardID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"auctions\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"card_id"}),
+				strmangle.WhereClause("\"", "\"", 2, auctionPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.CardID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &cardR{
+			Auctions: related,
+		}
+	} else {
+		o.R.Auctions = append(o.R.Auctions, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &auctionR{
+				Card: o,
+			}
+		} else {
+			rel.R.Card = o
+		}
+	}
+	return nil
+}
+
+// AddListingsG adds the given related objects to the existing relationships
+// of the card, optionally inserting them as new records.
+// Appends related to o.R.Listings.
+// Sets related.R.Card appropriately.
+// Uses the global database handle.
+func (o *Card) AddListingsG(ctx context.Context, insert bool, related ...*Listing) error {
+	return o.AddListings(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// AddListings adds the given related objects to the existing relationships
+// of the card, optionally inserting them as new records.
+// Appends related to o.R.Listings.
+// Sets related.R.Card appropriately.
+func (o *Card) AddListings(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Listing) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.CardID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"listings\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"card_id"}),
+				strmangle.WhereClause("\"", "\"", 2, listingPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.CardID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &cardR{
+			Listings: related,
+		}
+	} else {
+		o.R.Listings = append(o.R.Listings, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &listingR{
+				Card: o,
+			}
+		} else {
+			rel.R.Card = o
+		}
 	}
 	return nil
 }

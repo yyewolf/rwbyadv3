@@ -29,6 +29,13 @@ type Player struct {
 	UpdatedAt      time.Time   `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 	DeletedAt      null.Time   `boil:"deleted_at" json:"deleted_at,omitempty" toml:"deleted_at" yaml:"deleted_at,omitempty"`
 	SelectedCardID null.String `boil:"selected_card_id" json:"selected_card_id,omitempty" toml:"selected_card_id" yaml:"selected_card_id,omitempty"`
+	Liens          int64       `boil:"liens" json:"liens" toml:"liens" yaml:"liens"`
+	Level          int         `boil:"level" json:"level" toml:"level" yaml:"level"`
+	XP             int64       `boil:"xp" json:"xp" toml:"xp" yaml:"xp"`
+	NextLevelXP    int64       `boil:"next_level_xp" json:"next_level_xp" toml:"next_level_xp" yaml:"next_level_xp"`
+	BackpackLevel  int         `boil:"backpack_level" json:"backpack_level" toml:"backpack_level" yaml:"backpack_level"`
+	LiensBidded    int64       `boil:"liens_bidded" json:"liens_bidded" toml:"liens_bidded" yaml:"liens_bidded"`
+	Username       string      `boil:"username" json:"username" toml:"username" yaml:"username"`
 
 	R *playerR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L playerL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -40,12 +47,26 @@ var PlayerColumns = struct {
 	UpdatedAt      string
 	DeletedAt      string
 	SelectedCardID string
+	Liens          string
+	Level          string
+	XP             string
+	NextLevelXP    string
+	BackpackLevel  string
+	LiensBidded    string
+	Username       string
 }{
 	ID:             "id",
 	CreatedAt:      "created_at",
 	UpdatedAt:      "updated_at",
 	DeletedAt:      "deleted_at",
 	SelectedCardID: "selected_card_id",
+	Liens:          "liens",
+	Level:          "level",
+	XP:             "xp",
+	NextLevelXP:    "next_level_xp",
+	BackpackLevel:  "backpack_level",
+	LiensBidded:    "liens_bidded",
+	Username:       "username",
 }
 
 var PlayerTableColumns = struct {
@@ -54,12 +75,26 @@ var PlayerTableColumns = struct {
 	UpdatedAt      string
 	DeletedAt      string
 	SelectedCardID string
+	Liens          string
+	Level          string
+	XP             string
+	NextLevelXP    string
+	BackpackLevel  string
+	LiensBidded    string
+	Username       string
 }{
 	ID:             "players.id",
 	CreatedAt:      "players.created_at",
 	UpdatedAt:      "players.updated_at",
 	DeletedAt:      "players.deleted_at",
 	SelectedCardID: "players.selected_card_id",
+	Liens:          "players.liens",
+	Level:          "players.level",
+	XP:             "players.xp",
+	NextLevelXP:    "players.next_level_xp",
+	BackpackLevel:  "players.backpack_level",
+	LiensBidded:    "players.liens_bidded",
+	Username:       "players.username",
 }
 
 // Generated where
@@ -70,12 +105,26 @@ var PlayerWhere = struct {
 	UpdatedAt      whereHelpertime_Time
 	DeletedAt      whereHelpernull_Time
 	SelectedCardID whereHelpernull_String
+	Liens          whereHelperint64
+	Level          whereHelperint
+	XP             whereHelperint64
+	NextLevelXP    whereHelperint64
+	BackpackLevel  whereHelperint
+	LiensBidded    whereHelperint64
+	Username       whereHelperstring
 }{
 	ID:             whereHelperstring{field: "\"players\".\"id\""},
 	CreatedAt:      whereHelpertime_Time{field: "\"players\".\"created_at\""},
 	UpdatedAt:      whereHelpertime_Time{field: "\"players\".\"updated_at\""},
 	DeletedAt:      whereHelpernull_Time{field: "\"players\".\"deleted_at\""},
 	SelectedCardID: whereHelpernull_String{field: "\"players\".\"selected_card_id\""},
+	Liens:          whereHelperint64{field: "\"players\".\"liens\""},
+	Level:          whereHelperint{field: "\"players\".\"level\""},
+	XP:             whereHelperint64{field: "\"players\".\"xp\""},
+	NextLevelXP:    whereHelperint64{field: "\"players\".\"next_level_xp\""},
+	BackpackLevel:  whereHelperint{field: "\"players\".\"backpack_level\""},
+	LiensBidded:    whereHelperint64{field: "\"players\".\"liens_bidded\""},
+	Username:       whereHelperstring{field: "\"players\".\"username\""},
 }
 
 // PlayerRels is where relationship names are stored.
@@ -83,8 +132,13 @@ var PlayerRels = struct {
 	IDGithubStar        string
 	SelectedCard        string
 	GithubStar          string
+	Auctions            string
+	AuctionsBids        string
+	AuthCookies         string
+	AuthDiscordStates   string
 	AuthGithubStates    string
 	Cards               string
+	Listings            string
 	LootBoxes           string
 	PlayerCardFavorites string
 	PlayerCards         string
@@ -93,8 +147,13 @@ var PlayerRels = struct {
 	IDGithubStar:        "IDGithubStar",
 	SelectedCard:        "SelectedCard",
 	GithubStar:          "GithubStar",
+	Auctions:            "Auctions",
+	AuctionsBids:        "AuctionsBids",
+	AuthCookies:         "AuthCookies",
+	AuthDiscordStates:   "AuthDiscordStates",
 	AuthGithubStates:    "AuthGithubStates",
 	Cards:               "Cards",
+	Listings:            "Listings",
 	LootBoxes:           "LootBoxes",
 	PlayerCardFavorites: "PlayerCardFavorites",
 	PlayerCards:         "PlayerCards",
@@ -106,8 +165,13 @@ type playerR struct {
 	IDGithubStar        *GithubStar             `boil:"IDGithubStar" json:"IDGithubStar" toml:"IDGithubStar" yaml:"IDGithubStar"`
 	SelectedCard        *Card                   `boil:"SelectedCard" json:"SelectedCard" toml:"SelectedCard" yaml:"SelectedCard"`
 	GithubStar          *GithubStar             `boil:"GithubStar" json:"GithubStar" toml:"GithubStar" yaml:"GithubStar"`
+	Auctions            AuctionSlice            `boil:"Auctions" json:"Auctions" toml:"Auctions" yaml:"Auctions"`
+	AuctionsBids        AuctionsBidSlice        `boil:"AuctionsBids" json:"AuctionsBids" toml:"AuctionsBids" yaml:"AuctionsBids"`
+	AuthCookies         AuthCookieSlice         `boil:"AuthCookies" json:"AuthCookies" toml:"AuthCookies" yaml:"AuthCookies"`
+	AuthDiscordStates   AuthDiscordStateSlice   `boil:"AuthDiscordStates" json:"AuthDiscordStates" toml:"AuthDiscordStates" yaml:"AuthDiscordStates"`
 	AuthGithubStates    AuthGithubStateSlice    `boil:"AuthGithubStates" json:"AuthGithubStates" toml:"AuthGithubStates" yaml:"AuthGithubStates"`
 	Cards               CardSlice               `boil:"Cards" json:"Cards" toml:"Cards" yaml:"Cards"`
+	Listings            ListingSlice            `boil:"Listings" json:"Listings" toml:"Listings" yaml:"Listings"`
 	LootBoxes           LootBoxSlice            `boil:"LootBoxes" json:"LootBoxes" toml:"LootBoxes" yaml:"LootBoxes"`
 	PlayerCardFavorites PlayerCardFavoriteSlice `boil:"PlayerCardFavorites" json:"PlayerCardFavorites" toml:"PlayerCardFavorites" yaml:"PlayerCardFavorites"`
 	PlayerCards         PlayerCardSlice         `boil:"PlayerCards" json:"PlayerCards" toml:"PlayerCards" yaml:"PlayerCards"`
@@ -140,6 +204,34 @@ func (r *playerR) GetGithubStar() *GithubStar {
 	return r.GithubStar
 }
 
+func (r *playerR) GetAuctions() AuctionSlice {
+	if r == nil {
+		return nil
+	}
+	return r.Auctions
+}
+
+func (r *playerR) GetAuctionsBids() AuctionsBidSlice {
+	if r == nil {
+		return nil
+	}
+	return r.AuctionsBids
+}
+
+func (r *playerR) GetAuthCookies() AuthCookieSlice {
+	if r == nil {
+		return nil
+	}
+	return r.AuthCookies
+}
+
+func (r *playerR) GetAuthDiscordStates() AuthDiscordStateSlice {
+	if r == nil {
+		return nil
+	}
+	return r.AuthDiscordStates
+}
+
 func (r *playerR) GetAuthGithubStates() AuthGithubStateSlice {
 	if r == nil {
 		return nil
@@ -152,6 +244,13 @@ func (r *playerR) GetCards() CardSlice {
 		return nil
 	}
 	return r.Cards
+}
+
+func (r *playerR) GetListings() ListingSlice {
+	if r == nil {
+		return nil
+	}
+	return r.Listings
 }
 
 func (r *playerR) GetLootBoxes() LootBoxSlice {
@@ -186,9 +285,9 @@ func (r *playerR) GetPlayerCardsDecks() PlayerCardsDeckSlice {
 type playerL struct{}
 
 var (
-	playerAllColumns            = []string{"id", "created_at", "updated_at", "deleted_at", "selected_card_id"}
+	playerAllColumns            = []string{"id", "created_at", "updated_at", "deleted_at", "selected_card_id", "liens", "level", "xp", "next_level_xp", "backpack_level", "liens_bidded", "username"}
 	playerColumnsWithoutDefault = []string{"id"}
-	playerColumnsWithDefault    = []string{"created_at", "updated_at", "deleted_at", "selected_card_id"}
+	playerColumnsWithDefault    = []string{"created_at", "updated_at", "deleted_at", "selected_card_id", "liens", "level", "xp", "next_level_xp", "backpack_level", "liens_bidded", "username"}
 	playerPrimaryKeyColumns     = []string{"id"}
 	playerGeneratedColumns      = []string{}
 )
@@ -551,6 +650,62 @@ func (o *Player) GithubStar(mods ...qm.QueryMod) githubStarQuery {
 	return GithubStars(queryMods...)
 }
 
+// Auctions retrieves all the auction's Auctions with an executor.
+func (o *Player) Auctions(mods ...qm.QueryMod) auctionQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"auctions\".\"player_id\"=?", o.ID),
+	)
+
+	return Auctions(queryMods...)
+}
+
+// AuctionsBids retrieves all the auctions_bid's AuctionsBids with an executor.
+func (o *Player) AuctionsBids(mods ...qm.QueryMod) auctionsBidQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"auctions_bids\".\"player_id\"=?", o.ID),
+	)
+
+	return AuctionsBids(queryMods...)
+}
+
+// AuthCookies retrieves all the auth_cookie's AuthCookies with an executor.
+func (o *Player) AuthCookies(mods ...qm.QueryMod) authCookieQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"auth_cookies\".\"player_id\"=?", o.ID),
+	)
+
+	return AuthCookies(queryMods...)
+}
+
+// AuthDiscordStates retrieves all the auth_discord_state's AuthDiscordStates with an executor.
+func (o *Player) AuthDiscordStates(mods ...qm.QueryMod) authDiscordStateQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"auth_discord_states\".\"player_id\"=?", o.ID),
+	)
+
+	return AuthDiscordStates(queryMods...)
+}
+
 // AuthGithubStates retrieves all the auth_github_state's AuthGithubStates with an executor.
 func (o *Player) AuthGithubStates(mods ...qm.QueryMod) authGithubStateQuery {
 	var queryMods []qm.QueryMod
@@ -577,6 +732,20 @@ func (o *Player) Cards(mods ...qm.QueryMod) cardQuery {
 	)
 
 	return Cards(queryMods...)
+}
+
+// Listings retrieves all the listing's Listings with an executor.
+func (o *Player) Listings(mods ...qm.QueryMod) listingQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"listings\".\"player_id\"=?", o.ID),
+	)
+
+	return Listings(queryMods...)
 }
 
 // LootBoxes retrieves all the loot_box's LootBoxes with an executor.
@@ -999,6 +1168,462 @@ func (playerL) LoadGithubStar(ctx context.Context, e boil.ContextExecutor, singu
 	return nil
 }
 
+// LoadAuctions allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (playerL) LoadAuctions(ctx context.Context, e boil.ContextExecutor, singular bool, maybePlayer interface{}, mods queries.Applicator) error {
+	var slice []*Player
+	var object *Player
+
+	if singular {
+		var ok bool
+		object, ok = maybePlayer.(*Player)
+		if !ok {
+			object = new(Player)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybePlayer))
+			}
+		}
+	} else {
+		s, ok := maybePlayer.(*[]*Player)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybePlayer))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &playerR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &playerR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`auctions`),
+		qm.WhereIn(`auctions.player_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`auctions.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load auctions")
+	}
+
+	var resultSlice []*Auction
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice auctions")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on auctions")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for auctions")
+	}
+
+	if len(auctionAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.Auctions = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &auctionR{}
+			}
+			foreign.R.Player = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.PlayerID {
+				local.R.Auctions = append(local.R.Auctions, foreign)
+				if foreign.R == nil {
+					foreign.R = &auctionR{}
+				}
+				foreign.R.Player = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAuctionsBids allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (playerL) LoadAuctionsBids(ctx context.Context, e boil.ContextExecutor, singular bool, maybePlayer interface{}, mods queries.Applicator) error {
+	var slice []*Player
+	var object *Player
+
+	if singular {
+		var ok bool
+		object, ok = maybePlayer.(*Player)
+		if !ok {
+			object = new(Player)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybePlayer))
+			}
+		}
+	} else {
+		s, ok := maybePlayer.(*[]*Player)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybePlayer))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &playerR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &playerR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`auctions_bids`),
+		qm.WhereIn(`auctions_bids.player_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`auctions_bids.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load auctions_bids")
+	}
+
+	var resultSlice []*AuctionsBid
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice auctions_bids")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on auctions_bids")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for auctions_bids")
+	}
+
+	if len(auctionsBidAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.AuctionsBids = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &auctionsBidR{}
+			}
+			foreign.R.Player = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.PlayerID {
+				local.R.AuctionsBids = append(local.R.AuctionsBids, foreign)
+				if foreign.R == nil {
+					foreign.R = &auctionsBidR{}
+				}
+				foreign.R.Player = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAuthCookies allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (playerL) LoadAuthCookies(ctx context.Context, e boil.ContextExecutor, singular bool, maybePlayer interface{}, mods queries.Applicator) error {
+	var slice []*Player
+	var object *Player
+
+	if singular {
+		var ok bool
+		object, ok = maybePlayer.(*Player)
+		if !ok {
+			object = new(Player)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybePlayer))
+			}
+		}
+	} else {
+		s, ok := maybePlayer.(*[]*Player)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybePlayer))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &playerR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &playerR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`auth_cookies`),
+		qm.WhereIn(`auth_cookies.player_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`auth_cookies.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load auth_cookies")
+	}
+
+	var resultSlice []*AuthCookie
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice auth_cookies")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on auth_cookies")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for auth_cookies")
+	}
+
+	if len(authCookieAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.AuthCookies = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &authCookieR{}
+			}
+			foreign.R.Player = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.PlayerID {
+				local.R.AuthCookies = append(local.R.AuthCookies, foreign)
+				if foreign.R == nil {
+					foreign.R = &authCookieR{}
+				}
+				foreign.R.Player = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAuthDiscordStates allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (playerL) LoadAuthDiscordStates(ctx context.Context, e boil.ContextExecutor, singular bool, maybePlayer interface{}, mods queries.Applicator) error {
+	var slice []*Player
+	var object *Player
+
+	if singular {
+		var ok bool
+		object, ok = maybePlayer.(*Player)
+		if !ok {
+			object = new(Player)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybePlayer))
+			}
+		}
+	} else {
+		s, ok := maybePlayer.(*[]*Player)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybePlayer))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &playerR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &playerR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`auth_discord_states`),
+		qm.WhereIn(`auth_discord_states.player_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`auth_discord_states.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load auth_discord_states")
+	}
+
+	var resultSlice []*AuthDiscordState
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice auth_discord_states")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on auth_discord_states")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for auth_discord_states")
+	}
+
+	if len(authDiscordStateAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.AuthDiscordStates = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &authDiscordStateR{}
+			}
+			foreign.R.Player = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.PlayerID) {
+				local.R.AuthDiscordStates = append(local.R.AuthDiscordStates, foreign)
+				if foreign.R == nil {
+					foreign.R = &authDiscordStateR{}
+				}
+				foreign.R.Player = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // LoadAuthGithubStates allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-M or N-M relationship.
 func (playerL) LoadAuthGithubStates(ctx context.Context, e boil.ContextExecutor, singular bool, maybePlayer interface{}, mods queries.Applicator) error {
@@ -1217,6 +1842,120 @@ func (playerL) LoadCards(ctx context.Context, e boil.ContextExecutor, singular b
 				local.R.Cards = append(local.R.Cards, foreign)
 				if foreign.R == nil {
 					foreign.R = &cardR{}
+				}
+				foreign.R.Player = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadListings allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (playerL) LoadListings(ctx context.Context, e boil.ContextExecutor, singular bool, maybePlayer interface{}, mods queries.Applicator) error {
+	var slice []*Player
+	var object *Player
+
+	if singular {
+		var ok bool
+		object, ok = maybePlayer.(*Player)
+		if !ok {
+			object = new(Player)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybePlayer))
+			}
+		}
+	} else {
+		s, ok := maybePlayer.(*[]*Player)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybePlayer))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &playerR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &playerR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`listings`),
+		qm.WhereIn(`listings.player_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`listings.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load listings")
+	}
+
+	var resultSlice []*Listing
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice listings")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on listings")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for listings")
+	}
+
+	if len(listingAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.Listings = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &listingR{}
+			}
+			foreign.R.Player = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.PlayerID {
+				local.R.Listings = append(local.R.Listings, foreign)
+				if foreign.R == nil {
+					foreign.R = &listingR{}
 				}
 				foreign.R.Player = local
 				break
@@ -1889,6 +2628,347 @@ func (o *Player) SetGithubStar(ctx context.Context, exec boil.ContextExecutor, i
 	return nil
 }
 
+// AddAuctionsG adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.Auctions.
+// Sets related.R.Player appropriately.
+// Uses the global database handle.
+func (o *Player) AddAuctionsG(ctx context.Context, insert bool, related ...*Auction) error {
+	return o.AddAuctions(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// AddAuctions adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.Auctions.
+// Sets related.R.Player appropriately.
+func (o *Player) AddAuctions(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Auction) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.PlayerID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"auctions\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"player_id"}),
+				strmangle.WhereClause("\"", "\"", 2, auctionPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.PlayerID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &playerR{
+			Auctions: related,
+		}
+	} else {
+		o.R.Auctions = append(o.R.Auctions, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &auctionR{
+				Player: o,
+			}
+		} else {
+			rel.R.Player = o
+		}
+	}
+	return nil
+}
+
+// AddAuctionsBidsG adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.AuctionsBids.
+// Sets related.R.Player appropriately.
+// Uses the global database handle.
+func (o *Player) AddAuctionsBidsG(ctx context.Context, insert bool, related ...*AuctionsBid) error {
+	return o.AddAuctionsBids(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// AddAuctionsBids adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.AuctionsBids.
+// Sets related.R.Player appropriately.
+func (o *Player) AddAuctionsBids(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AuctionsBid) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.PlayerID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"auctions_bids\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"player_id"}),
+				strmangle.WhereClause("\"", "\"", 2, auctionsBidPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.PlayerID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &playerR{
+			AuctionsBids: related,
+		}
+	} else {
+		o.R.AuctionsBids = append(o.R.AuctionsBids, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &auctionsBidR{
+				Player: o,
+			}
+		} else {
+			rel.R.Player = o
+		}
+	}
+	return nil
+}
+
+// AddAuthCookiesG adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.AuthCookies.
+// Sets related.R.Player appropriately.
+// Uses the global database handle.
+func (o *Player) AddAuthCookiesG(ctx context.Context, insert bool, related ...*AuthCookie) error {
+	return o.AddAuthCookies(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// AddAuthCookies adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.AuthCookies.
+// Sets related.R.Player appropriately.
+func (o *Player) AddAuthCookies(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AuthCookie) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.PlayerID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"auth_cookies\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"player_id"}),
+				strmangle.WhereClause("\"", "\"", 2, authCookiePrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.PlayerID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &playerR{
+			AuthCookies: related,
+		}
+	} else {
+		o.R.AuthCookies = append(o.R.AuthCookies, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &authCookieR{
+				Player: o,
+			}
+		} else {
+			rel.R.Player = o
+		}
+	}
+	return nil
+}
+
+// AddAuthDiscordStatesG adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.AuthDiscordStates.
+// Sets related.R.Player appropriately.
+// Uses the global database handle.
+func (o *Player) AddAuthDiscordStatesG(ctx context.Context, insert bool, related ...*AuthDiscordState) error {
+	return o.AddAuthDiscordStates(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// AddAuthDiscordStates adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.AuthDiscordStates.
+// Sets related.R.Player appropriately.
+func (o *Player) AddAuthDiscordStates(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AuthDiscordState) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.PlayerID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"auth_discord_states\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"player_id"}),
+				strmangle.WhereClause("\"", "\"", 2, authDiscordStatePrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.State}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.PlayerID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &playerR{
+			AuthDiscordStates: related,
+		}
+	} else {
+		o.R.AuthDiscordStates = append(o.R.AuthDiscordStates, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &authDiscordStateR{
+				Player: o,
+			}
+		} else {
+			rel.R.Player = o
+		}
+	}
+	return nil
+}
+
+// SetAuthDiscordStatesG removes all previously related items of the
+// player replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.Player's AuthDiscordStates accordingly.
+// Replaces o.R.AuthDiscordStates with related.
+// Sets related.R.Player's AuthDiscordStates accordingly.
+// Uses the global database handle.
+func (o *Player) SetAuthDiscordStatesG(ctx context.Context, insert bool, related ...*AuthDiscordState) error {
+	return o.SetAuthDiscordStates(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// SetAuthDiscordStates removes all previously related items of the
+// player replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.Player's AuthDiscordStates accordingly.
+// Replaces o.R.AuthDiscordStates with related.
+// Sets related.R.Player's AuthDiscordStates accordingly.
+func (o *Player) SetAuthDiscordStates(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AuthDiscordState) error {
+	query := "update \"auth_discord_states\" set \"player_id\" = null where \"player_id\" = $1"
+	values := []interface{}{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.AuthDiscordStates {
+			queries.SetScanner(&rel.PlayerID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.Player = nil
+		}
+		o.R.AuthDiscordStates = nil
+	}
+
+	return o.AddAuthDiscordStates(ctx, exec, insert, related...)
+}
+
+// RemoveAuthDiscordStatesG relationships from objects passed in.
+// Removes related items from R.AuthDiscordStates (uses pointer comparison, removal does not keep order)
+// Sets related.R.Player.
+// Uses the global database handle.
+func (o *Player) RemoveAuthDiscordStatesG(ctx context.Context, related ...*AuthDiscordState) error {
+	return o.RemoveAuthDiscordStates(ctx, boil.GetContextDB(), related...)
+}
+
+// RemoveAuthDiscordStates relationships from objects passed in.
+// Removes related items from R.AuthDiscordStates (uses pointer comparison, removal does not keep order)
+// Sets related.R.Player.
+func (o *Player) RemoveAuthDiscordStates(ctx context.Context, exec boil.ContextExecutor, related ...*AuthDiscordState) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.PlayerID, nil)
+		if rel.R != nil {
+			rel.R.Player = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("player_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.AuthDiscordStates {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.AuthDiscordStates)
+			if ln > 1 && i < ln-1 {
+				o.R.AuthDiscordStates[i] = o.R.AuthDiscordStates[ln-1]
+			}
+			o.R.AuthDiscordStates = o.R.AuthDiscordStates[:ln-1]
+			break
+		}
+	}
+
+	return nil
+}
+
 // AddAuthGithubStatesG adds the given related objects to the existing relationships
 // of the player, optionally inserting them as new records.
 // Appends related to o.R.AuthGithubStates.
@@ -2004,6 +3084,68 @@ func (o *Player) AddCards(ctx context.Context, exec boil.ContextExecutor, insert
 	for _, rel := range related {
 		if rel.R == nil {
 			rel.R = &cardR{
+				Player: o,
+			}
+		} else {
+			rel.R.Player = o
+		}
+	}
+	return nil
+}
+
+// AddListingsG adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.Listings.
+// Sets related.R.Player appropriately.
+// Uses the global database handle.
+func (o *Player) AddListingsG(ctx context.Context, insert bool, related ...*Listing) error {
+	return o.AddListings(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// AddListings adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.Listings.
+// Sets related.R.Player appropriately.
+func (o *Player) AddListings(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Listing) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.PlayerID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"listings\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"player_id"}),
+				strmangle.WhereClause("\"", "\"", 2, listingPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.PlayerID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &playerR{
+			Listings: related,
+		}
+	} else {
+		o.R.Listings = append(o.R.Listings, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &listingR{
 				Player: o,
 			}
 		} else {

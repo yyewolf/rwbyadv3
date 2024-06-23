@@ -2,6 +2,7 @@ package begin
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
@@ -15,6 +16,10 @@ import (
 const (
 	commandName        = "begin"
 	commandDescription = "Begin your adventure!"
+
+	componentId         = "begin/{player_id}/{page}/{action}"
+	componentActionPrev = "prev"
+	componentActionNext = "next"
 )
 
 type beginCommand struct {
@@ -31,6 +36,13 @@ func BeginCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 		builder.WithDescription(commandDescription),
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
 			h.Command("/"+commandName, cmd.HandleCommand)
+
+			h.ButtonComponent("/"+componentId, builder.WithContextD(
+				app,
+				cmd.HandleInteraction,
+				builder.WithPlayer(),
+				builder.WithPlayerCards(),
+			))
 			return nil
 		}),
 		builder.WithSlashCommand(discord.SlashCommandCreate{
@@ -73,10 +85,44 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 		)
 	}
 
+	embed, components := cmd.generator(&p, 0)
+
 	return e.Respond(
 		discord.InteractionResponseTypeCreateMessage,
 		discord.NewMessageCreateBuilder().
-			SetContentf("Account created !").
-			SetEphemeral(true),
+			AddEmbeds(embed).
+			AddContainerComponents(components),
 	)
+}
+
+func (cmd *beginCommand) HandleInteraction(data discord.ButtonInteractionData, e *handler.ComponentEvent) error {
+	// Get route parameters
+	playerID := e.Vars["player_id"]
+	action := e.Vars["action"]
+	page, _ := strconv.Atoi(e.Vars["page"])
+
+	e.DeferUpdateMessage()
+	if playerID != e.User().ID.String() {
+		return nil
+	}
+
+	switch action {
+	case componentActionNext:
+		page++
+	case componentActionPrev:
+		page--
+	default:
+	}
+
+	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+
+	embed, components := cmd.generator(p, page)
+
+	_, err := e.UpdateInteractionResponse(
+		discord.NewMessageUpdateBuilder().
+			AddEmbeds(embed).
+			AddContainerComponents(components).
+			Build(),
+	)
+	return err
 }

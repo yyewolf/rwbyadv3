@@ -27,7 +27,6 @@ func SelectCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 
 	cmd.app = app
 
-	var min = 0
 	return builder.NewCommand(
 		builder.WithCommandName(commandName),
 		builder.WithDescription(commandDescription),
@@ -47,7 +46,7 @@ func SelectCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 				discord.ApplicationCommandOptionInt{
 					Name:        "card",
 					Description: "Which card do you want to select ?",
-					MinValue:    &min,
+					MinValue:    utils.Optional(0),
 					Required:    true,
 				},
 			},
@@ -60,16 +59,16 @@ func (cmd *selectCommand) HandleCommand(e *handler.CommandEvent) error {
 
 	want := e.SlashCommandInteractionData().Int("card")
 
-	if len(p.R.PlayerCards) < want {
+	card, found := utils.Players.GetAvailableCard(p, want-1)
+	if !found {
 		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("Sorry, you have to have this card to select it.").
+			SetContent("Sorry, you do not have a card with this number...").
 			SetEphemeral(true).
 			Build(),
 		)
 	}
 
-	wantedCard := p.R.PlayerCards[want-1].R.Card
-	err := p.SetSelectedCardG(context.Background(), false, wantedCard)
+	err := p.SetSelectedCardG(context.Background(), false, card)
 	if err != nil {
 		u := uuid.NewString()
 		logrus.WithError(err).WithField("error_id", u).Error("a db error occured")
@@ -81,7 +80,7 @@ func (cmd *selectCommand) HandleCommand(e *handler.CommandEvent) error {
 	}
 
 	return e.CreateMessage(discord.NewMessageCreateBuilder().
-		SetContentf("All good, you selected : `%s`", utils.Cards.FullString(wantedCard)).
+		SetContentf("All good, you selected : `%s`", utils.Cards.FullString(card)).
 		SetEphemeral(true).
 		Build(),
 	)

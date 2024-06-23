@@ -7,6 +7,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/commands/bugs"
 	"github.com/yyewolf/rwbyadv3/internal/commands/general"
 	"github.com/yyewolf/rwbyadv3/internal/commands/inventory"
+	"github.com/yyewolf/rwbyadv3/internal/commands/market"
 	"github.com/yyewolf/rwbyadv3/internal/commands/preprod"
 	"github.com/yyewolf/rwbyadv3/internal/commands/rewards"
 	"github.com/yyewolf/rwbyadv3/internal/commands/system"
@@ -19,6 +20,7 @@ func RegisterCommands(app interfaces.App) *builder.MenuStore {
 
 	general.NewMenu(ms, app)
 	inventory.NewMenu(ms, app)
+	market.NewMenu(ms, app)
 	boxes.NewMenu(ms, app)
 	rewards.NewMenu(ms, app)
 	system.NewMenu(ms, app)
@@ -33,10 +35,13 @@ func RegisterCommands(app interfaces.App) *builder.MenuStore {
 		logrus.Fatal("Couldn't load commands")
 	}
 
-	app.Client().Rest().SetGlobalCommands(
+	_, err = app.Client().Rest().SetGlobalCommands(
 		app.Client().ApplicationID(),
 		createCommands,
 	)
+	if err != nil {
+		logrus.WithError(err).Error("couldn't register commands")
+	}
 
 	return ms
 }

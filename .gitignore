@@ -32,3 +32,15 @@ sqlboiler.toml
 
 # Templ
 *_templ.go
+
+# Docs
+venv/
+
+# NodeJS
+node_modules/
+
+# Air
+bin/*
+tmp/
+
+!.gitkeep

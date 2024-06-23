@@ -6,11 +6,31 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/values"
+	"go.temporal.io/sdk/worker"
 )
 
 func (a *App) Start() {
+	// Begin job handler here
+	go func() {
+		for {
+			a.jobHandler.Start()
+		}
+	}()
+
 	go func() {
 		err := a.client.OpenGateway(context.TODO())
+		if err == nil {
+			return
+		}
+
+		select {
+		case a.errorChannel <- err:
+		default:
+		}
+	}()
+
+	go func() {
+		err := a.temporalWorker.Run(worker.InterruptCh())
 		if err == nil {
 			return
 		}
@@ -44,6 +64,8 @@ func (a *App) Start() {
 			a.webApp.Stop()
 		}
 
+		a.temporalWorker.Stop()
+		a.temporalClient.Close()
 		a.jobHandler.Shutdown()
 	case err := <-a.errorChannel:
 		logrus.WithField("error", err).Error("An error stopped execution")

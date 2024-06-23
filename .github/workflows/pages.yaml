@@ -1,0 +1,72 @@
+name: GitHub Pages
+
+on: 
+  push:
+    branches:
+      - main
+      - beta
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.8'
+
+      - name: Upgrade pip
+        run: |
+          # install pip=>20.1 to use "pip cache dir"
+          python3 -m pip install --upgrade pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: python3 -m pip install -r ./requirements.txt
+
+      # - run: mkdocs build
+      - name: Build
+      # Create a /site directory and build for every branch
+        run: |
+          mkdir ./site
+          for branch in develop beta main;
+          do
+            git checkout $branch
+            mkdocs build -d ./site/$branch || true
+            if [ -d ./site/$branch ]; then
+              echo "Site built successfully for $branch"
+            else
+              echo "Site build failed for $branch"
+            fi
+            if $branch == 'main'; then
+              cp -r ./site/$branch/* ./site
+            fi
+          done
+          
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/beta' || github.ref == 'refs/heads/develop'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site

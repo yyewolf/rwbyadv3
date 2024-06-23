@@ -10,6 +10,15 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: auth_discord_states_type; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.auth_discord_states_type AS ENUM (
+    'login'
+);
+
+
+--
 -- Name: auth_github_states_type; Type: TYPE; Schema: public; Owner: -
 --
 
@@ -33,6 +42,66 @@ CREATE TYPE public.loot_boxes_type AS ENUM (
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
+
+--
+-- Name: auctions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.auctions (
+    id character varying(50) NOT NULL,
+    player_id character varying(50) NOT NULL,
+    card_id character varying(50) NOT NULL,
+    time_extensions integer DEFAULT 0 NOT NULL,
+    ends_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone
+);
+
+
+--
+-- Name: auctions_bids; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.auctions_bids (
+    id character varying(50) NOT NULL,
+    auction_id character varying(50) NOT NULL,
+    player_id character varying(50) NOT NULL,
+    price bigint NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone
+);
+
+
+--
+-- Name: auth_cookies; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.auth_cookies (
+    id character varying(100) NOT NULL,
+    player_id character varying(50) NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone
+);
+
+
+--
+-- Name: auth_discord_states; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.auth_discord_states (
+    state character varying(50) NOT NULL,
+    player_id character varying(50),
+    redirect_uri text NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    type public.auth_discord_states_type NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone
+);
+
 
 --
 -- Name: auth_github_states; Type: TABLE; Schema: public; Owner: -
@@ -65,7 +134,10 @@ CREATE TABLE public.cards (
     individual_value double precision NOT NULL,
     rarity integer NOT NULL,
     level integer NOT NULL,
-    buffs integer NOT NULL
+    buffs integer NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    available boolean DEFAULT true NOT NULL,
+    owned_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -117,6 +189,22 @@ CREATE TABLE public.jobs (
     recurring boolean DEFAULT false NOT NULL,
     delta_time bigint DEFAULT 0 NOT NULL,
     errored boolean DEFAULT false NOT NULL
+);
+
+
+--
+-- Name: listings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.listings (
+    id character varying(50) NOT NULL,
+    player_id character varying(50) NOT NULL,
+    card_id character varying(50) NOT NULL,
+    price bigint NOT NULL,
+    note character varying(500) NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone
 );
 
 
@@ -177,7 +265,14 @@ CREATE TABLE public.players (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     deleted_at timestamp with time zone,
-    selected_card_id character varying(50)
+    selected_card_id character varying(50),
+    liens bigint DEFAULT 500 NOT NULL,
+    level integer DEFAULT 0 NOT NULL,
+    xp bigint DEFAULT 0 NOT NULL,
+    next_level_xp bigint DEFAULT 20 NOT NULL,
+    backpack_level integer DEFAULT 1 NOT NULL,
+    liens_bidded bigint DEFAULT 0 NOT NULL,
+    username character varying(50) DEFAULT ''::character varying NOT NULL
 );
 
 
@@ -188,6 +283,38 @@ CREATE TABLE public.players (
 CREATE TABLE public.schema_migrations (
     version character varying(128) NOT NULL
 );
+
+
+--
+-- Name: auctions_bids auctions_bids_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auctions_bids
+    ADD CONSTRAINT auctions_bids_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: auctions auctions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auctions
+    ADD CONSTRAINT auctions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: auth_cookies auth_cookies_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auth_cookies
+    ADD CONSTRAINT auth_cookies_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: auth_discord_states auth_discord_states_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auth_discord_states
+    ADD CONSTRAINT auth_discord_states_pkey PRIMARY KEY (state);
 
 
 --
@@ -239,6 +366,14 @@ ALTER TABLE ONLY public.jobs
 
 
 --
+-- Name: listings listings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.listings
+    ADD CONSTRAINT listings_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: loot_boxes loot_boxes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -287,6 +422,54 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: auctions_bids auctions_bids_auction_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auctions_bids
+    ADD CONSTRAINT auctions_bids_auction_id_fkey FOREIGN KEY (auction_id) REFERENCES public.auctions(id);
+
+
+--
+-- Name: auctions_bids auctions_bids_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auctions_bids
+    ADD CONSTRAINT auctions_bids_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+
+
+--
+-- Name: auctions auctions_card_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auctions
+    ADD CONSTRAINT auctions_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id);
+
+
+--
+-- Name: auctions auctions_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auctions
+    ADD CONSTRAINT auctions_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+
+
+--
+-- Name: auth_cookies auth_cookies_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auth_cookies
+    ADD CONSTRAINT auth_cookies_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+
+
+--
+-- Name: auth_discord_states auth_discord_states_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auth_discord_states
+    ADD CONSTRAINT auth_discord_states_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+
+
+--
 -- Name: auth_github_states auth_github_states_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -332,6 +515,22 @@ ALTER TABLE ONLY public.players
 
 ALTER TABLE ONLY public.github_stars
     ADD CONSTRAINT fk_player_id FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: listings listings_card_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.listings
+    ADD CONSTRAINT listings_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id);
+
+
+--
+-- Name: listings listings_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.listings
+    ADD CONSTRAINT listings_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
 
 
 --
@@ -414,4 +613,7 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240503174603'),
     ('20240505092653'),
     ('20240506144248'),
-    ('20240507105741');
+    ('20240507105741'),
+    ('20240517132427'),
+    ('20240519111300'),
+    ('20240605145413');

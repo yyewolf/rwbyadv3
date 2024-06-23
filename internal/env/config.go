@@ -24,6 +24,12 @@ type Config struct {
 	Discord struct {
 		Token string       `env:"TOKEN" envDefault:""`
 		AppID snowflake.ID `env:"APP_ID" envDefault:""`
+
+		App struct {
+			ClientID     string `env:"CLIENT_ID" envDefault:""`
+			ClientSecret string `env:"CLIENT_SECRET" envDefault:""`
+			BaseURI      string `env:"BASE_URI" envDefault:""`
+		} `envPrefix:"APP_"`
 	} `envPrefix:"DISCORD_"`
 
 	// Github
@@ -53,6 +59,13 @@ type Config struct {
 		} `envPrefix:"JOBS_"`
 	} `envPrefix:"RBMQ_"`
 
+	// Temporal
+	Temporal struct {
+		Host      string `env:"HOST" envDefault:"localhost"`
+		Port      string `env:"PORT" envDefault:"7233"`
+		TaskQueue string `env:"TASK_QUEUE" envDefault:"worker-dev"`
+	} `envPrefix:"TEMPORAL_"`
+
 	// Web
 	Web struct {
 		Port string `env:"PORT" envDefault:"8080"`
@@ -61,6 +74,7 @@ type Config struct {
 	// App parameters
 	App struct {
 		CardsLocation string `env:"CARDS_LOCATION" envDefault:"/cards/yml"`
+		BotColor      int    `env:"BOT_COLOR" envDefault:"3859607"`
 	} `envPrefix:"APP_"`
 }
 

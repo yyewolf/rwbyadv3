@@ -38,3 +38,11 @@ func (a *App) loadCommandMentions() error {
 	}
 	return nil
 }
+
+func (a *App) Footer() *discord.EmbedFooter {
+	u, _ := a.Client().Rest().GetCurrentUser("")
+	return &discord.EmbedFooter{
+		Text:    "Made by Yewolf - Support: https://discord.gg/adJGyVxv7H",
+		IconURL: u.EffectiveAvatarURL(),
+	}
+}

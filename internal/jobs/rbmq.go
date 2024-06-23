@@ -58,6 +58,11 @@ func (j *JobHandler) Start() error {
 	j.conn = conn
 	j.ch = ch
 
+	err = j.Init()
+	if err != nil {
+		return err
+	}
+
 	go func() {
 		for {
 			j.Listen()
@@ -67,11 +72,6 @@ func (j *JobHandler) Start() error {
 			time.Sleep(2 * time.Second)
 		}
 	}()
-
-	err = j.Init()
-	if err != nil {
-		return err
-	}
 
 	ticker := time.NewTicker(1 * time.Second)
 	for {
@@ -118,6 +118,15 @@ func (j *JobHandler) Start() error {
 				}
 			}
 		}
+	}
+}
+
+func (j *JobHandler) WaitAvailable() {
+	for {
+		if j.conn != nil {
+			return
+		}
+		time.Sleep(1 * time.Second)
 	}
 }
 

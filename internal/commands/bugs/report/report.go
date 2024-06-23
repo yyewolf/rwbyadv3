@@ -108,6 +108,8 @@ func (cmd *reportCommand) HandleResponse(t string) handler.ModalHandler {
 								"You can complement your issue by logging in and completing it.",
 							issue.GetHTMLURL(),
 						).
+						SetEmbedFooter(cmd.app.Footer()).
+						SetColor(cmd.app.Config().App.BotColor).
 						Build(),
 				).
 				Build(),

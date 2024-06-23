@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "alpinejs": "^3.14.1",
+    "htmx-ext-sse": "^2.0.0",
+    "htmx.org": "^2.0.0",
+    "hyperscript.org": "^0.9.12",
+    "tailwindcss": "^3.4.4"
+  }
+}

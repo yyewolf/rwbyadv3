@@ -2,7 +2,7 @@ package success
 
 import "github.com/yyewolf/rwbyadv3/web/templates/layout"
 
-templ Success(text, back string) {
+templ Success(text, back, redirectTo string) {
 	<section class="flex flex-col items-center justify-center h-[100vh] gap-12">
 		if text != "" {
 			<p class="text-3xl text-center md:text-sm text-green-400">
@@ -13,6 +13,17 @@ templ Success(text, back string) {
 			<a hx-swap="transition:true" href={ templ.SafeURL(back) } class="btn btn-secondary btn-outline">
 				Go Back
 			</a>
+		}
+		if redirectTo != "" {
+			<p class="text-3xl text-center md:text-sm text-green-400">
+				If you are not redirected, click <a id="redirect" href={ templ.SafeURL(redirectTo) }>here</a>.
+			</p>
+			<script>
+				setTimeout(() => {{
+					// Click the link after 3 seconds
+					document.getElementById("redirect").click();
+				}}, 3000);
+			</script>
 		}
 	</section>
 }

@@ -30,7 +30,10 @@ func ProfileCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command 
 				app,
 				cmd.HandleCommand,
 				builder.WithPlayer(),
+				builder.WithPlayerCards(),
 				builder.WithPlayerGithubStars(),
+				builder.WithPlayerSelectedCard(),
+				builder.WithPlayerLootBoxes(),
 			))
 			return nil
 		}),
@@ -47,7 +50,6 @@ func (cmd *profileCommand) HandleCommand(e *handler.CommandEvent) error {
 	return e.Respond(
 		discord.InteractionResponseTypeCreateMessage,
 		discord.NewMessageCreateBuilder().
-			SetContentf("Loaded : %+#v", p).
-			SetEphemeral(true),
+			SetEmbeds(cmd.generator(p, e.User())),
 	)
 }

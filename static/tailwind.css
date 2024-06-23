@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    @font-face {
+        font-family: 'Baloo 2';
+        src: url('/cdn/static/fonts/baloo2.ttf') format('truetype');
+    }
+
+    html {
+        font-family: "Baloo 2", system-ui, sans-serif;
+    }
+}
+
+.icon-container {
+    position: relative;
+}
+
+.icon-container svg {
+    position: absolute;
+}
+
+.icon-container .line {
+    stroke-dasharray: 95;
+    stroke-width: 4px;
+    fill: transparent;
+    animation: svgAnimation 6s linear infinite;
+}
+
+@keyframes svgAnimation {
+    from {
+        stroke-dashoffset: 0;
+    }
+
+    to {
+        stroke-dashoffset: 190;
+    }
+}

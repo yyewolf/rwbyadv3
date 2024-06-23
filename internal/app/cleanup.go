@@ -8,9 +8,10 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"github.com/yyewolf/rwbyadv3/models"
+	"go.temporal.io/sdk/workflow"
 )
 
-func (a *App) CleanupJob(params map[string]interface{}) error {
+func (a *App) CleanupJob(ctx workflow.Context) error {
 	logrus.WithField("at", time.Now()).Debug("Starting cleanup job")
 
 	var tables = []string{
@@ -27,6 +28,14 @@ func (a *App) CleanupJob(params map[string]interface{}) error {
 			qm.Where(`deleted_at < NOW() - INTERVAL '30 days'`),
 		}
 		q := models.NewQuery(mods...)
+		queries.SetDelete(q)
+		q.Exec(boil.GetDB())
+
+		mods = []qm.QueryMod{
+			qm.From(`"` + table + `"`),
+			qm.Where(`expires_at < NOW()`),
+		}
+		q = models.NewQuery(mods...)
 		queries.SetDelete(q)
 		q.Exec(boil.GetDB())
 	}
