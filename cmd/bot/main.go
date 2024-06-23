@@ -57,7 +57,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	w := worker.New(temporal, "worker", worker.Options{})
+	w := worker.New(temporal, c.Temporal.TaskQueue, worker.Options{})
 
 	app := app.New(
 		app.WithConfig(c),
