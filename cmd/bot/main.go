@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
 	"os/signal"
@@ -11,6 +12,9 @@ import (
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
 	_ "github.com/amacneil/dbmate/v2/pkg/driver/postgres"
 	_ "github.com/lib/pq"
+	sloglogrus "github.com/samber/slog-logrus/v2"
+	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/worker"
 
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -44,9 +48,21 @@ func main() {
 
 	cards.ParseCards(c.App.CardsLocation)
 
+	// Create the temporal client
+	temporal, err := client.Dial(client.Options{
+		HostPort: fmt.Sprintf("%s:%s", c.Temporal.Host, c.Temporal.Port),
+		Logger:   slog.New(sloglogrus.Option{Logger: logrus.StandardLogger()}.NewLogrusHandler()),
+	})
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	w := worker.New(temporal, "worker", worker.Options{})
+
 	app := app.New(
 		app.WithConfig(c),
 		app.WithWeb(),
+		app.WithTemporal(temporal, w),
 	)
 
 	hooks.RegisterHooks(app)

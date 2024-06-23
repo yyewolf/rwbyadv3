@@ -13,7 +13,7 @@ type A struct{}
 var App A
 
 func (A) SendDM(app interfaces.App, to string, msg discord.MessageCreate) {
-	app.JobHandler().SendEvent(
+	app.EventHandler().SendEvent(
 		jobs.NotifySendDm,
 		uuid.NewString(),
 		map[string]interface{}{
@@ -24,7 +24,7 @@ func (A) SendDM(app interfaces.App, to string, msg discord.MessageCreate) {
 }
 
 func (A) DispatchNewListing(app interfaces.App, listing *models.Listing) {
-	app.JobHandler().SendEvent(
+	app.EventHandler().SendEvent(
 		jobs.EventNewListing,
 		uuid.NewString(),
 		map[string]interface{}{
@@ -34,7 +34,7 @@ func (A) DispatchNewListing(app interfaces.App, listing *models.Listing) {
 }
 
 func (A) DispatchRemoveListing(app interfaces.App, listing *models.Listing) {
-	app.JobHandler().SendEvent(
+	app.EventHandler().SendEvent(
 		jobs.EventRemoveListing,
 		uuid.NewString(),
 		map[string]interface{}{
@@ -44,7 +44,7 @@ func (A) DispatchRemoveListing(app interfaces.App, listing *models.Listing) {
 }
 
 func (A) DispatchNewAuction(app interfaces.App, auction *models.Auction) {
-	app.JobHandler().SendEvent(
+	app.EventHandler().SendEvent(
 		jobs.EventNewAuction,
 		uuid.NewString(),
 		map[string]interface{}{
@@ -54,7 +54,7 @@ func (A) DispatchNewAuction(app interfaces.App, auction *models.Auction) {
 }
 
 func (A) DispatchRemoveAuction(app interfaces.App, auction *models.Auction) {
-	app.JobHandler().SendEvent(
+	app.EventHandler().SendEvent(
 		jobs.EventRemoveAuction,
 		uuid.NewString(),
 		map[string]interface{}{
@@ -64,7 +64,7 @@ func (A) DispatchRemoveAuction(app interfaces.App, auction *models.Auction) {
 }
 
 func (A) DispatchNewBid(app interfaces.App, bid *models.AuctionsBid) {
-	app.JobHandler().SendEvent(
+	app.EventHandler().SendEvent(
 		jobs.EventBidAuction,
 		uuid.NewString(),
 		map[string]interface{}{

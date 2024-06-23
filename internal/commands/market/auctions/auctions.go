@@ -1,12 +1,17 @@
 package auctions
 
 import (
+	"context"
+	"time"
+
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
+	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
-	"github.com/yyewolf/rwbyadv3/internal/jobs"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
+	"github.com/yyewolf/rwbyadv3/models"
+	"go.temporal.io/sdk/client"
 )
 
 const (
@@ -27,7 +32,8 @@ func AuctionsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command
 	var cmd auctionsCommand
 
 	cmd.app = app
-	cmd.app.JobHandler().OnEvent(jobs.JobEndAuction, cmd.AuctionEnd)
+	cmd.ReconcileAuctions()
+	app.Worker().RegisterWorkflow(cmd.AuctionEnd)
 
 	return builder.NewCommand(
 		builder.WithCommandName(commandName),
@@ -107,4 +113,24 @@ func AuctionsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command
 			},
 		}),
 	)
+}
+
+func (cmd *auctionsCommand) ReconcileAuctions() {
+	auctions, _ := models.Auctions(
+		models.AuctionWhere.EndsAt.LT(time.Now()),
+	).AllG(context.Background())
+
+	for i, auction := range auctions {
+		// Trigger workflow
+		workflowOptions := client.StartWorkflowOptions{
+			ID:         "end_auction_" + auction.ID,
+			TaskQueue:  "worker",
+			StartDelay: time.Duration(i) * time.Second,
+		}
+
+		_, err := cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.AuctionEnd, auction.ID)
+		if err != nil {
+			logrus.WithError(err).Error("failed to schedule delayed end auction job")
+		}
+	}
 }

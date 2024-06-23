@@ -24,11 +24,11 @@ type MarketApiHandler struct {
 func RegisterAPIRoutes(app interfaces.App, g *echo.Group) {
 	handler := MarketApiHandler{app: app}
 
-	app.JobHandler().OnEvent(jobs.EventNewListing, handler.OnAddListing)
-	app.JobHandler().OnEvent(jobs.EventRemoveListing, handler.OnRemoveListing)
-	app.JobHandler().OnEvent(jobs.EventNewAuction, handler.OnAddAuction)
-	app.JobHandler().OnEvent(jobs.EventRemoveAuction, handler.OnRemoveAuction)
-	app.JobHandler().OnEvent(jobs.EventBidAuction, handler.OnNewBid)
+	app.EventHandler().OnEvent(jobs.EventNewListing, handler.OnAddListing)
+	app.EventHandler().OnEvent(jobs.EventRemoveListing, handler.OnRemoveListing)
+	app.EventHandler().OnEvent(jobs.EventNewAuction, handler.OnAddAuction)
+	app.EventHandler().OnEvent(jobs.EventRemoveAuction, handler.OnRemoveAuction)
+	app.EventHandler().OnEvent(jobs.EventBidAuction, handler.OnNewBid)
 
 	handler.ReloadListings()
 	handler.ReloadAuctions()
@@ -71,6 +71,7 @@ func (h *MarketApiHandler) ReloadListings() {
 
 func (h *MarketApiHandler) ReloadAuctions() {
 	auctions, _ := models.Auctions(
+		qm.Where(models.AuctionColumns.EndsAt+" > NOW()"),
 		qm.Limit(10),
 		qm.Load(
 			models.AuctionRels.Player,

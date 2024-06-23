@@ -1,10 +1,6 @@
 package jobs
 
 const (
-	JobEndAuction  = "end_auction"
-	JobCleanupDb   = "cleanup_db"
-	JobDelayedPong = "delayed_pong"
-
 	// Web related jobs / notification
 	NotifySendDm = "send_dm"
 

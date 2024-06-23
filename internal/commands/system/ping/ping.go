@@ -1,15 +1,17 @@
 package ping
 
 import (
+	"context"
+	"log"
 	"time"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
 	"github.com/disgoorg/snowflake/v2"
-	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
-	"github.com/yyewolf/rwbyadv3/internal/jobs"
+	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/workflow"
 )
 
 const (
@@ -18,16 +20,15 @@ const (
 )
 
 type pingCommand struct {
-	app        interfaces.App
-	jobHandler interfaces.JobHandler
+	app interfaces.App
+	// jobHandler interfaces.JobHandler
 }
 
 func PingCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 	var cmd pingCommand
 
 	cmd.app = app
-	cmd.jobHandler = app.JobHandler()
-	cmd.jobHandler.OnEvent(jobs.JobDelayedPong, cmd.DelayedPongJob)
+	app.Worker().RegisterWorkflow(cmd.DelayedPongWorkflow)
 
 	return builder.NewCommand(
 		builder.WithCommandName(commandName),
@@ -45,14 +46,30 @@ func PingCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 
 func (cmd *pingCommand) HandleCommand(e *handler.CommandEvent) error {
 	// Create delayed pong in 10 seconds
-	_, err := cmd.jobHandler.ScheduleJob(
-		jobs.JobDelayedPong,
-		e.ID().String(),
-		time.Now().Add(10*time.Second),
-		map[string]interface{}{"user_id": e.User().ID.String()},
-	)
+	workflowOptions := client.StartWorkflowOptions{
+		ID:         "delayed_pong_" + e.ID().String(),
+		TaskQueue:  "worker",
+		StartDelay: 5 * time.Second,
+	}
+
+	_, err := cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.DelayedPongWorkflow, e.User().ID.String())
 	if err != nil {
-		logrus.WithError(err).Error("failed to schedule delayed pong job")
+		log.Fatalln("Unable to execute workflow", err)
+	}
+
+	err = cmd.app.Temporal().TerminateWorkflow(context.Background(), "delayed_pong_"+e.ID().String(), "", "rescheduled")
+	if err != nil {
+		log.Fatalln("Unable to execute workflow", err)
+	}
+	workflowOptions = client.StartWorkflowOptions{
+		ID:         "delayed_pong_" + e.ID().String(),
+		TaskQueue:  "worker",
+		StartDelay: 10 * time.Second,
+	}
+
+	_, err = cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.DelayedPongWorkflow, e.User().ID.String())
+	if err != nil {
+		log.Fatalln("Unable to execute workflow", err)
 	}
 
 	return e.Respond(
@@ -63,18 +80,20 @@ func (cmd *pingCommand) HandleCommand(e *handler.CommandEvent) error {
 	)
 }
 
-func (cmd *pingCommand) DelayedPongJob(params map[string]interface{}) error {
-	// get user id from param "user_id"
-	id := params["user_id"].(string)
+func (cmd *pingCommand) DelayedPongWorkflow(ctx workflow.Context, userID string) (bool, error) {
+	workflow.GetLogger(ctx).Info("delayed pong has been triggered", "StartTime", workflow.Now(ctx))
 
 	c := cmd.app.Client()
 
-	ch, err := c.Rest().CreateDMChannel(snowflake.MustParse(id))
+	ch, err := c.Rest().CreateDMChannel(snowflake.MustParse(userID))
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	_, err = c.Rest().CreateMessage(ch.ID(), discord.NewMessageCreateBuilder().SetContentf("Delayed Pong ! (you used %s)", cmd.app.CommandMention("ping")).Build())
+	if err != nil {
+		return false, err
+	}
 
-	return err
+	return true, nil
 }

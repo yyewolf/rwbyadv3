@@ -9,11 +9,10 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/models"
+	"go.temporal.io/sdk/workflow"
 )
 
-func (cmd *auctionsCommand) AuctionEnd(params map[string]interface{}) error {
-	auctionID := params["auction_id"].(string)
-
+func (cmd *auctionsCommand) AuctionEnd(ctx workflow.Context, auctionID string) (bool, error) {
 	auction, err := models.Auctions(
 		qm.Where(models.AuctionColumns.ID+"=?", auctionID),
 		qm.Load(
@@ -28,18 +27,20 @@ func (cmd *auctionsCommand) AuctionEnd(params map[string]interface{}) error {
 		),
 	).OneG(context.Background())
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Check if the auction has any bids
 	latestBid, found := utils.Auctions.GetLatestBid(auction)
 	if !found {
 		// If no bids, give back to seller
-		return cmd.auctionEndNoBid(auction)
+		err = cmd.auctionEndNoBid(auction)
+		return err == nil, err
 	}
 
 	// If there are bids, give to the highest bidder and give the money back to the other bidders
-	return cmd.auctionEndBidder(auction, latestBid)
+	err = cmd.auctionEndBidder(auction, latestBid)
+	return err == nil, err
 }
 
 func (cmd *auctionsCommand) auctionEndNoBid(auction *models.Auction) error {

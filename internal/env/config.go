@@ -59,6 +59,12 @@ type Config struct {
 		} `envPrefix:"JOBS_"`
 	} `envPrefix:"RBMQ_"`
 
+	// Temporal
+	Temporal struct {
+		Host string `env:"HOST" envDefault:"localhost"`
+		Port string `env:"PORT" envDefault:"7233"`
+	} `envPrefix:"TEMPORAL_"`
+
 	// Web
 	Web struct {
 		Port string `env:"PORT" envDefault:"8080"`

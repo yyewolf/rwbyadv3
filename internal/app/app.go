@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"log/slog"
-	"time"
 
 	"github.com/disgoorg/disgo"
 	"github.com/disgoorg/disgo/bot"
@@ -21,6 +20,8 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/repo"
 	"github.com/yyewolf/rwbyadv3/internal/values"
 	"github.com/yyewolf/rwbyadv3/web"
+	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/worker"
 
 	sloglogrus "github.com/samber/slog-logrus/v2"
 )
@@ -38,7 +39,9 @@ type App struct {
 	github *repo.GithubClient
 
 	// jobs stuff
-	jobHandler interfaces.JobHandler
+	jobHandler     interfaces.JobHandler
+	temporalClient client.Client
+	temporalWorker worker.Worker
 
 	// command mentions
 	commandMentions map[string]string
@@ -92,14 +95,17 @@ func New(options ...Option) interfaces.App {
 		)
 	}
 
-	// Jobs
-	app.jobHandler.OnEvent(jobs.JobCleanupDb, app.CleanupJob)
+	// Events
 	app.jobHandler.OnEvent(jobs.NotifySendDm, app.SendDMJob)
-	app.jobHandler.ScheduleRecurringJob(
-		jobs.JobCleanupDb,
-		time.Date(2024, 1, 1, 1, 1, 0, 0, time.Local),
-		24*time.Hour,
-	)
+
+	// Jobs
+	app.Worker().RegisterWorkflow(app.CleanupJob)
+	workflowOptions := client.StartWorkflowOptions{
+		ID:           "cleanup_db",
+		TaskQueue:    "worker",
+		CronSchedule: "0 0 * * *",
+	}
+	app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, app.CleanupJob)
 
 	return app
 }
@@ -110,13 +116,6 @@ func (a *App) OnReady(_ *events.Ready) {
 	a.ms = commands.RegisterCommands(a)
 
 	a.loadCommandMentions()
-
-	// Begin job handler here
-	go func() {
-		for {
-			a.jobHandler.Start()
-		}
-	}()
 
 	// Set status depending on mode :
 	switch a.config.Mode {
@@ -145,8 +144,16 @@ func (a *App) Github() *repo.GithubClient {
 	return a.github
 }
 
-func (a *App) JobHandler() interfaces.JobHandler {
+func (a *App) EventHandler() interfaces.JobHandler {
 	return a.jobHandler
+}
+
+func (a *App) Temporal() client.Client {
+	return a.temporalClient
+}
+
+func (a *App) Worker() worker.Worker {
+	return a.temporalWorker
 }
 
 func (a *App) CommandMention(c string) string {

@@ -8,9 +8,10 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"github.com/yyewolf/rwbyadv3/models"
+	"go.temporal.io/sdk/workflow"
 )
 
-func (a *App) CleanupJob(params map[string]interface{}) error {
+func (a *App) CleanupJob(ctx workflow.Context) error {
 	logrus.WithField("at", time.Now()).Debug("Starting cleanup job")
 
 	var tables = []string{
