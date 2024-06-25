@@ -75,6 +75,19 @@ func (h *MarketApiHandler) OnNewBid(params map[string]interface{}) error {
 		Event: []byte(fmt.Sprintf("auction_%s_bid", bid.AuctionID)),
 	})
 
+	var found bool
+	for _, l := range h.latestAuctions {
+		if l.ID == bid.AuctionID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil
+	}
+
+	h.ReloadAuctions()
+
 	return nil
 }
 

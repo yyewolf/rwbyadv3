@@ -2,17 +2,91 @@ package auctions
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/yyewolf/rwbyadv3/internal/temporal"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/models"
+	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/workflow"
 )
 
-func (cmd *auctionsCommand) AuctionEnd(ctx workflow.Context, auctionID string) (bool, error) {
+func (cmd *auctionsCommand) AuctionEndWorkflow(ctx workflow.Context, params *temporal.AuctionEndParams) (*temporal.AuctionEndStatus, error) {
+	future := workflow.NewTimer(ctx, params.EndsAt.Sub(workflow.Now(ctx)))
+
+	err := future.Get(ctx, nil)
+	if err != nil {
+		return &temporal.AuctionEndStatus{
+			Status: "error waiting for timer",
+		}, err
+	}
+
+	auction, err := models.Auctions(
+		qm.Where(models.AuctionColumns.ID+"=?", params.AuctionID),
+		qm.Load(
+			models.AuctionRels.AuctionsBids,
+			qm.OrderBy(models.AuctionsBidColumns.Price+" DESC"),
+		),
+		qm.Load(
+			models.AuctionRels.Player,
+		),
+		qm.Load(
+			qm.Rels(models.AuctionRels.Card, models.CardRels.CardsStat),
+		),
+	).OneG(context.Background())
+	if err != nil {
+		return &temporal.AuctionEndStatus{
+			Status: "error querying auction",
+		}, err
+	}
+
+	if auction.EndsAt.After(time.Now()) {
+		// reset current workflow
+		workflowOptions := client.StartWorkflowOptions{
+			ID:        fmt.Sprintf("end_auction_%s_%d", auction.ID, auction.TimeExtensions),
+			TaskQueue: cmd.app.Config().Temporal.TaskQueue,
+		}
+
+		params = &temporal.AuctionEndParams{
+			AuctionID: params.AuctionID,
+			EndsAt:    auction.EndsAt,
+		}
+
+		_, err = cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.AuctionEndWorkflow)
+		if err != nil {
+			return &temporal.AuctionEndStatus{
+				Status: "error restarting workflow",
+			}, err
+		}
+
+		return &temporal.AuctionEndStatus{
+			Ok: true,
+		}, nil
+	}
+
+	activityOptions := workflow.ActivityOptions{
+		StartToCloseTimeout: 5 * time.Second,
+	}
+	ctx = workflow.WithActivityOptions(ctx, activityOptions)
+	var activityResult temporal.AuctionEndStatus
+	err = workflow.ExecuteActivity(ctx, cmd.AuctionEndActivity, params.AuctionID).Get(ctx, &activityResult)
+	if err != nil {
+		return &temporal.AuctionEndStatus{
+			Status: "error executing activity",
+		}, err
+	}
+
+	return &temporal.AuctionEndStatus{
+		Ok: true,
+	}, nil
+}
+
+func (cmd *auctionsCommand) AuctionEndActivity(ctx context.Context, auctionID string) (*temporal.AuctionEndStatus, error) {
 	auction, err := models.Auctions(
 		qm.Where(models.AuctionColumns.ID+"=?", auctionID),
 		qm.Load(
@@ -27,7 +101,9 @@ func (cmd *auctionsCommand) AuctionEnd(ctx workflow.Context, auctionID string) (
 		),
 	).OneG(context.Background())
 	if err != nil {
-		return false, err
+		return &temporal.AuctionEndStatus{
+			Ok: false,
+		}, err
 	}
 
 	// Check if the auction has any bids
@@ -35,12 +111,22 @@ func (cmd *auctionsCommand) AuctionEnd(ctx workflow.Context, auctionID string) (
 	if !found {
 		// If no bids, give back to seller
 		err = cmd.auctionEndNoBid(auction)
-		return err == nil, err
+		return &temporal.AuctionEndStatus{
+			Ok: false,
+		}, err
 	}
 
 	// If there are bids, give to the highest bidder and give the money back to the other bidders
 	err = cmd.auctionEndBidder(auction, latestBid)
-	return err == nil, err
+	if err != nil {
+		return &temporal.AuctionEndStatus{
+			Ok: false,
+		}, err
+	}
+
+	return &temporal.AuctionEndStatus{
+		Ok: true,
+	}, nil
 }
 
 func (cmd *auctionsCommand) auctionEndNoBid(auction *models.Auction) error {

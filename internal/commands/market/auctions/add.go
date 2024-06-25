@@ -2,7 +2,6 @@ package auctions
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -12,28 +11,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
+	"github.com/yyewolf/rwbyadv3/internal/temporal"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/models"
 	"go.temporal.io/sdk/client"
 )
-
-func (cmd *auctionsCommand) RescheduleAuction(params map[string]interface{}) error {
-	var auction = new(models.Auction)
-	b, _ := json.Marshal(params["auction"])
-	json.Unmarshal(b, auction)
-
-	workflowOptions := client.StartWorkflowOptions{
-		ID:         fmt.Sprintf("end_auction_%d_%s", auction.TimeExtensions, auction.ID),
-		TaskQueue:  cmd.app.Config().Temporal.TaskQueue,
-		StartDelay: time.Until(auction.EndsAt),
-	}
-
-	_, err := cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.AuctionEnd, auction.ID)
-	if err != nil {
-		logrus.WithError(err).Error("failed to schedule delayed end auction job")
-	}
-	return err
-}
 
 func (cmd *auctionsCommand) AddAuction(e *handler.CommandEvent) error {
 	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
@@ -98,12 +80,14 @@ func (cmd *auctionsCommand) AddAuction(e *handler.CommandEvent) error {
 
 	// Schedule end
 	workflowOptions := client.StartWorkflowOptions{
-		ID:         fmt.Sprintf("end_auction_%d_%s", auction.TimeExtensions, auction.ID),
-		TaskQueue:  cmd.app.Config().Temporal.TaskQueue,
-		StartDelay: time.Until(auction.EndsAt),
+		ID:        fmt.Sprintf("end_auction_%s", auction.ID),
+		TaskQueue: cmd.app.Config().Temporal.TaskQueue,
 	}
 
-	_, err = cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.AuctionEnd, auction.ID)
+	_, err = cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.AuctionEndWorkflow, &temporal.AuctionEndParams{
+		AuctionID: auction.ID,
+		EndsAt:    auction.EndsAt,
+	})
 	if err != nil {
 		logrus.WithError(err).Error("failed to schedule delayed end auction job")
 		tx.Rollback()

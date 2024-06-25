@@ -10,13 +10,6 @@ import (
 )
 
 func (a *App) Start() {
-	// Begin job handler here
-	go func() {
-		for {
-			a.jobHandler.Start()
-		}
-	}()
-
 	go func() {
 		err := a.client.OpenGateway(context.TODO())
 		if err == nil {
@@ -26,6 +19,18 @@ func (a *App) Start() {
 		select {
 		case a.errorChannel <- err:
 		default:
+		}
+	}()
+
+	// Wait for gateway to be opened
+	for !a.client.Gateway().Status().IsConnected() {
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	// Begin job handler here
+	go func() {
+		for {
+			a.jobHandler.Start()
 		}
 	}()
 
