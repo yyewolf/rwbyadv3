@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
-	"github.com/yyewolf/rwbyadv3/internal/jobs"
+	"github.com/yyewolf/rwbyadv3/internal/temporal"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/models"
 	"go.temporal.io/sdk/client"
@@ -35,8 +35,8 @@ func AuctionsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command
 
 	cmd.app = app
 	cmd.ReconcileAuctions()
-	app.EventHandler().OnEvent(jobs.EventRescheduleAuction, cmd.RescheduleAuction)
-	app.Worker().RegisterWorkflow(cmd.AuctionEnd)
+	app.Worker().RegisterWorkflow(cmd.AuctionEndWorkflow)
+	app.Worker().RegisterActivity(cmd.AuctionEndActivity)
 
 	return builder.NewCommand(
 		builder.WithCommandName(commandName),
@@ -126,12 +126,19 @@ func (cmd *auctionsCommand) ReconcileAuctions() {
 	for i, auction := range auctions {
 		// Trigger workflow
 		workflowOptions := client.StartWorkflowOptions{
-			ID:         fmt.Sprintf("end_auction_%d_%s", auction.TimeExtensions, auction.ID),
+			ID:         fmt.Sprintf("end_auction_%s", auction.ID),
 			TaskQueue:  cmd.app.Config().Temporal.TaskQueue,
 			StartDelay: time.Duration(i) * time.Second,
 		}
 
-		_, err := cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.AuctionEnd, auction.ID)
+		if auction.TimeExtensions > 0 {
+			workflowOptions.ID = fmt.Sprintf("end_auction_%s_%d", auction.ID, auction.TimeExtensions)
+		}
+
+		_, err := cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.AuctionEndWorkflow, &temporal.AuctionEndParams{
+			AuctionID: auction.ID,
+			EndsAt:    auction.EndsAt,
+		})
 		if err != nil {
 			logrus.WithError(err).Error("failed to schedule delayed end auction job")
 		}

@@ -21,7 +21,7 @@ templ Success(text, back, redirectTo string) {
 			<script>
 				setTimeout(() => {{
 					// Click the link after 3 seconds
-					document.getElementById("redirect").click();
+					window.location = document.getElementById("redirect").href;
 				}}, 3000);
 			</script>
 		}

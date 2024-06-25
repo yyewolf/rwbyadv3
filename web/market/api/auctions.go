@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strconv"
 	"time"
@@ -271,14 +270,8 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 		delay = 5
 	}
 
-	reschedule := false
-
 	// Handle time extensions
 	if time.Now().After(auction.EndsAt.Add(-time.Duration(delay) * time.Second)) {
-		reschedule = true
-		// Terminate workflow
-		h.app.Temporal().TerminateWorkflow(context.Background(), fmt.Sprintf("end_auction_%d_%s", auction.TimeExtensions, auction.ID), "", "rescheduled")
-
 		// Calculate new end time
 		auction.TimeExtensions++
 		auction.EndsAt = auction.EndsAt.Add(time.Duration(delay) * time.Second)
@@ -305,7 +298,7 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 		Build(),
 	)
 
-	if latestBid.PlayerID != bidder.ID {
+	if latestBid != nil && latestBid.PlayerID != bidder.ID {
 		utils.App.SendDM(h.app, latestBid.PlayerID, discord.NewMessageCreateBuilder().
 			SetEmbeds(
 				discord.NewEmbedBuilder().
@@ -316,11 +309,6 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 			).
 			Build(),
 		)
-	}
-
-	if reschedule {
-		// Reschedule workflow and update auction
-		utils.App.DispatchRescheduleAuction(h.app, auction)
 	}
 
 	c.Response().Header().Add("HX-Retarget", "#message")

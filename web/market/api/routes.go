@@ -75,6 +75,10 @@ func (h *MarketApiHandler) ReloadListings() {
 func (h *MarketApiHandler) ReloadAuctions() {
 	auctions, _ := models.Auctions(
 		qm.Where(models.AuctionColumns.EndsAt+" > NOW()"),
+		qm.Load(
+			models.AuctionRels.AuctionsBids,
+			qm.OrderBy(models.AuctionsBidColumns.Price+" DESC"),
+		),
 		qm.Limit(10),
 		qm.Load(
 			models.AuctionRels.Player,

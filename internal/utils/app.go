@@ -72,16 +72,6 @@ func (A) DispatchRemoveAuction(app interfaces.App, auction *models.Auction) {
 	)
 }
 
-func (A) DispatchRescheduleAuction(app interfaces.App, auction *models.Auction) {
-	app.EventHandler().SendEvent(
-		jobs.EventRescheduleAuction,
-		uuid.NewString(),
-		map[string]interface{}{
-			"auction": auction,
-		},
-	)
-}
-
 func (A) DispatchNewBid(app interfaces.App, bid *models.AuctionsBid) {
 	app.EventHandler().SendEvent(
 		jobs.EventBidAuction,
