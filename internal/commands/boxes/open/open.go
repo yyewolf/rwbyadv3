@@ -90,6 +90,15 @@ func (cmd *openCommand) HandleInteraction(data discord.ButtonInteractionData, e 
 		)
 	}
 
+	// Check for available slots
+	if utils.Players.AvailableSlots(p) == 0 {
+		return e.CreateMessage(discord.NewMessageCreateBuilder().
+			SetContent("You don't have any available slots in your backpack :(").
+			SetEphemeral(true).
+			Build(),
+		)
+	}
+
 	tx, err := boil.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
@@ -137,7 +146,10 @@ func (cmd *openCommand) HandleInteraction(data discord.ButtonInteractionData, e 
 		}
 	}
 
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 
 	f, embed, _ := utils.Cards.Message(c)
 	embed.Footer = cmd.app.Footer()

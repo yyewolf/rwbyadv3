@@ -106,7 +106,11 @@ func (h *MarketApiHandler) PurchaseListing(c echo.Context) error {
 		return templates.RenderView(c, market.Error("You do not have enough liens to purchase this card."))
 	}
 
-	// TODO: Add max card check
+	// Check for available slots
+	if utils.Players.AvailableSlots(buyer) == 0 {
+		c.Response().Header().Add("HX-Retarget", "#message")
+		return templates.RenderView(c, market.Error("You do not have enough slots in your backpack to purchase this card."))
+	}
 
 	tx, err := boil.BeginTx(context.Background(), nil)
 	if err != nil {
