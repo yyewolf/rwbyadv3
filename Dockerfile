@@ -1,4 +1,4 @@
-FROM node:20.12-alpine AS web-builder
+FROM node:22.3-alpine AS web-builder
 RUN apk add --no-cache make
 WORKDIR /app
 COPY . .
