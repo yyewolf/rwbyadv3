@@ -3,10 +3,19 @@ package utils
 import (
 	"math"
 
+	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/models"
 )
 
-type Player struct{}
+type Player struct {
+	c *env.Config
+}
+
+func init() {
+	Players = Player{
+		c: env.Get(),
+	}
+}
 
 var Players Player
 
@@ -137,4 +146,16 @@ func (Player) GetMarketAuction(p *models.Player, i int) (*models.Card, bool) {
 
 func (Player) AvailableBalance(p *models.Player) int64 {
 	return p.Liens - p.LiensBidded
+}
+
+func (p Player) MaxSlots(player *models.Player) int {
+	return player.BackpackLevel * p.c.App.BackpackSize
+}
+
+func (p Player) UsedSlots(player *models.Player) int {
+	return len(player.R.PlayerCards) + player.SlotsReserved
+}
+
+func (p Player) AvailableSlots(player *models.Player) int {
+	return p.MaxSlots(player) - p.UsedSlots(player)
 }

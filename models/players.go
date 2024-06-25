@@ -36,6 +36,7 @@ type Player struct {
 	BackpackLevel  int         `boil:"backpack_level" json:"backpack_level" toml:"backpack_level" yaml:"backpack_level"`
 	LiensBidded    int64       `boil:"liens_bidded" json:"liens_bidded" toml:"liens_bidded" yaml:"liens_bidded"`
 	Username       string      `boil:"username" json:"username" toml:"username" yaml:"username"`
+	SlotsReserved  int         `boil:"slots_reserved" json:"slots_reserved" toml:"slots_reserved" yaml:"slots_reserved"`
 
 	R *playerR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L playerL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -54,6 +55,7 @@ var PlayerColumns = struct {
 	BackpackLevel  string
 	LiensBidded    string
 	Username       string
+	SlotsReserved  string
 }{
 	ID:             "id",
 	CreatedAt:      "created_at",
@@ -67,6 +69,7 @@ var PlayerColumns = struct {
 	BackpackLevel:  "backpack_level",
 	LiensBidded:    "liens_bidded",
 	Username:       "username",
+	SlotsReserved:  "slots_reserved",
 }
 
 var PlayerTableColumns = struct {
@@ -82,6 +85,7 @@ var PlayerTableColumns = struct {
 	BackpackLevel  string
 	LiensBidded    string
 	Username       string
+	SlotsReserved  string
 }{
 	ID:             "players.id",
 	CreatedAt:      "players.created_at",
@@ -95,6 +99,7 @@ var PlayerTableColumns = struct {
 	BackpackLevel:  "players.backpack_level",
 	LiensBidded:    "players.liens_bidded",
 	Username:       "players.username",
+	SlotsReserved:  "players.slots_reserved",
 }
 
 // Generated where
@@ -112,6 +117,7 @@ var PlayerWhere = struct {
 	BackpackLevel  whereHelperint
 	LiensBidded    whereHelperint64
 	Username       whereHelperstring
+	SlotsReserved  whereHelperint
 }{
 	ID:             whereHelperstring{field: "\"players\".\"id\""},
 	CreatedAt:      whereHelpertime_Time{field: "\"players\".\"created_at\""},
@@ -125,6 +131,7 @@ var PlayerWhere = struct {
 	BackpackLevel:  whereHelperint{field: "\"players\".\"backpack_level\""},
 	LiensBidded:    whereHelperint64{field: "\"players\".\"liens_bidded\""},
 	Username:       whereHelperstring{field: "\"players\".\"username\""},
+	SlotsReserved:  whereHelperint{field: "\"players\".\"slots_reserved\""},
 }
 
 // PlayerRels is where relationship names are stored.
@@ -285,9 +292,9 @@ func (r *playerR) GetPlayerCardsDecks() PlayerCardsDeckSlice {
 type playerL struct{}
 
 var (
-	playerAllColumns            = []string{"id", "created_at", "updated_at", "deleted_at", "selected_card_id", "liens", "level", "xp", "next_level_xp", "backpack_level", "liens_bidded", "username"}
+	playerAllColumns            = []string{"id", "created_at", "updated_at", "deleted_at", "selected_card_id", "liens", "level", "xp", "next_level_xp", "backpack_level", "liens_bidded", "username", "slots_reserved"}
 	playerColumnsWithoutDefault = []string{"id"}
-	playerColumnsWithDefault    = []string{"created_at", "updated_at", "deleted_at", "selected_card_id", "liens", "level", "xp", "next_level_xp", "backpack_level", "liens_bidded", "username"}
+	playerColumnsWithDefault    = []string{"created_at", "updated_at", "deleted_at", "selected_card_id", "liens", "level", "xp", "next_level_xp", "backpack_level", "liens_bidded", "username", "slots_reserved"}
 	playerPrimaryKeyColumns     = []string{"id"}
 	playerGeneratedColumns      = []string{}
 )

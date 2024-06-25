@@ -214,8 +214,6 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 		return templates.RenderView(c, market.Error("You need to bid a bit more..."))
 	}
 
-	// TODO: Add max card check
-
 	tx, err := boil.BeginTx(context.Background(), nil)
 	if err != nil {
 		c.Response().Header().Add("HX-Retarget", "#message")
@@ -240,14 +238,27 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 
 		previousBidder.Liens += latestBid.Price
 		previousBidder.LiensBidded -= latestBid.Price
+		previousBidder.SlotsReserved--
 
-		_, err = previousBidder.Update(context.Background(), tx, boil.Whitelist(models.PlayerColumns.Liens, models.PlayerColumns.LiensBidded))
+		_, err = previousBidder.Update(context.Background(), tx, boil.Whitelist(
+			models.PlayerColumns.Liens,
+			models.PlayerColumns.LiensBidded,
+			models.PlayerColumns.SlotsReserved,
+		))
 		if err != nil {
 			tx.Rollback()
 			c.Response().Header().Add("HX-Retarget", "#message")
 			return templates.RenderView(c, market.Error("An error occured."))
 		}
 	}
+
+	// Check for available slots
+	if utils.Players.AvailableSlots(bidder) == 0 && (latestBid == nil || latestBid.PlayerID != bidder.ID) {
+		c.Response().Header().Add("HX-Retarget", "#message")
+		return templates.RenderView(c, market.Error("You do not have enough slots in your backpack to purchase this card."))
+	}
+
+	bidder.SlotsReserved++
 
 	err = bid.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
@@ -256,7 +267,11 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 		return templates.RenderView(c, market.Error("An error occured."))
 	}
 
-	_, err = bidder.Update(context.Background(), tx, boil.Whitelist(models.PlayerColumns.Liens, models.PlayerColumns.LiensBidded))
+	_, err = bidder.Update(context.Background(), tx, boil.Whitelist(
+		models.PlayerColumns.Liens,
+		models.PlayerColumns.LiensBidded,
+		models.PlayerColumns.SlotsReserved,
+	))
 	if err != nil {
 		tx.Rollback()
 		c.Response().Header().Add("HX-Retarget", "#message")

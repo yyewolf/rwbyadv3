@@ -31,7 +31,6 @@ func PreprodCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command 
 		builder.WithCommandName(commandName),
 		builder.WithDescription(commandDescription),
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
-
 			h.Command("/preprod/lootbox", builder.WithContext(
 				app,
 				cmd.DoLootBox,
@@ -51,6 +50,17 @@ func PreprodCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command 
 				builder.WithPlayer(),
 			))
 
+			h.Command("/preprod/liens", builder.WithContext(
+				app,
+				cmd.SetLiens,
+				builder.WithPlayer(),
+			))
+
+			h.Command("/preprod/backpacks", builder.WithContext(
+				app,
+				cmd.SetLiens,
+				builder.WithPlayer(),
+			))
 			return nil
 		}),
 		builder.WithSlashCommand(discord.SlashCommandCreate{
@@ -82,6 +92,30 @@ func PreprodCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command 
 							Name:        "level",
 							Description: "What level do you want",
 							MinValue:    utils.Optional(0),
+							Required:    true,
+						},
+					},
+				},
+				&discord.ApplicationCommandOptionSubCommand{
+					Name:        "liens",
+					Description: "Set your amount of liens",
+					Options: []discord.ApplicationCommandOption{
+						discord.ApplicationCommandOptionInt{
+							Name:        "liens",
+							Description: "What amount of liens do you want",
+							MinValue:    utils.Optional(0),
+							Required:    true,
+						},
+					},
+				},
+				&discord.ApplicationCommandOptionSubCommand{
+					Name:        "backpacks",
+					Description: "Set your amount of backpacks",
+					Options: []discord.ApplicationCommandOption{
+						discord.ApplicationCommandOptionInt{
+							Name:        "backpacks",
+							Description: "What amount of backpacks do you want",
+							MinValue:    utils.Optional(1),
 							Required:    true,
 						},
 					},
@@ -133,6 +167,40 @@ func (cmd *preprodCommand) SetPlayerLevel(e *handler.CommandEvent) error {
 	p.Level = level
 	p.XP = 0
 	p.NextLevelXP = utils.Players.CalculateNextLevelXP(p)
+
+	p.UpdateG(context.Background(), boil.Infer())
+
+	return e.CreateMessage(
+		discord.NewMessageCreateBuilder().
+			SetContentf("Ok done.").
+			Build(),
+	)
+}
+
+func (cmd *preprodCommand) SetLiens(e *handler.CommandEvent) error {
+	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+
+	liens := e.SlashCommandInteractionData().Int("liens")
+
+	p.Liens = int64(liens)
+	p.XP = 0
+	p.NextLevelXP = utils.Players.CalculateNextLevelXP(p)
+
+	p.UpdateG(context.Background(), boil.Infer())
+
+	return e.CreateMessage(
+		discord.NewMessageCreateBuilder().
+			SetContentf("Ok done.").
+			Build(),
+	)
+}
+
+func (cmd *preprodCommand) SetBackpack(e *handler.CommandEvent) error {
+	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+
+	backpacks := e.SlashCommandInteractionData().Int("backpacks")
+
+	p.BackpackLevel = backpacks
 
 	p.UpdateG(context.Background(), boil.Infer())
 

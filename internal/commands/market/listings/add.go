@@ -7,6 +7,7 @@ import (
 	"github.com/disgoorg/disgo/handler"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
@@ -58,6 +59,21 @@ func (cmd *listingsCommand) AddListing(e *handler.CommandEvent) error {
 
 	card.Available = false
 	utils.Cards.SetLocation(card, "listings")
+
+	// Remove selected card if it was selected
+	if p.SelectedCardID.String == card.ID {
+		p.SelectedCardID = null.NewString("", false)
+		_, err = p.Update(context.Background(), tx, boil.Whitelist(models.PlayerColumns.SelectedCardID))
+		if err != nil {
+			logrus.WithError(err).Error("could not update selected card")
+			tx.Rollback()
+			return e.CreateMessage(discord.NewMessageCreateBuilder().
+				SetContent("Sorry, an error occured.").
+				SetEphemeral(true).
+				Build(),
+			)
+		}
+	}
 
 	_, err = card.Update(context.Background(), tx, boil.Infer())
 	if err != nil {

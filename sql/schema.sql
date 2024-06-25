@@ -272,7 +272,8 @@ CREATE TABLE public.players (
     next_level_xp bigint DEFAULT 20 NOT NULL,
     backpack_level integer DEFAULT 1 NOT NULL,
     liens_bidded bigint DEFAULT 0 NOT NULL,
-    username character varying(50) DEFAULT ''::character varying NOT NULL
+    username character varying(50) DEFAULT ''::character varying NOT NULL,
+    slots_reserved integer DEFAULT 0 NOT NULL
 );
 
 
@@ -616,4 +617,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240507105741'),
     ('20240517132427'),
     ('20240519111300'),
-    ('20240605145413');
+    ('20240605145413'),
+    ('20240625191041');

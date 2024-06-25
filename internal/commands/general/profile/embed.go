@@ -21,7 +21,7 @@ func (cmd *profileCommand) generator(p *models.Player, u discord.User) discord.E
 			fmt.Sprintf("XP : **%d**/**%d**", p.XP, p.NextLevelXP),
 			fmt.Sprintf("Slots : **%d**", p.BackpackLevel),
 			fmt.Sprintf("Boxes : **%d**/**%d**", len(p.R.LootBoxes), p.BackpackLevel),
-			fmt.Sprintf("Liens : **%d**", p.Liens),
+			fmt.Sprintf("Liens : **%d** (**%d** locked)", p.Liens, p.LiensBidded),
 		),
 		true,
 	)
@@ -31,7 +31,7 @@ func (cmd *profileCommand) generator(p *models.Player, u discord.User) discord.E
 	embed.AddField(
 		"Inventory :",
 		utils.Joinln(
-			fmt.Sprintf("Cards : **%d**/**%d**", len(p.R.PlayerCards), p.BackpackLevel),
+			fmt.Sprintf("Cards : **%d**/**%d** (**%d** reserved)", len(p.R.PlayerCards), utils.Players.MaxSlots(p), p.SlotsReserved),
 			fmt.Sprintf("Classic boxes : **%d**", counts[models.LootBoxesTypeClassic]),
 			fmt.Sprintf("Rare boxes : **%d**", counts[models.LootBoxesTypeRare]),
 			fmt.Sprintf("Limited boxes : **%d**", counts[models.LootBoxesTypeLimited]),
