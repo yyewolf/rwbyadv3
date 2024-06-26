@@ -57,7 +57,7 @@ func (cmd *auctionsCommand) AuctionEndWorkflow(ctx workflow.Context, params *tem
 			EndsAt:    auction.EndsAt,
 		}
 
-		_, err = cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.AuctionEndWorkflow)
+		_, err = cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.AuctionEndWorkflow, params)
 		if err != nil {
 			return &temporal.AuctionEndStatus{
 				Status: "error restarting workflow",

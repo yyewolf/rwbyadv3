@@ -57,16 +57,18 @@ func OnMessage(app interfaces.App) func(e *events.MessageCreate) {
 			}
 
 			XP := utils.Cards.GetXPReward(p.R.SelectedCard, 3, false)
-			utils.Cards.GiveXP(p.R.SelectedCard, XP)
+			levelup := utils.Cards.GiveXP(p.R.SelectedCard, XP)
 
-			workflowOptions := client.StartWorkflowOptions{
-				ID:        fmt.Sprintf("card_level_up_%s", e.MessageID),
-				TaskQueue: app.Config().Temporal.TaskQueue,
+			if levelup {
+				workflowOptions := client.StartWorkflowOptions{
+					ID:        fmt.Sprintf("card_level_up_%s", e.MessageID),
+					TaskQueue: app.Config().Temporal.TaskQueue,
+				}
+				app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, notifications.Repository.NotifyCardLevelUpWorkflow, &notifications.CardLevelUpParams{
+					Player: p,
+					Card:   p.R.SelectedCard,
+				})
 			}
-			app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, notifications.Repository.NotifyCardLevelUpWorkflow, &notifications.CardLevelUpParams{
-				Player: p,
-				Card:   p.R.SelectedCard,
-			})
 
 			p.R.SelectedCard.UpdateG(ctx, boil.Infer())
 		})
