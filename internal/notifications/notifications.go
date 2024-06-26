@@ -2,7 +2,6 @@ package notifications
 
 import (
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
-	"github.com/yyewolf/rwbyadv3/internal/jobs"
 )
 
 type NotificationsRepository struct {
@@ -12,8 +11,6 @@ type NotificationsRepository struct {
 var Repository *NotificationsRepository
 
 func NewNotificationsRepository(app interfaces.App) *NotificationsRepository {
-	eventHandler := app.EventHandler()
-
 	n := &NotificationsRepository{
 		app: app,
 	}
@@ -21,10 +18,8 @@ func NewNotificationsRepository(app interfaces.App) *NotificationsRepository {
 	Repository = n
 
 	// Events
-	eventHandler.OnEvent(jobs.NotifySendDm, n.SendDMJob)
-
+	app.Worker().RegisterWorkflow(n.SendDmWorkflow)
 	app.Worker().RegisterWorkflow(n.NotifyCardLevelUpWorkflow)
-	// app.Worker().RegisterActivity(cmd.AuctionEndActivity)
 
 	return n
 }

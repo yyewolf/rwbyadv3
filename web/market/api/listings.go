@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/yyewolf/rwbyadv3/internal/notifications"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/models"
 	"github.com/yyewolf/rwbyadv3/web/templates"
@@ -150,7 +151,7 @@ func (h *MarketApiHandler) PurchaseListing(c echo.Context) error {
 
 	cardDescription := utils.Cards.FullString(listing.R.Card)
 
-	utils.App.SendDM(h.app, buyer.ID, discord.NewMessageCreateBuilder().
+	notifications.DispatchDm(h.app, buyer, discord.NewMessageCreateBuilder().
 		SetEmbeds(
 			discord.NewEmbedBuilder().
 				SetTitle("Listing Purchase").
@@ -160,7 +161,7 @@ func (h *MarketApiHandler) PurchaseListing(c echo.Context) error {
 		).
 		Build(),
 	)
-	utils.App.SendDM(h.app, seller.ID, discord.NewMessageCreateBuilder().
+	notifications.DispatchDm(h.app, seller, discord.NewMessageCreateBuilder().
 		SetEmbeds(
 			discord.NewEmbedBuilder().
 				SetTitle("Listing Purchase").

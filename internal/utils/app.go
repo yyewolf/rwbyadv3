@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"github.com/disgoorg/disgo/discord"
 	"github.com/google/uuid"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/jobs"
@@ -11,17 +10,6 @@ import (
 type app struct{}
 
 var App app
-
-func (app) SendDM(app interfaces.App, to string, msg discord.MessageCreate) {
-	app.EventHandler().SendEvent(
-		jobs.NotifySendDm,
-		uuid.NewString(),
-		map[string]interface{}{
-			"user_id": to,
-			"message": msg,
-		},
-	)
-}
 
 func (app) DispatchNewListing(app interfaces.App, listing *models.Listing) {
 	app.EventHandler().SendEvent(

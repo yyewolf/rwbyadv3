@@ -1,10 +1,6 @@
 package jobs
 
 const (
-	// Web related jobs / notification
-	NotifySendDm      = "send_dm"
-	NotifyCardLevelUp = "card_level_up"
-
 	// Events
 	EventNewListing    = "new_listing"
 	EventRemoveListing = "remove_listing"

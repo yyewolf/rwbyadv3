@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/disgoorg/disgo/events"
@@ -13,7 +12,6 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/rates"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/models"
-	"go.temporal.io/sdk/client"
 	"golang.org/x/time/rate"
 )
 
@@ -60,14 +58,7 @@ func OnMessage(app interfaces.App) func(e *events.MessageCreate) {
 			levelup := utils.Cards.GiveXP(p.R.SelectedCard, XP)
 
 			if levelup {
-				workflowOptions := client.StartWorkflowOptions{
-					ID:        fmt.Sprintf("card_level_up_%s", e.MessageID),
-					TaskQueue: app.Config().Temporal.TaskQueue,
-				}
-				app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, notifications.Repository.NotifyCardLevelUpWorkflow, &notifications.CardLevelUpParams{
-					Player: p,
-					Card:   p.R.SelectedCard,
-				})
+				notifications.DispatchCardLevelUp(app, p, p.R.SelectedCard)
 			}
 
 			p.R.SelectedCard.UpdateG(ctx, boil.Infer())

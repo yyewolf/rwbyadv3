@@ -11,6 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/yyewolf/rwbyadv3/internal/notifications"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/models"
 	"github.com/yyewolf/rwbyadv3/web/templates"
@@ -302,7 +303,7 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 
 	cardDescription := utils.Cards.FullString(auction.R.Card)
 
-	utils.App.SendDM(h.app, bidder.ID, discord.NewMessageCreateBuilder().
+	notifications.DispatchDm(h.app, bidder, discord.NewMessageCreateBuilder().
 		SetEmbeds(
 			discord.NewEmbedBuilder().
 				SetTitle("Auction Bid").
@@ -314,16 +315,19 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 	)
 
 	if latestBid != nil && latestBid.PlayerID != bidder.ID {
-		utils.App.SendDM(h.app, latestBid.PlayerID, discord.NewMessageCreateBuilder().
-			SetEmbeds(
-				discord.NewEmbedBuilder().
-					SetTitle("Auction Outbid").
-					SetColor(h.app.Config().App.BotColor).
-					SetDescriptionf("You have been outbid on `%s` by **%d** Liens.", cardDescription, bidAmount).
-					Build(),
-			).
-			Build(),
-		)
+		latestbidder, err := latestBid.Player().OneG(context.Background())
+		if err == nil {
+			notifications.DispatchDm(h.app, latestbidder, discord.NewMessageCreateBuilder().
+				SetEmbeds(
+					discord.NewEmbedBuilder().
+						SetTitle("Auction Outbid").
+						SetColor(h.app.Config().App.BotColor).
+						SetDescriptionf("You have been outbid on `%s` by **%d** Liens.", cardDescription, bidAmount).
+						Build(),
+				).
+				Build(),
+			)
+		}
 	}
 
 	c.Response().Header().Add("HX-Retarget", "#message")

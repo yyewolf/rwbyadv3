@@ -198,14 +198,20 @@ func (cmd *auctionsCommand) auctionEndBidder(auction *models.Auction, latestBid 
 
 	// Money tranfer
 	bidder.LiensBidded -= latestBid.Price
+	bidder.SlotsReserved--
 	seller.Liens += latestBid.Price
 
 	_, err = bidder.Update(context.Background(), tx, boil.Whitelist(
 		models.PlayerColumns.LiensBidded,
+		models.PlayerColumns.SlotsReserved,
 	))
 	if err != nil {
 		tx.Rollback()
 		return err
+	}
+
+	if seller.ID == bidder.ID {
+		seller = bidder
 	}
 
 	_, err = seller.Update(context.Background(), tx, boil.Whitelist(

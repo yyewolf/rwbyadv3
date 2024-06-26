@@ -1,16 +1,32 @@
 package notifications
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/snowflake/v2"
+	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/models"
+	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/workflow"
 )
 
 type CardLevelUpParams struct {
 	Player *models.Player
 	Card   *models.Card
+}
+
+func DispatchCardLevelUp(app interfaces.App, p *models.Player, c *models.Card) {
+	workflowOptions := client.StartWorkflowOptions{
+		ID:        fmt.Sprintf("card_level_up_%s_%d", c.ID, c.Level),
+		TaskQueue: app.Config().Temporal.TaskQueue,
+	}
+	app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, Repository.NotifyCardLevelUpWorkflow, &CardLevelUpParams{
+		Player: p,
+		Card:   p.R.SelectedCard,
+	})
 }
 
 func (n *NotificationsRepository) NotifyCardLevelUpWorkflow(ctx workflow.Context, params *CardLevelUpParams) error {
