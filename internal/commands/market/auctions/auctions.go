@@ -119,9 +119,7 @@ func AuctionsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command
 }
 
 func (cmd *auctionsCommand) ReconcileAuctions() {
-	auctions, _ := models.Auctions(
-		models.AuctionWhere.EndsAt.LT(time.Now()),
-	).AllG(context.Background())
+	auctions, _ := models.Auctions().AllG(context.Background())
 
 	for i, auction := range auctions {
 		// Trigger workflow
