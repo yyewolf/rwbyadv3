@@ -3,6 +3,8 @@ package utils
 import (
 	"fmt"
 	"math"
+	"math/rand"
+	"net/url"
 	"strings"
 
 	"github.com/disgoorg/disgo/discord"
@@ -116,7 +118,8 @@ func (card Card) Message(c *models.Card) (*discord.File, discord.Embed, *discord
 }
 
 func (card Card) IconURI(c *models.Card) string {
-	return cards.MustGetImageURI(c.CardType, "icon", "webp")
+	uri, _ := url.JoinPath(Players.c.App.BaseURI, cards.MustGetImageURI(c.CardType, "icon", "webp"))
+	return uri
 }
 
 type CardMetadata struct {
@@ -138,4 +141,37 @@ func (card Card) GetMeta(c *models.Card) *CardMetadata {
 
 func (card Card) SaveMeta(c *models.Card, meta *CardMetadata) {
 	c.Metadata.Marshal(&meta)
+}
+
+// Leveling
+func (card Card) GetNextLevelXP(c *models.Card) int64 {
+	return int64(50*c.Level*c.Level + 100)
+}
+
+func (card Card) GetXPReward(c *models.Card, multiplier int, boost bool) int64 {
+	if c.Level >= 500 {
+		return 0
+	}
+	rint := multiplier * (c.Level)
+	add := int64(float64((rand.Intn(26+rint))+15) * (math.Pow(float64(c.Level), 0.72) + 1))
+	if boost {
+		rint = int(math.Floor(((3.0 / 2.0) * float64(multiplier)) * float64(c.Level)))
+		add = int64(float64((rand.Intn(33+rint))+25) * (math.Pow(float64(c.Level), 0.84) + 1))
+	}
+	return add
+}
+
+func (card Card) GiveXP(c *models.Card, XP int64) (levelUp bool) {
+	for c.XP+XP > c.NextLevelXP {
+		levelUp = true
+		//if level up
+		XP -= c.NextLevelXP - c.XP
+		c.Level++
+		c.XP = 0
+		c.NextLevelXP = card.GetNextLevelXP(c)
+		card.GenerateStats(c)
+	}
+	c.XP += XP
+	c.NextLevelXP = card.GetNextLevelXP(c)
+	return levelUp
 }

@@ -30,8 +30,8 @@ type Card struct {
 	CreatedAt       time.Time  `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt       time.Time  `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 	DeletedAt       null.Time  `boil:"deleted_at" json:"deleted_at,omitempty" toml:"deleted_at" yaml:"deleted_at,omitempty"`
-	XP              int        `boil:"xp" json:"xp" toml:"xp" yaml:"xp"`
-	NextLevelXP     int        `boil:"next_level_xp" json:"next_level_xp" toml:"next_level_xp" yaml:"next_level_xp"`
+	XP              int64      `boil:"xp" json:"xp" toml:"xp" yaml:"xp"`
+	NextLevelXP     int64      `boil:"next_level_xp" json:"next_level_xp" toml:"next_level_xp" yaml:"next_level_xp"`
 	CardType        string     `boil:"card_type" json:"card_type" toml:"card_type" yaml:"card_type"`
 	IndividualValue float64    `boil:"individual_value" json:"individual_value" toml:"individual_value" yaml:"individual_value"`
 	Rarity          int        `boil:"rarity" json:"rarity" toml:"rarity" yaml:"rarity"`
@@ -180,8 +180,8 @@ var CardWhere = struct {
 	CreatedAt       whereHelpertime_Time
 	UpdatedAt       whereHelpertime_Time
 	DeletedAt       whereHelpernull_Time
-	XP              whereHelperint
-	NextLevelXP     whereHelperint
+	XP              whereHelperint64
+	NextLevelXP     whereHelperint64
 	CardType        whereHelperstring
 	IndividualValue whereHelperfloat64
 	Rarity          whereHelperint
@@ -196,8 +196,8 @@ var CardWhere = struct {
 	CreatedAt:       whereHelpertime_Time{field: "\"cards\".\"created_at\""},
 	UpdatedAt:       whereHelpertime_Time{field: "\"cards\".\"updated_at\""},
 	DeletedAt:       whereHelpernull_Time{field: "\"cards\".\"deleted_at\""},
-	XP:              whereHelperint{field: "\"cards\".\"xp\""},
-	NextLevelXP:     whereHelperint{field: "\"cards\".\"next_level_xp\""},
+	XP:              whereHelperint64{field: "\"cards\".\"xp\""},
+	NextLevelXP:     whereHelperint64{field: "\"cards\".\"next_level_xp\""},
 	CardType:        whereHelperstring{field: "\"cards\".\"card_type\""},
 	IndividualValue: whereHelperfloat64{field: "\"cards\".\"individual_value\""},
 	Rarity:          whereHelperint{field: "\"cards\".\"rarity\""},

@@ -22,11 +22,26 @@ func (a *App) Start() {
 		}
 	}()
 
-	// Wait for gateway to be opened
-	for !a.client.Gateway().Status().IsConnected() {
-		time.Sleep(100 * time.Millisecond)
+	select {
+	case <-a.shutdown:
+		if a.client != nil {
+			a.client.Close(context.TODO())
+		}
+		if a.enableWeb && a.webApp != nil {
+			a.webApp.Stop()
+		}
+
+		a.temporalWorker.Stop()
+		a.temporalClient.Close()
+		a.jobHandler.Shutdown()
+	case err := <-a.errorChannel:
+		logrus.WithField("error", err).Error("An error stopped execution")
 	}
 
+	time.Sleep(2 * time.Second)
+}
+
+func (a *App) StartLater() {
 	// Begin job handler here
 	go func() {
 		for {
@@ -59,24 +74,6 @@ func (a *App) Start() {
 			}
 		}()
 	}
-
-	select {
-	case <-a.shutdown:
-		if a.client != nil {
-			a.client.Close(context.TODO())
-		}
-		if a.enableWeb && a.webApp != nil {
-			a.webApp.Stop()
-		}
-
-		a.temporalWorker.Stop()
-		a.temporalClient.Close()
-		a.jobHandler.Shutdown()
-	case err := <-a.errorChannel:
-		logrus.WithField("error", err).Error("An error stopped execution")
-	}
-
-	time.Sleep(2 * time.Second)
 }
 
 func (a *App) Shutdown() error {

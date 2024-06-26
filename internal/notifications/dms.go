@@ -1,4 +1,4 @@
-package app
+package notifications
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"github.com/disgoorg/snowflake/v2"
 )
 
-func (app *App) SendDMJob(params map[string]interface{}) error {
+func (n *NotificationsRepository) SendDMJob(params map[string]interface{}) error {
 	// get user id from param "user_id"
 	id := params["user_id"].(string)
 
@@ -15,7 +15,7 @@ func (app *App) SendDMJob(params map[string]interface{}) error {
 	b, _ := json.Marshal(params["message"])
 	json.Unmarshal(b, &message)
 
-	c := app.Client()
+	c := n.app.Client()
 
 	ch, err := c.Rest().CreateDMChannel(snowflake.MustParse(id))
 	if err != nil {
