@@ -76,6 +76,7 @@ type Config struct {
 		CardsLocation string `env:"CARDS_LOCATION" envDefault:"/cards/yml"`
 		BotColor      int    `env:"BOT_COLOR" envDefault:"3859607"`
 		BackpackSize  int    `env:"BACKPACK_SIZE" envDefault:"20"`
+		BaseURI       string `env:"BASE_URI" envDefault:""`
 	} `envPrefix:"APP_"`
 }
 

@@ -8,11 +8,11 @@ import (
 	"github.com/yyewolf/rwbyadv3/models"
 )
 
-type A struct{}
+type app struct{}
 
-var App A
+var App app
 
-func (A) SendDM(app interfaces.App, to string, msg discord.MessageCreate) {
+func (app) SendDM(app interfaces.App, to string, msg discord.MessageCreate) {
 	app.EventHandler().SendEvent(
 		jobs.NotifySendDm,
 		uuid.NewString(),
@@ -23,7 +23,7 @@ func (A) SendDM(app interfaces.App, to string, msg discord.MessageCreate) {
 	)
 }
 
-func (A) DispatchNewListing(app interfaces.App, listing *models.Listing) {
+func (app) DispatchNewListing(app interfaces.App, listing *models.Listing) {
 	app.EventHandler().SendEvent(
 		jobs.EventNewListing,
 		uuid.NewString(),
@@ -33,7 +33,7 @@ func (A) DispatchNewListing(app interfaces.App, listing *models.Listing) {
 	)
 }
 
-func (A) DispatchRemoveListing(app interfaces.App, listing *models.Listing) {
+func (app) DispatchRemoveListing(app interfaces.App, listing *models.Listing) {
 	app.EventHandler().SendEvent(
 		jobs.EventRemoveListing,
 		uuid.NewString(),
@@ -43,7 +43,7 @@ func (A) DispatchRemoveListing(app interfaces.App, listing *models.Listing) {
 	)
 }
 
-func (A) DispatchNewAuction(app interfaces.App, auction *models.Auction) {
+func (app) DispatchNewAuction(app interfaces.App, auction *models.Auction) {
 	app.EventHandler().SendEvent(
 		jobs.EventNewAuction,
 		uuid.NewString(),
@@ -52,7 +52,7 @@ func (A) DispatchNewAuction(app interfaces.App, auction *models.Auction) {
 		},
 	)
 }
-func (A) DispatchUpdateAuction(app interfaces.App, auction *models.Auction) {
+func (app) DispatchUpdateAuction(app interfaces.App, auction *models.Auction) {
 	app.EventHandler().SendEvent(
 		jobs.EventUpdateAuction,
 		uuid.NewString(),
@@ -62,7 +62,7 @@ func (A) DispatchUpdateAuction(app interfaces.App, auction *models.Auction) {
 	)
 }
 
-func (A) DispatchRemoveAuction(app interfaces.App, auction *models.Auction) {
+func (app) DispatchRemoveAuction(app interfaces.App, auction *models.Auction) {
 	app.EventHandler().SendEvent(
 		jobs.EventRemoveAuction,
 		uuid.NewString(),
@@ -72,7 +72,7 @@ func (A) DispatchRemoveAuction(app interfaces.App, auction *models.Auction) {
 	)
 }
 
-func (A) DispatchNewBid(app interfaces.App, bid *models.AuctionsBid) {
+func (app) DispatchNewBid(app interfaces.App, bid *models.AuctionsBid) {
 	app.EventHandler().SendEvent(
 		jobs.EventBidAuction,
 		uuid.NewString(),

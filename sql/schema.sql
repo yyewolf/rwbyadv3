@@ -128,8 +128,8 @@ CREATE TABLE public.cards (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     deleted_at timestamp with time zone,
-    xp integer DEFAULT 0 NOT NULL,
-    next_level_xp integer NOT NULL,
+    xp bigint DEFAULT 0 NOT NULL,
+    next_level_xp bigint NOT NULL,
     card_type character varying(50) NOT NULL,
     individual_value double precision NOT NULL,
     rarity integer NOT NULL,
@@ -618,4 +618,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240517132427'),
     ('20240519111300'),
     ('20240605145413'),
-    ('20240625191041');
+    ('20240625191041'),
+    ('20240626084657');

@@ -17,6 +17,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/jobs"
+	"github.com/yyewolf/rwbyadv3/internal/notifications"
 	"github.com/yyewolf/rwbyadv3/internal/repo"
 	"github.com/yyewolf/rwbyadv3/internal/values"
 	"github.com/yyewolf/rwbyadv3/web"
@@ -95,9 +96,6 @@ func New(options ...Option) interfaces.App {
 		)
 	}
 
-	// Events
-	app.jobHandler.OnEvent(jobs.NotifySendDm, app.SendDMJob)
-
 	// Jobs
 	app.Worker().RegisterWorkflow(app.CleanupJob)
 	workflowOptions := client.StartWorkflowOptions{
@@ -110,21 +108,25 @@ func New(options ...Option) interfaces.App {
 	return app
 }
 
-func (a *App) OnReady(_ *events.Ready) {
+func (app *App) OnReady(_ *events.Ready) {
 	logrus.Info("Bot is ready, registering commands...")
 
-	a.ms = commands.RegisterCommands(a)
+	app.ms = commands.RegisterCommands(app)
 
-	a.loadCommandMentions()
+	app.loadCommandMentions()
+
+	notifications.NewNotificationsRepository(app)
+
+	app.StartLater()
 
 	// Set status depending on mode :
-	switch a.config.Mode {
+	switch app.config.Mode {
 	case values.Dev:
-		a.client.SetPresence(context.TODO(), gateway.WithPlayingActivity("/help for help - dev"))
+		app.client.SetPresence(context.TODO(), gateway.WithPlayingActivity("/help for help - dev"))
 	case values.Preprod:
-		a.client.SetPresence(context.TODO(), gateway.WithPlayingActivity("/help for help - preprod"))
+		app.client.SetPresence(context.TODO(), gateway.WithPlayingActivity("/help for help - preprod"))
 	case values.Prod:
-		a.client.SetPresence(context.TODO(), gateway.WithPlayingActivity("/help for help"))
+		app.client.SetPresence(context.TODO(), gateway.WithPlayingActivity("/help for help"))
 	}
 }
 
