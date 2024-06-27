@@ -17,6 +17,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
+	"github.com/yyewolf/rwbyadv3/internal/values"
 	"github.com/yyewolf/rwbyadv3/models"
 	"github.com/yyewolf/rwbyadv3/web/templates"
 	"github.com/yyewolf/rwbyadv3/web/templates/errors"
@@ -206,8 +207,7 @@ func (h *DiscordAuthHandler) CallbackLogin(state *models.AuthDiscordState, token
 			return ErrorPage(c, http.StatusInternalServerError)
 		}
 
-		// Set the cookie
-		c.SetCookie(&http.Cookie{
+		cookie := &http.Cookie{
 			Name:     "session",
 			Value:    sessionID,
 			MaxAge:   7 * 24 * 60 * 60,
@@ -215,7 +215,15 @@ func (h *DiscordAuthHandler) CallbackLogin(state *models.AuthDiscordState, token
 			Secure:   true,
 			HttpOnly: true,
 			SameSite: http.SameSiteStrictMode,
-		})
+		}
+
+		// not secure on preprod
+		if h.app.Config().Mode == values.Dev {
+			cookie.Secure = false
+		}
+
+		// Set the cookie
+		c.SetCookie(cookie)
 
 		return SuccessPageRedirect(c, "Successfully logged in, you should be redirected in a few seconds...", state.RedirectURI)
 	}

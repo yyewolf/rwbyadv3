@@ -2,6 +2,7 @@ package utils
 
 import (
 	"math"
+	"math/rand"
 
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/models"
@@ -18,25 +19,6 @@ func init() {
 }
 
 var Players Player
-
-func (Player) CalculateNextLevelXP(p *models.Player) int64 {
-	return int64(10*int(math.Pow(float64(p.Level), 1.8)) + 20)
-}
-
-func (c Player) GiveXP(p *models.Player, given int64) (levelUp bool) {
-	for p.XP+given >= p.NextLevelXP {
-		levelUp = true
-
-		// When leveling up, reiter giving but with lower amount
-		given -= p.NextLevelXP - p.XP
-		p.Level++
-		p.XP = 0
-		p.NextLevelXP = c.CalculateNextLevelXP(p)
-	}
-	p.XP += given
-	p.NextLevelXP = c.CalculateNextLevelXP(p)
-	return levelUp
-}
 
 // Replace with iterator with go1.23
 func (Player) AvailableCards(p *models.Player) []*models.Card {
@@ -158,4 +140,33 @@ func (p Player) UsedSlots(player *models.Player) int {
 
 func (p Player) AvailableSlots(player *models.Player) int {
 	return p.MaxSlots(player) - p.UsedSlots(player)
+}
+
+// Leveling
+func (Player) GetNextLevelXP(p *models.Player) int64 {
+	return int64(10*int(math.Pow(float64(p.Level), 1.8)) + 20)
+}
+
+func (Player) GetXPReward(p *models.Player, difficulty float64, boost bool) int64 {
+	rint := int(5*difficulty*math.Pow(float64(p.Level), 1.48)) + 10
+	add := difficulty*float64(rand.Intn(rint)) + 5 + math.Pow(float64(p.Level), 1.45)
+	if boost {
+		rint = int(((3 / 2) * difficulty) * float64(p.Level))
+		add = float64((rand.Intn(33+rint))+25) * (math.Pow(float64(p.Level), 0.84) + 1)
+	}
+	return int64(add)
+}
+
+func (pl Player) GiveXP(p *models.Player, XP int64) (levelUp bool) {
+	for p.XP+XP > p.NextLevelXP {
+		levelUp = true
+		//if level up
+		XP -= p.NextLevelXP - p.XP
+		p.Level++
+		p.XP = 0
+		p.NextLevelXP = pl.GetNextLevelXP(p)
+	}
+	p.XP += XP
+	p.NextLevelXP = pl.GetNextLevelXP(p)
+	return levelUp
 }

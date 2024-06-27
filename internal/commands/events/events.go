@@ -55,13 +55,19 @@ func OnMessage(app interfaces.App) func(e *events.MessageCreate) {
 			}
 
 			XP := utils.Cards.GetXPReward(p.R.SelectedCard, 3, false)
-			levelup := utils.Cards.GiveXP(p.R.SelectedCard, XP)
-
-			if levelup {
+			cardLevelUp := utils.Cards.GiveXP(p.R.SelectedCard, XP)
+			if cardLevelUp {
 				notifications.DispatchCardLevelUp(app, p, p.R.SelectedCard)
 			}
 
+			levelBefore := p.Level
+			playerLevelUp := utils.Players.GiveXP(p, 1)
+			if playerLevelUp {
+				notifications.DispatchPlayerLevelUp(app, p, levelBefore)
+			}
+
 			p.R.SelectedCard.UpdateG(ctx, boil.Infer())
+			p.UpdateG(ctx, boil.Infer())
 		})
 	}
 }

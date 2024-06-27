@@ -166,7 +166,7 @@ func (cmd *preprodCommand) SetPlayerLevel(e *handler.CommandEvent) error {
 
 	p.Level = level
 	p.XP = 0
-	p.NextLevelXP = utils.Players.CalculateNextLevelXP(p)
+	p.NextLevelXP = utils.Players.GetNextLevelXP(p)
 
 	p.UpdateG(context.Background(), boil.Infer())
 
@@ -184,7 +184,7 @@ func (cmd *preprodCommand) SetLiens(e *handler.CommandEvent) error {
 
 	p.Liens = int64(liens)
 	p.XP = 0
-	p.NextLevelXP = utils.Players.CalculateNextLevelXP(p)
+	p.NextLevelXP = utils.Players.GetNextLevelXP(p)
 
 	p.UpdateG(context.Background(), boil.Infer())
 
