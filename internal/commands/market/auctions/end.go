@@ -199,7 +199,6 @@ func (cmd *auctionsCommand) auctionEndBidder(auction *models.Auction, latestBid 
 	// Money tranfer
 	bidder.LiensBidded -= latestBid.Price
 	bidder.SlotsReserved--
-	seller.Liens += latestBid.Price
 
 	_, err = bidder.Update(context.Background(), tx, boil.Whitelist(
 		models.PlayerColumns.LiensBidded,
@@ -213,6 +212,7 @@ func (cmd *auctionsCommand) auctionEndBidder(auction *models.Auction, latestBid 
 	if seller.ID == bidder.ID {
 		seller = bidder
 	}
+	seller.Liens += latestBid.Price
 
 	_, err = seller.Update(context.Background(), tx, boil.Whitelist(
 		models.PlayerColumns.Liens,

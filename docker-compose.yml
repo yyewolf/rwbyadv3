@@ -26,6 +26,7 @@ services:
   rabbitmq:
     image: heidiks/rabbitmq-delayed-message-exchange:3.13.0-management
     container_name: rabbitmq
+    restart: unless-stopped
     ports:
         - 5672:5672
         - 15672:15672
@@ -57,6 +58,7 @@ services:
       
   temporal:
     container_name: temporal
+    restart: unless-stopped
     depends_on:
       - postgresql
     environment:
@@ -74,6 +76,7 @@ services:
 
   temporal-admin-tools:
     container_name: temporal-admin-tools
+    restart: unless-stopped
     depends_on:
       - temporal
     environment:
@@ -91,6 +94,7 @@ services:
 
   temporal-ui:
     container_name: temporal-ui
+    restart: unless-stopped
     depends_on:
       - temporal
     environment:
