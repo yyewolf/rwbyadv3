@@ -1,6 +1,8 @@
 package rwbyadv3
 
-import "embed"
+import (
+	"embed"
+)
 
 //go:embed cards/img/*
 var cardFS embed.FS
@@ -16,7 +18,7 @@ func GetStaticFS() embed.FS {
 	return staticFS
 }
 
-//go:embed dungeons
+//go:embed dungeons/dist/*
 var dungeonFS embed.FS
 
 func GetDungeonFS() embed.FS {

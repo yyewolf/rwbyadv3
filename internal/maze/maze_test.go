@@ -52,3 +52,21 @@ func TestGen(t *testing.T) {
 
 	DrawMaze(g)
 }
+
+func TestExpand(t *testing.T) {
+	g := DefaultMaze(10, 10)
+	g.Generate()
+	expand := g.Expand(2)
+	DrawMaze(g)
+
+	for _, row := range expand {
+		for _, v := range row {
+			if v == 0 {
+				fmt.Print("  ")
+			} else {
+				fmt.Print("██")
+			}
+		}
+		fmt.Println()
+	}
+}
