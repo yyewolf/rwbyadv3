@@ -8,6 +8,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/web/auth"
 	"github.com/yyewolf/rwbyadv3/web/cdn"
+	"github.com/yyewolf/rwbyadv3/web/dungeons"
 	"github.com/yyewolf/rwbyadv3/web/market"
 	"github.com/yyewolf/rwbyadv3/web/metrics"
 )
@@ -42,6 +43,10 @@ func (w *WebApp) RegisterRoutes() {
 	// Also redirect from /market to /market/
 	w.GET("/market", RedirectTo("/market/"))
 	market.NewMarketHandler(w.app, w.Group("/market"))
+
+	// Also redirect from /dungeons to /dungeons/
+	w.GET("/dungeons", RedirectTo("/dungeons/"))
+	dungeons.NewDungeonsHandler(w.app, w.Group("/dungeons"))
 
 	cdn.NewCDNHandler(w.app, w.Group("/cdn"))
 }

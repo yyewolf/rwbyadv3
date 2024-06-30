@@ -15,3 +15,10 @@ var staticFS embed.FS
 func GetStaticFS() embed.FS {
 	return staticFS
 }
+
+//go:embed dungeons
+var dungeonFS embed.FS
+
+func GetDungeonFS() embed.FS {
+	return dungeonFS
+}
