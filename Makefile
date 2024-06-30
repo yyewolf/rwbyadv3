@@ -16,6 +16,9 @@ assets:
 	@echo "\033[0;31mBuilding fonts...\033[0m"
 	cp -r static/fonts static/dist/fonts
 
+build_dungeon:
+	cd dungeons && npm run build
+
 generate:
 	$(MAKE) assets
 	go generate
