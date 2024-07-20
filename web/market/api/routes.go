@@ -45,16 +45,16 @@ func RegisterAPIRoutes(app interfaces.App, g *echo.Group) {
 	// Listings routes
 	g.GET("/listings", handler.GetListings)
 	// g.GET("/listings/:listingId", echo.WrapHandler(templ.Handler(market.Main()))) Not required, maybe later :D
-	g.POST("/listings/:listingId", handler.PurchaseListing, auth.DiscordHandler.RequireAuth(discord.WithRedirect("market")))
-	g.GET("/listings/:listingId/modal", handler.GetListingModal, auth.DiscordHandler.RequireAuth(discord.WithRedirect("market")))
+	g.POST("/listings/:listingId", handler.PurchaseListing, auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectMarket)))
+	g.GET("/listings/:listingId/modal", handler.GetListingModal, auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectMarket)))
 
 	// Auctions routes
 	g.GET("/auctions", handler.GetAuctions)
 	g.GET("/auctions/:auctionId", handler.GetAuction)
 	g.GET("/auctions/:auctionId/price", handler.GetAuctionPrice)
 	g.GET("/auctions/:auctionId/timer", handler.GetAuctionTimeleft)
-	g.POST("/auctions/:auctionId", handler.BidOnAuction, auth.DiscordHandler.RequireAuth(discord.WithRedirect("market")))
-	g.GET("/auctions/:auctionId/modal", handler.GetAuctionModal, auth.DiscordHandler.RequireAuth(discord.WithRedirect("market")))
+	g.POST("/auctions/:auctionId", handler.BidOnAuction, auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectMarket)))
+	g.GET("/auctions/:auctionId/modal", handler.GetAuctionModal, auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectMarket)))
 }
 
 func (h *MarketApiHandler) ReloadListings() {

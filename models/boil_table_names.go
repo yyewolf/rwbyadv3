@@ -11,6 +11,7 @@ var TableNames = struct {
 	AuthGithubStates    string
 	Cards               string
 	CardsStats          string
+	Dungeons            string
 	GithubStars         string
 	Jobs                string
 	Listings            string
@@ -18,6 +19,7 @@ var TableNames = struct {
 	PlayerCardFavorites string
 	PlayerCards         string
 	PlayerCardsDeck     string
+	PlayerLimits        string
 	Players             string
 }{
 	Auctions:            "auctions",
@@ -27,6 +29,7 @@ var TableNames = struct {
 	AuthGithubStates:    "auth_github_states",
 	Cards:               "cards",
 	CardsStats:          "cards_stats",
+	Dungeons:            "dungeons",
 	GithubStars:         "github_stars",
 	Jobs:                "jobs",
 	Listings:            "listings",
@@ -34,5 +37,6 @@ var TableNames = struct {
 	PlayerCardFavorites: "player_card_favorites",
 	PlayerCards:         "player_cards",
 	PlayerCardsDeck:     "player_cards_deck",
+	PlayerLimits:        "player_limits",
 	Players:             "players",
 }

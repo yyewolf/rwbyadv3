@@ -1,0 +1,30 @@
+package dungeons
+
+templ View(dungeonId string) {
+    <head>
+    <title>RWBY Adventures' Dungeons</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <style>
+        body {
+        overflow-y: scroll;
+        margin: 0;
+        width: 100%;
+        position: fixed;
+        }
+    </style>
+    <script src="/cdn/static/htmx.min.js" defer></script>
+    <script src="/cdn/static/htmx-ext-sse.js" defer></script>
+    <script src="/cdn/static/alpinejs.min.js" defer></script>
+    <script src="/cdn/static/_hyperscript.min.js" defer></script>
+    <input type="hidden" id="dungeonId" value={ dungeonId }>
+    <script>
+        const dungeonId = document.getElementById('dungeonId').value;
+    </script>
+
+    </head>
+
+    <body>
+        <script src="static/app.js"></script>
+    </body>
+
+}

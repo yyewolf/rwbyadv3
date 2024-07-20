@@ -98,12 +98,21 @@ func New(options ...Option) interfaces.App {
 
 	// Jobs
 	app.Worker().RegisterWorkflow(app.CleanupJob)
+	app.Worker().RegisterWorkflow(app.RestoreLimits)
+
 	workflowOptions := client.StartWorkflowOptions{
 		ID:           "cleanup_db",
 		TaskQueue:    app.config.Temporal.TaskQueue,
 		CronSchedule: "0 0 * * *",
 	}
 	app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, app.CleanupJob)
+
+	workflowOptions = client.StartWorkflowOptions{
+		ID:           "restore_limits",
+		TaskQueue:    app.config.Temporal.TaskQueue,
+		CronSchedule: "*/10 * * * *",
+	}
+	app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, app.RestoreLimits)
 
 	return app
 }

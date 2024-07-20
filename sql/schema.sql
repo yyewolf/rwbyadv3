@@ -159,6 +159,20 @@ CREATE TABLE public.cards_stats (
 
 
 --
+-- Name: dungeons; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.dungeons (
+    id character varying(50) NOT NULL,
+    player_id character varying(50) NOT NULL,
+    seed bigint NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone
+);
+
+
+--
 -- Name: github_stars; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -257,6 +271,20 @@ CREATE TABLE public.player_cards_deck (
 
 
 --
+-- Name: player_limits; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.player_limits (
+    player_id character varying(50) NOT NULL,
+    dungeons_left integer DEFAULT 3 NOT NULL,
+    dungeons_reset_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone
+);
+
+
+--
 -- Name: players; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -343,6 +371,14 @@ ALTER TABLE ONLY public.cards_stats
 
 
 --
+-- Name: dungeons dungeons_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dungeons
+    ADD CONSTRAINT dungeons_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: github_stars github_stars_github_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -404,6 +440,14 @@ ALTER TABLE ONLY public.player_cards_deck
 
 ALTER TABLE ONLY public.player_cards
     ADD CONSTRAINT player_cards_pkey PRIMARY KEY (player_id, card_id);
+
+
+--
+-- Name: player_limits player_limits_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.player_limits
+    ADD CONSTRAINT player_limits_pkey PRIMARY KEY (player_id);
 
 
 --
@@ -495,6 +539,14 @@ ALTER TABLE ONLY public.cards_stats
 
 
 --
+-- Name: dungeons dungeons_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dungeons
+    ADD CONSTRAINT dungeons_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+
+
+--
 -- Name: cards fk_cards_stats; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -515,6 +567,14 @@ ALTER TABLE ONLY public.players
 --
 
 ALTER TABLE ONLY public.github_stars
+    ADD CONSTRAINT fk_player_id FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: player_limits fk_player_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.player_limits
     ADD CONSTRAINT fk_player_id FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
 
 
@@ -619,4 +679,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240519111300'),
     ('20240605145413'),
     ('20240625191041'),
-    ('20240626084657');
+    ('20240626084657'),
+    ('20240706095548');

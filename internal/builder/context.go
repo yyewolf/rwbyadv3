@@ -11,6 +11,7 @@ import (
 	"github.com/disgoorg/disgo/handler"
 	"github.com/disgoorg/disgo/rest"
 	"github.com/disgoorg/snowflake/v2"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
@@ -20,8 +21,9 @@ import (
 type ContextKey string
 
 var (
-	PlayerKey ContextKey = "player"
-	ErrorKey  ContextKey
+	PlayerKey    ContextKey = "player"
+	ErrorKey     ContextKey = "error"
+	ContextIdKey ContextKey = "context_id"
 )
 
 type Event interface {
@@ -38,6 +40,8 @@ type ContextBuilder struct {
 	withPlayerCards        bool
 	withPlayerLootBoxes    bool
 	withPlayerSelectedCard bool
+	withPlayerLimits       bool
+	withDungeons           bool
 }
 
 type ContextOption func(a *ContextBuilder)
@@ -69,6 +73,14 @@ func FillPlayerContext(cb *ContextBuilder, userID snowflake.ID, ctx context.Cont
 		mods = append(mods, qm.Load(models.PlayerRels.SelectedCard))
 	}
 
+	if cb.withPlayerLimits {
+		mods = append(mods, qm.Load(models.PlayerRels.PlayerLimit))
+	}
+
+	if cb.withDungeons {
+		mods = append(mods, qm.Load(models.PlayerRels.Dungeons))
+	}
+
 	mods = append(mods,
 		qm.Select("*"),
 		qm.Where(models.PlayerColumns.ID+"=?", userID),
@@ -98,6 +110,9 @@ func FillContextReply[K Event](cb *ContextBuilder, event K, ctx context.Context)
 			return ctx, errors.New("auth error")
 		}
 	}
+
+	// Add UUID to track the context
+	ctx = context.WithValue(ctx, ContextIdKey, uuid.NewString())
 
 	return ctx, nil
 }
@@ -229,6 +244,18 @@ func WithPlayerSelectedCard() func(a *ContextBuilder) {
 func WithPlayerLootBoxes() func(a *ContextBuilder) {
 	return func(a *ContextBuilder) {
 		a.withPlayerLootBoxes = true
+	}
+}
+
+func WithPlayerLimits() func(a *ContextBuilder) {
+	return func(a *ContextBuilder) {
+		a.withPlayerLimits = true
+	}
+}
+
+func WithDungeons() func(a *ContextBuilder) {
+	return func(a *ContextBuilder) {
+		a.withDungeons = true
 	}
 }
 

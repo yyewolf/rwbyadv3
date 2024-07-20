@@ -1,5 +1,7 @@
 package maze
 
+import "math/rand"
+
 const (
 	Up = 1 << iota
 	Down
@@ -31,10 +33,12 @@ func (n *Node) DelLink(dir int8) {
 type gridArray [][]*Node
 
 type Grid struct {
-	Width, Height int
+	w int `json:"-"`
+	h int `json:"-"`
 
-	pointerAt *Node
-	gridArray
+	pointerAt *Node      `json:"-"`
+	r         *rand.Rand `json:"-"`
+	gridArray gridArray  `json:"-"`
 }
 
 func (n *Node) Neighbors(g *Grid) []*Node {

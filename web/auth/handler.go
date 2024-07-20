@@ -16,9 +16,9 @@ func NewAuthHandler(app interfaces.App, g *echo.Group) {
 	DiscordHandler = discord.NewDiscordAuthHandler(app, g.Group("/discord"))
 
 	g.GET("/discord", func(c echo.Context) error {
-		return c.Redirect(302, "/discord/")
+		return c.Redirect(302, "/auth/discord/")
 	})
 	g.GET("/github", func(c echo.Context) error {
-		return c.Redirect(302, "/github/")
+		return c.Redirect(302, "/auth/github/")
 	})
 }
