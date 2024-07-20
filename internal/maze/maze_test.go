@@ -2,6 +2,7 @@ package maze
 
 import (
 	"fmt"
+	"math/rand"
 	"testing"
 )
 
@@ -20,7 +21,7 @@ func DrawMaze(g *Grid) {
 			fmt.Print("↑")
 		}
 
-		if n.H == g.Width-1 {
+		if n.H == g.w-1 {
 			fmt.Print("\n")
 		}
 		return false
@@ -28,12 +29,12 @@ func DrawMaze(g *Grid) {
 }
 
 func TestDefaultMaze(t *testing.T) {
-	g := DefaultMaze(10, 10)
+	g := NewGrid(rand.New(rand.NewSource(1)), 10, 10)
 	DrawMaze(g)
 }
 
 func TestStep(t *testing.T) {
-	g := DefaultMaze(10, 10)
+	g := NewGrid(rand.New(rand.NewSource(1)), 10, 10)
 	DrawMaze(g)
 
 	fmt.Println()
@@ -44,7 +45,7 @@ func TestStep(t *testing.T) {
 }
 
 func TestGen(t *testing.T) {
-	g := DefaultMaze(10, 10)
+	g := NewGrid(rand.New(rand.NewSource(1)), 10, 10)
 	DrawMaze(g)
 
 	fmt.Println()
@@ -54,7 +55,7 @@ func TestGen(t *testing.T) {
 }
 
 func TestExpand(t *testing.T) {
-	g := DefaultMaze(10, 10)
+	g := NewGrid(rand.New(rand.NewSource(1)), 10, 10)
 	g.Generate()
 	expand := g.Expand(2)
 	DrawMaze(g)

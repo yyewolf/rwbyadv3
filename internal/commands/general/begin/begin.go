@@ -10,6 +10,7 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
+	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/models"
 )
 
@@ -35,7 +36,10 @@ func BeginCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 		builder.WithCommandName(commandName),
 		builder.WithDescription(commandDescription),
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
-			h.Command("/"+commandName, cmd.HandleCommand)
+			h.Command("/"+commandName, builder.WithContext(
+				cmd.app,
+				cmd.HandleCommand,
+			))
 
 			h.ButtonComponent("/"+componentId, builder.WithContextD(
 				app,
@@ -61,11 +65,22 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 	p := models.Player{
 		ID: e.User().ID.String(),
 	}
-	p.SetGithubStar(context.Background(), tx, true, &models.GithubStar{
+	err = p.SetGithubStar(context.Background(), tx, true, &models.GithubStar{
 		PlayerID: e.User().ID.String(),
 	})
+	if err != nil {
+		return utils.CommandError(e, err)
+	}
+	err = p.SetPlayerLimit(context.Background(), tx, true, &models.PlayerLimit{
+		PlayerID:     e.User().ID.String(),
+		DungeonsLeft: 3,
+	})
+	if err != nil {
+		return utils.CommandError(e, err)
+	}
 	err = p.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
+		logrus.WithError(err).WithField("user_id", e.ID().String()).Error("error creating user in db")
 		return e.Respond(
 			discord.InteractionResponseTypeCreateMessage,
 			discord.NewMessageCreateBuilder().

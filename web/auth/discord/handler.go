@@ -17,7 +17,6 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/internal/values"
 	"github.com/yyewolf/rwbyadv3/models"
 	"github.com/yyewolf/rwbyadv3/web/templates"
 	"github.com/yyewolf/rwbyadv3/web/templates/errors"
@@ -83,6 +82,7 @@ func ErrorPage(c echo.Context, code int) error {
 		errors.Error(fmt.Sprint(code), "Try again in a few seconds...", ""),
 	))
 }
+
 func SuccessPageRedirect(c echo.Context, text, redirectURI string) error {
 	return templates.RenderView(c, success.SuccessIndex(
 		"- Auth Success",
@@ -96,8 +96,10 @@ func SuccessPageRedirect(c echo.Context, text, redirectURI string) error {
 func (h *DiscordAuthHandler) BeginAuth() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Get state from query
-		s := c.QueryParam("s")
-		w := c.QueryParam("w")
+		params := c.QueryParams()
+
+		s := params.Get("s")
+		w := params.Get("w")
 
 		// w corresponds to the component calling, this tells us to create a state and redirect to the component
 		if s == "" {
@@ -108,10 +110,12 @@ func (h *DiscordAuthHandler) BeginAuth() echo.HandlerFunc {
 			}
 			s = state.State
 			switch w {
-			case "main":
+			case RedirectMain:
 				state.RedirectURI = "/"
-			case "market":
+			case RedirectMarket:
 				state.RedirectURI = "/market"
+			case RedirectDungeons:
+				state.RedirectURI = "/dungeons/" + params.Get("dungeonId")
 			default:
 				return ErrorPage(c, http.StatusForbidden)
 			}
@@ -215,11 +219,6 @@ func (h *DiscordAuthHandler) CallbackLogin(state *models.AuthDiscordState, token
 			Secure:   true,
 			HttpOnly: true,
 			SameSite: http.SameSiteStrictMode,
-		}
-
-		// not secure on preprod
-		if h.app.Config().Mode == values.Dev {
-			cookie.Secure = false
 		}
 
 		// Set the cookie

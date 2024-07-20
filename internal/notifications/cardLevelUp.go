@@ -3,10 +3,12 @@ package notifications
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
+	"github.com/yyewolf/rwbyadv3/internal/temporal"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/models"
 	"go.temporal.io/sdk/client"
@@ -30,6 +32,21 @@ func DispatchCardLevelUp(app interfaces.App, p *models.Player, c *models.Card) {
 }
 
 func (n *NotificationsRepository) NotifyCardLevelUpWorkflow(ctx workflow.Context, params *CardLevelUpParams) error {
+
+	activityOptions := workflow.ActivityOptions{
+		StartToCloseTimeout: 5 * time.Second,
+	}
+	ctx = workflow.WithActivityOptions(ctx, activityOptions)
+	var activityResult temporal.AuctionEndStatus
+	err := workflow.ExecuteActivity(ctx, n.NotifyCardLevelUpActivity, params).Get(ctx, &activityResult)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (n *NotificationsRepository) NotifyCardLevelUpActivity(ctx context.Context, params *CardLevelUpParams) error {
 	// TODO : Add check for DMs, GuildChannels, and if the user wants the notification at all
 
 	c := n.app.Client()

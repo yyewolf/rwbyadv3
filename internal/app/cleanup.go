@@ -1,6 +1,8 @@
 package app
 
 import (
+	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -14,13 +16,9 @@ import (
 func (a *App) CleanupJob(ctx workflow.Context) error {
 	logrus.WithField("at", time.Now()).Debug("Starting cleanup job")
 
-	var tables = []string{
-		models.TableNames.AuthGithubStates,
-		models.TableNames.Cards,
-		models.TableNames.GithubStars,
-		models.TableNames.Jobs,
-		models.TableNames.Players,
-	}
+	b, _ := json.Marshal(models.TableNames)
+	var tables = make(map[string]string)
+	json.Unmarshal(b, &tables)
 
 	for _, table := range tables {
 		mods := []qm.QueryMod{
@@ -39,6 +37,23 @@ func (a *App) CleanupJob(ctx workflow.Context) error {
 		queries.SetDelete(q)
 		q.Exec(boil.GetDB())
 	}
+
+	return nil
+}
+
+func (a *App) RestoreLimits(ctx workflow.Context) error {
+	logrus.WithField("at", time.Now()).Debug("Restore limits")
+
+	// Restore player limits
+	models.PlayerLimits(
+		qm.Where(models.PlayerLimitColumns.DungeonsResetAt+" < NOW()"),
+	).UpdateAllG(
+		context.Background(),
+		models.M{
+			models.PlayerLimitColumns.DungeonsResetAt: nil,
+			models.PlayerLimitColumns.DungeonsLeft:    3,
+		},
+	)
 
 	return nil
 }
