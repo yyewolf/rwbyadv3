@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/yyewolf/rwbyadv3/internal/dungeons"
+	"github.com/yyewolf/rwbyadv3/internal/dungeons/loots"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/notifications"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
@@ -37,14 +38,17 @@ func GetDungeon(app interfaces.App) echo.HandlerFunc {
 }
 
 type EndDungeonRequest struct {
-	Loots []string `json:"string"`
+	Loots []string `json:"loots"`
 }
 
 func EndDungeon(app interfaces.App) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Parse body
 		var req EndDungeonRequest
-		c.Bind(&req)
+		err := c.Bind(&req)
+		if err != nil {
+			return c.JSON(400, err)
+		}
 
 		session := utils.GetSessionFromContext(c)
 		player := session.R.Player
@@ -66,11 +70,18 @@ func EndDungeon(app interfaces.App) echo.HandlerFunc {
 			return c.JSON(500, err)
 		}
 
+		var pickedUpLoots []loots.Loot
+
 		for _, loot := range d.Loots {
 			if !slices.Contains(req.Loots, loot.GetID()) {
 				continue
 			}
+			if loot.GetType() == "exit" && loot.GetID() != req.Loots[len(req.Loots)-1] {
+				tx.Rollback()
+				return c.JSON(500, err)
+			}
 			loot.PickedUp(tx, player)
+			pickedUpLoots = append(pickedUpLoots, loot)
 		}
 
 		player.Update(context.Background(), tx, boil.Infer())
@@ -81,12 +92,28 @@ func EndDungeon(app interfaces.App) echo.HandlerFunc {
 			return c.JSON(500, err)
 		}
 
+		texts := make([]string, 0)
+		for _, loot := range loots.PossibleLoots {
+			texts = append(texts, loot.RewardText(pickedUpLoots))
+		}
+
+		// remove empty texts
+		texts = slices.DeleteFunc(texts, func(s string) bool {
+			return s == ""
+		})
+
 		notifications.DispatchDm(app, player, discord.NewMessageCreateBuilder().
 			SetEmbeds(
 				discord.NewEmbedBuilder().
 					SetTitle("Dungeon End").
 					SetColor(app.Config().App.BotColor).
-					SetDescriptionf("Yes").
+					SetDescriptionf(
+						utils.Joinln(
+							"Congratulations! You have completed the dungeon. Here are your rewards:",
+							"",
+							utils.Joinln(texts...),
+						),
+					).
 					Build(),
 			).
 			Build(),

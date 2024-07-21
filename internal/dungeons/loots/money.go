@@ -2,6 +2,7 @@ package loots
 
 import (
 	"database/sql"
+	"fmt"
 	"math/rand"
 
 	"github.com/google/uuid"
@@ -46,4 +47,14 @@ func (m MoneyBag) Generate(r *rand.Rand, point [2]int) Loot {
 
 func (m MoneyBag) PickedUp(tx *sql.Tx, p *models.Player) {
 	p.Liens += int64(m.Amount)
+}
+
+func (m MoneyBag) RewardText(l []Loot) string {
+	amount := 0
+	for _, loot := range l {
+		if loot.GetType() == "money" {
+			amount += loot.(MoneyBag).Amount
+		}
+	}
+	return fmt.Sprintf("You found **%d Ⱡ** (Liens)!", amount)
 }
