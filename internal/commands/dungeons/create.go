@@ -12,6 +12,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
+	"github.com/yyewolf/rwbyadv3/internal/values"
 	"github.com/yyewolf/rwbyadv3/models"
 )
 
@@ -92,7 +93,11 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 
 	p.R.PlayerLimit.DungeonsLeft--
 	if p.R.PlayerLimit.DungeonsResetAt.IsZero() {
-		p.R.PlayerLimit.DungeonsResetAt.SetValid(time.Now().Add(5 * time.Minute))
+		if cmd.app.Config().Mode == values.Prod {
+			p.R.PlayerLimit.DungeonsResetAt.SetValid(time.Now().Add(24 * time.Hour))
+		} else {
+			p.R.PlayerLimit.DungeonsResetAt.SetValid(time.Now().Add(5 * time.Minute))
+		}
 	}
 
 	tx, err := boil.BeginTx(e.Ctx, nil)
@@ -132,7 +137,7 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 			SetEmbeds(
 				discord.NewEmbedBuilder().
 					SetTitle("Dungeon").
-					SetDescriptionf("Dungeon created with seed %d, you can join it [here](%s)!", dungeon.Seed, dungeonUri).
+					SetDescriptionf("Dungeon has been created, you can join it [here](%s)!", dungeonUri).
 					SetColor(cmd.app.Config().App.BotColor).
 					SetEmbedFooter(cmd.app.Footer()).
 					Build(),
