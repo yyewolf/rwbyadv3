@@ -77,5 +77,7 @@ func (d *Dungeon) GenerateLoots() {
 	var location = possiblePoints[d.r.Intn(len(possiblePoints))]
 	var exit = loots.Exit{}.Generate(d.r, location)
 
-	d.Loots = append(d.Loots, exit)
+	// Append the exit randomly
+	i := d.r.Intn(len(d.Loots))
+	d.Loots = append(d.Loots[:i], append([]loots.Loot{exit}, d.Loots[i:]...)...)
 }

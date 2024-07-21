@@ -45,3 +45,7 @@ func (m Exit) Generate(r *rand.Rand, point [2]int) Loot {
 func (m Exit) PickedUp(tx *sql.Tx, p *models.Player) {
 	// Do nothing
 }
+
+func (m Exit) RewardText(l []Loot) string {
+	return ""
+}

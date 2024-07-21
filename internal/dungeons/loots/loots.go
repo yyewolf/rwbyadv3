@@ -15,6 +15,7 @@ type Loot interface {
 
 	Generate(r *rand.Rand, point [2]int) Loot
 	PickedUp(tx *sql.Tx, p *models.Player)
+	RewardText([]Loot) string
 }
 
 var PossibleLoots = []Loot{
