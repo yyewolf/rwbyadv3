@@ -3,12 +3,12 @@ package auctions
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
@@ -18,7 +18,7 @@ import (
 	"go.temporal.io/sdk/client"
 )
 
-func (cmd *auctionsCommand) AddAuction(e *handler.CommandEvent) error {
+func (cmd *auctionsCommand) AddAuctionB(e *handler.CommandEvent) error {
 	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
 
 	want := e.SlashCommandInteractionData().Int("card")
@@ -33,6 +33,31 @@ func (cmd *auctionsCommand) AddAuction(e *handler.CommandEvent) error {
 
 	duration := int64(e.SlashCommandInteractionData().Int("duration"))
 
+	return cmd.addConfirmation.AskForConfirmation(
+		e,
+		utils.Joinln(
+			fmt.Sprintf("Card: `%s`", utils.Cards.FullString(card)),
+			"Are you sure that you want to put this card into auction ? This is **irreversible**.",
+		),
+		fmt.Sprintf(addConfirmationFormat, want, duration),
+	)
+}
+
+func (cmd *auctionsCommand) AddAuction(data discord.ButtonInteractionData, e *handler.ComponentEvent) error {
+	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+
+	want, _ := strconv.Atoi(e.Vars["want"])
+	card, found := utils.Players.GetAvailableCard(p, want-1)
+	if !found {
+		return e.CreateMessage(discord.NewMessageCreateBuilder().
+			SetContent("Sorry, you do not have a card with this number...").
+			SetEphemeral(true).
+			Build(),
+		)
+	}
+
+	duration, _ := strconv.ParseInt(e.Vars["duration"], 10, 64)
+
 	auction := models.Auction{
 		ID:       uuid.NewString(),
 		PlayerID: p.ID,
@@ -46,23 +71,13 @@ func (cmd *auctionsCommand) AddAuction(e *handler.CommandEvent) error {
 
 	tx, err := boil.BeginTx(context.Background(), nil)
 	if err != nil {
-		logrus.WithError(err).Error("could not begin tx")
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("Sorry, an error occured.").
-			SetEphemeral(true).
-			Build(),
-		)
+		return utils.ComponentError(e, err)
 	}
 
 	err = auction.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
-		logrus.WithError(err).Error("could not begin insert listing")
 		tx.Rollback()
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("Sorry, an error occured.").
-			SetEphemeral(true).
-			Build(),
-		)
+		return utils.ComponentError(e, err)
 	}
 
 	card.Available = false
@@ -73,25 +88,15 @@ func (cmd *auctionsCommand) AddAuction(e *handler.CommandEvent) error {
 		p.SelectedCardID = null.NewString("", false)
 		_, err = p.Update(context.Background(), tx, boil.Whitelist(models.PlayerColumns.SelectedCardID))
 		if err != nil {
-			logrus.WithError(err).Error("could not update selected card")
 			tx.Rollback()
-			return e.CreateMessage(discord.NewMessageCreateBuilder().
-				SetContent("Sorry, an error occured.").
-				SetEphemeral(true).
-				Build(),
-			)
+			return utils.ComponentError(e, err)
 		}
 	}
 
 	_, err = card.Update(context.Background(), tx, boil.Infer())
 	if err != nil {
-		logrus.WithError(err).Error("could not update card")
 		tx.Rollback()
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("Sorry, an error occured.").
-			SetEphemeral(true).
-			Build(),
-		)
+		return utils.ComponentError(e, err)
 	}
 
 	// Schedule end
@@ -105,30 +110,27 @@ func (cmd *auctionsCommand) AddAuction(e *handler.CommandEvent) error {
 		EndsAt:    auction.EndsAt,
 	})
 	if err != nil {
-		logrus.WithError(err).Error("failed to schedule delayed end auction job")
 		tx.Rollback()
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("Sorry, an error occured.").
-			SetEphemeral(true).
-			Build(),
-		)
+		return utils.ComponentError(e, err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		logrus.WithError(err).Error("could not update card")
 		tx.Rollback()
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("Sorry, an error occured.").
-			SetEphemeral(true).
-			Build(),
-		)
+		return utils.ComponentError(e, err)
 	}
 
 	return e.Respond(
 		discord.InteractionResponseTypeCreateMessage,
 		discord.NewMessageCreateBuilder().
-			SetContentf("All good !").
+			SetEmbeds(
+				discord.NewEmbedBuilder().
+					SetTitle("Auctions").
+					SetDescription("Your auction has been sent !").
+					SetColor(cmd.app.Config().App.BotColor).
+					SetEmbedFooter(cmd.app.Footer()).
+					Build(),
+			).
 			SetEphemeral(true),
 	)
 }

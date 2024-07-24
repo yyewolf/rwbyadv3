@@ -92,7 +92,7 @@ func (cmd *reportCommand) HandleResponse(t string) handler.ModalHandler {
 			logrus.WithError(err).Error("Failed to create issue")
 			return e.CreateMessage(
 				discord.NewMessageCreateBuilder().
-					SetContent("Failed to create issue").
+					SetContent("Failed to create the bug report.").
 					SetEphemeral(true).
 					Build(),
 			)

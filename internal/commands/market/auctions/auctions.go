@@ -12,6 +12,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/temporal"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
+	"github.com/yyewolf/rwbyadv3/internal/utils/confirmation"
 	"github.com/yyewolf/rwbyadv3/models"
 	"go.temporal.io/sdk/client"
 )
@@ -20,7 +21,11 @@ const (
 	commandName        = "auctions"
 	commandDescription = "Auctions"
 
-	componentId            = "auctions/{player_id}/{page}/{action}"
+	addConfirmationId     = "auctions/add/{want}/{duration}/confirmation"
+	addConfirmationFormat = "auctions/add/%d/%d/confirmation"
+
+	componentId            = "auctions/list/{player_id}/{page}/{action}"
+	componentFormat        = "auctions/list/%s/%d/%s"
 	componentActionPrev    = "prev"
 	componentActionRefresh = "refresh"
 	componentActionNext    = "next"
@@ -28,6 +33,8 @@ const (
 
 type auctionsCommand struct {
 	app interfaces.App
+
+	addConfirmation *confirmation.Handler
 }
 
 func AuctionsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
@@ -38,13 +45,20 @@ func AuctionsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command
 	app.Worker().RegisterWorkflow(cmd.AuctionEndWorkflow)
 	app.Worker().RegisterActivity(cmd.AuctionEndActivity)
 
+	cmd.addConfirmation = confirmation.NewHandler(app, addConfirmationId, builder.WithContextD(
+		app,
+		cmd.AddAuction,
+		builder.WithPlayer(),
+		builder.WithPlayerCards(),
+	))
+
 	return builder.NewCommand(
 		builder.WithCommandName(commandName),
 		builder.WithDescription(commandDescription),
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
 			h.Command("/auctions/add", builder.WithContext(
 				app,
-				cmd.AddAuction,
+				cmd.AddAuctionB,
 				builder.WithPlayer(),
 				builder.WithPlayerCards(),
 			))
@@ -54,12 +68,16 @@ func AuctionsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command
 				builder.WithPlayer(),
 				builder.WithPlayerCards(),
 			))
+
 			h.ButtonComponent("/"+componentId, builder.WithContextD(
 				app,
 				cmd.HandleGetAuctionsInteraction,
 				builder.WithPlayer(),
 				builder.WithPlayerCards(),
 			))
+
+			cmd.addConfirmation.SetupMux(h)
+
 			return nil
 		}),
 		builder.WithSlashCommand(discord.SlashCommandCreate{

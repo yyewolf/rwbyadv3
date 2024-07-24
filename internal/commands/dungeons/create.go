@@ -34,7 +34,7 @@ func Command(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 		builder.WithCommandName(commandName),
 		builder.WithDescription(commandDescription),
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
-			h.Command("/dungeons/create", builder.WithContext(
+			h.Command("/dungeons/enter", builder.WithContext(
 				app,
 				cmd.HandleCommand,
 				builder.WithPlayer(),
@@ -48,8 +48,8 @@ func Command(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 			Description: commandDescription,
 			Options: []discord.ApplicationCommandOption{
 				&discord.ApplicationCommandOptionSubCommand{
-					Name:        "create",
-					Description: "Create a dungeon!",
+					Name:        "enter",
+					Description: "Enter the dungeon!",
 				},
 			},
 		}),
@@ -70,7 +70,6 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 		return e.Respond(
 			discord.InteractionResponseTypeCreateMessage,
 			discord.NewMessageCreateBuilder().
-				// SetContentf("You had unfinished business ! Join it [here](%s)!", dungeonUri),
 				SetEmbeds(
 					discord.NewEmbedBuilder().
 						SetTitle("Dungeon").
@@ -129,7 +128,11 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 		tx.Rollback()
 		return utils.CommandError(e, err)
 	}
-	tx.Commit()
+
+	err = tx.Commit()
+	if err != nil {
+		return utils.CommandError(e, err)
+	}
 
 	return e.Respond(
 		discord.InteractionResponseTypeCreateMessage,

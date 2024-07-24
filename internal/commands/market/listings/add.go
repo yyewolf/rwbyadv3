@@ -6,7 +6,6 @@ import (
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
@@ -38,23 +37,13 @@ func (cmd *listingsCommand) AddListing(e *handler.CommandEvent) error {
 
 	tx, err := boil.BeginTx(context.Background(), nil)
 	if err != nil {
-		logrus.WithError(err).Error("could not begin tx")
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("Sorry, an error occured.").
-			SetEphemeral(true).
-			Build(),
-		)
+		return utils.CommandError(e, err)
 	}
 
 	err = listing.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
-		logrus.WithError(err).Error("could not begin insert listing")
 		tx.Rollback()
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("Sorry, an error occured.").
-			SetEphemeral(true).
-			Build(),
-		)
+		return utils.CommandError(e, err)
 	}
 
 	card.Available = false
@@ -65,33 +54,33 @@ func (cmd *listingsCommand) AddListing(e *handler.CommandEvent) error {
 		p.SelectedCardID = null.NewString("", false)
 		_, err = p.Update(context.Background(), tx, boil.Whitelist(models.PlayerColumns.SelectedCardID))
 		if err != nil {
-			logrus.WithError(err).Error("could not update selected card")
 			tx.Rollback()
-			return e.CreateMessage(discord.NewMessageCreateBuilder().
-				SetContent("Sorry, an error occured.").
-				SetEphemeral(true).
-				Build(),
-			)
+			return utils.CommandError(e, err)
 		}
 	}
 
 	_, err = card.Update(context.Background(), tx, boil.Infer())
 	if err != nil {
-		logrus.WithError(err).Error("could not update card")
 		tx.Rollback()
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("Sorry, an error occured.").
-			SetEphemeral(true).
-			Build(),
-		)
+		return utils.CommandError(e, err)
 	}
 
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return utils.CommandError(e, err)
+	}
 
 	return e.Respond(
 		discord.InteractionResponseTypeCreateMessage,
 		discord.NewMessageCreateBuilder().
-			SetContentf("All good !").
+			SetEmbeds(
+				discord.NewEmbedBuilder().
+					SetTitle("Listings").
+					SetDescription("Your listing has been sent !").
+					SetColor(cmd.app.Config().App.BotColor).
+					SetEmbedFooter(cmd.app.Footer()).
+					Build(),
+			).
 			SetEphemeral(true),
 	)
 }

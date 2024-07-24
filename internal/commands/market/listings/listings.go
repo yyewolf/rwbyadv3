@@ -56,6 +56,7 @@ func ListingsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command
 				builder.WithPlayer(),
 				builder.WithPlayerCards(),
 			))
+
 			return nil
 		}),
 		builder.WithSlashCommand(discord.SlashCommandCreate{

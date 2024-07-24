@@ -34,6 +34,7 @@ func ProfileCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command 
 				builder.WithPlayerGithubStars(),
 				builder.WithPlayerSelectedCard(),
 				builder.WithPlayerLootBoxes(),
+				builder.WithPlayerLimits(),
 			))
 			return nil
 		}),

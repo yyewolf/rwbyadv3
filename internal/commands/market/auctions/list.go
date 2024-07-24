@@ -58,12 +58,10 @@ func (cmd *auctionsCommand) generator(username string, p *models.Player, page in
 
 	embed.AddFields(field)
 
-	customID := fmt.Sprintf("/auctions/%s/%d", p.ID, page)
-
 	return embed.Build(), discord.NewActionRow(
-		discord.NewSecondaryButton("◀️ Prev", customID+"/"+componentActionPrev),
-		discord.NewSecondaryButton("🔄 Refresh", customID+"/"+componentActionRefresh),
-		discord.NewSecondaryButton("▶️ Next", customID+"/"+componentActionNext),
+		discord.NewSecondaryButton("◀️ Prev", fmt.Sprintf(componentFormat, p.ID, page, componentActionPrev)),
+		discord.NewSecondaryButton("🔄 Refresh", fmt.Sprintf(componentFormat, p.ID, page, componentActionRefresh)),
+		discord.NewSecondaryButton("▶️ Next", fmt.Sprintf(componentFormat, p.ID, page, componentActionNext)),
 	)
 }
 
