@@ -101,13 +101,13 @@ func (cmd *openCommand) HandleInteraction(data discord.ButtonInteractionData, e 
 
 	tx, err := boil.BeginTx(context.Background(), nil)
 	if err != nil {
-		return err
+		return utils.ComponentError(e, err)
 	}
 
 	_, err = lootBox.Delete(context.Background(), tx, false)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return utils.ComponentError(e, err)
 	}
 
 	var c *models.Card
@@ -128,13 +128,13 @@ func (cmd *openCommand) HandleInteraction(data discord.ButtonInteractionData, e 
 	err = c.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		tx.Rollback()
-		return err
+		return utils.ComponentError(e, err)
 	}
 
 	err = c.SetCardsStat(context.Background(), tx, true, utils.Cards.GenerateStats(c))
 	if err != nil {
 		tx.Rollback()
-		return err
+		return utils.ComponentError(e, err)
 	}
 
 	// If user does not have a selected card, this is it :
@@ -142,13 +142,13 @@ func (cmd *openCommand) HandleInteraction(data discord.ButtonInteractionData, e 
 		err = p.SetSelectedCard(context.Background(), tx, false, c)
 		if err != nil {
 			tx.Rollback()
-			return err
+			return utils.ComponentError(e, err)
 		}
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return err
+		return utils.ComponentError(e, err)
 	}
 
 	f, embed, _ := utils.Cards.Message(c)

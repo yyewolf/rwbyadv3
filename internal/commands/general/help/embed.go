@@ -23,7 +23,16 @@ func (cmd *helpCommand) generateEmbed() {
 		for _, command := range menu.Commands {
 			discordCmd := utils.FindCommandByName(commands, command.Name)
 
-			embed.Description += fmt.Sprintf("</%s:%s> - `%s`\n", discordCmd.Name(), discordCmd.ID(), command.Description)
+			subcommands := command.GetSubCommands()
+
+			// This is not clickable if there are subcommands below
+			if len(subcommands) == 0 {
+				embed.Description += fmt.Sprintf("</%s:%s> - `%s`\n", discordCmd.Name(), discordCmd.ID(), command.Description)
+			}
+
+			for _, subcommand := range subcommands {
+				embed.Description += fmt.Sprintf("</%s %s:%s> - `%s`\n", subcommand.Prefix, subcommand.Name, discordCmd.ID(), subcommand.Description)
+			}
 		}
 
 		cmd.embeds[menu.Name] = embed

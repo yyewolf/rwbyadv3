@@ -40,6 +40,17 @@ func (cmd *profileCommand) generator(p *models.Player, u discord.User) discord.E
 		true,
 	)
 
+	// Activities
+	dungeonActivity := utils.Players.GetDungeonState(p)
+
+	embed.AddField(
+		"Activities :",
+		utils.Joinln(
+			dungeonActivity.RenderUser(),
+		),
+		true,
+	)
+
 	embed.SetEmbedFooter(cmd.app.Footer())
 
 	return embed.Build()

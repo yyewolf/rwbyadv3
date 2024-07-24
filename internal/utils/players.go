@@ -3,6 +3,7 @@ package utils
 import (
 	"math"
 	"math/rand"
+	"time"
 
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/models"
@@ -169,4 +170,20 @@ func (pl Player) GiveXP(p *models.Player, XP int64) (levelUp bool) {
 	p.XP += XP
 	p.NextLevelXP = pl.GetNextLevelXP(p)
 	return levelUp
+}
+
+func (Player) GetDungeonState(p *models.Player) *PlayerDungeonState {
+	var t time.Time
+
+	if p.R.PlayerLimit.DungeonsResetAt.Valid {
+		t = p.R.PlayerLimit.DungeonsResetAt.Time
+	}
+
+	return &PlayerDungeonState{
+		Left:  p.R.PlayerLimit.DungeonsLeft,
+		Reset: t,
+
+		// TODO: Don't hardcode this...
+		Max: 3,
+	}
 }

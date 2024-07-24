@@ -2,7 +2,6 @@ package ping
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/disgoorg/disgo/discord"
@@ -10,6 +9,7 @@ import (
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
+	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/workflow"
 )
@@ -54,7 +54,7 @@ func (cmd *pingCommand) HandleCommand(e *handler.CommandEvent) error {
 
 	_, err := cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.DelayedPongWorkflow, e.User().ID.String())
 	if err != nil {
-		log.Fatalln("Unable to execute workflow", err)
+		return utils.CommandError(e, err)
 	}
 
 	return e.Respond(

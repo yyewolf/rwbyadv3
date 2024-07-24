@@ -5,7 +5,6 @@ import (
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
-	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
@@ -28,12 +27,7 @@ func (cmd *listingsCommand) RemoveListing(e *handler.CommandEvent) error {
 
 	tx, err := boil.BeginTx(context.Background(), nil)
 	if err != nil {
-		logrus.WithError(err).Error("could not begin tx")
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("Sorry, an error occured.").
-			SetEphemeral(true).
-			Build(),
-		)
+		return utils.CommandError(e, err)
 	}
 
 	listing, err := models.Listings(
@@ -41,13 +35,8 @@ func (cmd *listingsCommand) RemoveListing(e *handler.CommandEvent) error {
 		qm.Where(models.ListingColumns.PlayerID+"=?", p.ID),
 	).One(context.Background(), tx)
 	if err != nil {
-		logrus.WithError(err).Error("could not begin insert listing")
 		tx.Rollback()
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("Sorry, an error occured.").
-			SetEphemeral(true).
-			Build(),
-		)
+		return utils.CommandError(e, err)
 	}
 
 	card.Available = true
@@ -55,13 +44,8 @@ func (cmd *listingsCommand) RemoveListing(e *handler.CommandEvent) error {
 
 	_, err = card.Update(context.Background(), tx, boil.Infer())
 	if err != nil {
-		logrus.WithError(err).Error("could not update card")
 		tx.Rollback()
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("Sorry, an error occured.").
-			SetEphemeral(true).
-			Build(),
-		)
+		return utils.CommandError(e, err)
 	}
 
 	listing.Delete(context.Background(), tx, false)

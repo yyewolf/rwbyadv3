@@ -91,13 +91,7 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 
 	err = tx.Commit()
 	if err != nil {
-		logrus.WithError(err).WithField("user_id", e.ID().String()).Error("error creating user in db")
-		return e.Respond(
-			discord.InteractionResponseTypeCreateMessage,
-			discord.NewMessageCreateBuilder().
-				SetContentf("An error occured :(").
-				SetEphemeral(true),
-		)
+		return utils.CommandError(e, err)
 	}
 
 	embed, components := cmd.generator(&p, 0)

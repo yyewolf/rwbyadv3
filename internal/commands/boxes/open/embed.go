@@ -12,11 +12,11 @@ func (cmd *openCommand) generator(p *models.Player) discord.ContainerComponent {
 	counts := utils.Players.LootBoxesCount(p)
 
 	var buttons []discord.InteractiveComponent
-	for _, t := range models.AllLootBoxesType() {
+	for _, lootboxType := range models.AllLootBoxesType() {
 		buttons = append(buttons,
 			discord.NewSecondaryButton(
-				fmt.Sprintf("%d %s boxes", counts[t], t),
-				fmt.Sprintf(componentIdFmt, p.ID, t),
+				fmt.Sprintf("%d %s boxes", counts[lootboxType], lootboxType),
+				fmt.Sprintf(componentIdFmt, p.ID, lootboxType),
 			),
 		)
 	}
