@@ -218,7 +218,7 @@ func (h *DiscordAuthHandler) CallbackLogin(state *models.AuthDiscordState, token
 			Path:     "/",
 			Secure:   true,
 			HttpOnly: true,
-			SameSite: http.SameSiteStrictMode,
+			SameSite: http.SameSiteLaxMode, // Lax is important to allow auto auth when coming from discord
 		}
 
 		// Set the cookie
