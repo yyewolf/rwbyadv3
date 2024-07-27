@@ -9,8 +9,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/yyewolf/rwbyadv3/internal/dungeons"
-	"github.com/yyewolf/rwbyadv3/internal/dungeons/loots"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
+	"github.com/yyewolf/rwbyadv3/internal/loots"
 	"github.com/yyewolf/rwbyadv3/internal/notifications"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/models"
@@ -93,7 +93,7 @@ func EndDungeon(app interfaces.App) echo.HandlerFunc {
 		}
 
 		texts := make([]string, 0)
-		for _, loot := range loots.PossibleLoots {
+		for _, loot := range loots.DungeonLoots {
 			texts = append(texts, loot.RewardText(pickedUpLoots))
 		}
 
@@ -114,6 +114,7 @@ func EndDungeon(app interfaces.App) echo.HandlerFunc {
 							utils.Joinln(texts...),
 						),
 					).
+					SetEmbedFooter(app.Footer()).
 					Build(),
 			).
 			Build(),

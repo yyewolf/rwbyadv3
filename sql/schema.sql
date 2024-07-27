@@ -159,6 +159,21 @@ CREATE TABLE public.cards_stats (
 
 
 --
+-- Name: dailies; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.dailies (
+    player_id character varying(50) NOT NULL,
+    has_voted boolean DEFAULT false NOT NULL,
+    last_vote_at timestamp with time zone DEFAULT now() NOT NULL,
+    streak integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone
+);
+
+
+--
 -- Name: dungeons; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -371,6 +386,14 @@ ALTER TABLE ONLY public.cards_stats
 
 
 --
+-- Name: dailies dailies_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dailies
+    ADD CONSTRAINT dailies_pkey PRIMARY KEY (player_id);
+
+
+--
 -- Name: dungeons dungeons_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -579,6 +602,14 @@ ALTER TABLE ONLY public.player_limits
 
 
 --
+-- Name: dailies fk_player_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dailies
+    ADD CONSTRAINT fk_player_id FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
 -- Name: listings listings_card_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -680,4 +711,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240605145413'),
     ('20240625191041'),
     ('20240626084657'),
-    ('20240706095548');
+    ('20240706095548'),
+    ('20240726065110');

@@ -39,7 +39,7 @@ func Command(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 				cmd.HandleCommand,
 				builder.WithPlayer(),
 				builder.WithPlayerLimits(),
-				builder.WithDungeons(),
+				builder.WithPlayerDungeons(),
 			))
 			return nil
 		}),

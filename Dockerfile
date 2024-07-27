@@ -35,7 +35,7 @@ RUN go install github.com/a-h/templ/cmd/templ@latest
 RUN go generate templ.go
 COPY --from=web-builder-main /app/static /app/static
 COPY --from=web-builder-dungeons /app/dungeons/dist /app/dungeons/dist
-RUN go build -o /app/rwbyadv3 /app/cmd/bot/main.go
+RUN go build -ldflags "-s -w" -o /app/rwbyadv3 /app/cmd/bot/main.go
 # Install CA certificates for scratch image
 RUN apk --no-cache add ca-certificates && update-ca-certificates
 

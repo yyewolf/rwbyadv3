@@ -41,7 +41,8 @@ type ContextBuilder struct {
 	withPlayerLootBoxes    bool
 	withPlayerSelectedCard bool
 	withPlayerLimits       bool
-	withDungeons           bool
+	withPlayerDungeons     bool
+	withPlayerDaily        bool
 }
 
 type ContextOption func(a *ContextBuilder)
@@ -77,8 +78,12 @@ func FillPlayerContext(cb *ContextBuilder, userID snowflake.ID, ctx context.Cont
 		mods = append(mods, qm.Load(models.PlayerRels.PlayerLimit))
 	}
 
-	if cb.withDungeons {
+	if cb.withPlayerDungeons {
 		mods = append(mods, qm.Load(models.PlayerRels.Dungeons))
+	}
+
+	if cb.withPlayerDaily {
+		mods = append(mods, qm.Load(models.PlayerRels.Daily))
 	}
 
 	mods = append(mods,
@@ -253,9 +258,15 @@ func WithPlayerLimits() func(a *ContextBuilder) {
 	}
 }
 
-func WithDungeons() func(a *ContextBuilder) {
+func WithPlayerDungeons() func(a *ContextBuilder) {
 	return func(a *ContextBuilder) {
-		a.withDungeons = true
+		a.withPlayerDungeons = true
+	}
+}
+
+func WithPlayerDaily() func(a *ContextBuilder) {
+	return func(a *ContextBuilder) {
+		a.withPlayerDaily = true
 	}
 }
 
