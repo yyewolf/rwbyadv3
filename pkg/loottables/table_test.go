@@ -1,4 +1,4 @@
-package loots
+package loottables
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/yyewolf/rwbyadv3/internal/loots"
-	"github.com/yyewolf/rwbyadv3/pkg/loots/item"
+	"github.com/yyewolf/rwbyadv3/pkg/loottables/item"
 )
 
 func TestSimpleTable(t *testing.T) {
