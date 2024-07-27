@@ -2,11 +2,12 @@ package loots
 
 import (
 	"database/sql"
+	"fmt"
 	"math/rand"
 
 	"github.com/google/uuid"
 	"github.com/yyewolf/rwbyadv3/models"
-	"github.com/yyewolf/rwbyadv3/pkg/loots/item"
+	"github.com/yyewolf/rwbyadv3/pkg/loottables/item"
 )
 
 type Exit struct {
@@ -32,12 +33,7 @@ func (m Exit) GetY() int {
 	return m.Y
 }
 
-func (m Exit) Generate(r *rand.Rand, point [2]int) Loot {
-	var buffer = make([]byte, 16)
-	r.Read(buffer)
-	m.ID = uuid.NewSHA1(uuid.NameSpaceDNS, buffer).String()
-
-	m.Type = "exit"
+func (m Exit) Place(point [2]int) DungeonLoot {
 	m.X = point[0]
 	m.Y = point[1]
 	return m
@@ -47,7 +43,7 @@ func (m Exit) PickedUp(tx *sql.Tx, p *models.Player) {
 	// Do nothing
 }
 
-func (m Exit) RewardText(l []Loot) string {
+func (m Exit) RewardText(l []interface{}) string {
 	return ""
 }
 
@@ -57,6 +53,15 @@ func (m *Exit) GetAmount() int {
 
 func (m *Exit) SetAmount(amount int) {}
 
-func (m *Exit) New() item.Amountable[int] {
-	return &Exit{}
+func (m *Exit) New(r *rand.Rand) item.Amountable[int] {
+	var buffer = make([]byte, 16)
+	r.Read(buffer)
+	m.ID = uuid.NewSHA1(uuid.NameSpaceDNS, buffer).String()
+
+	m.Type = "exit"
+	fmt.Println("oof")
+	return &Exit{
+		ID:   m.ID,
+		Type: m.Type,
+	}
 }

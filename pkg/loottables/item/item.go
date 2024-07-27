@@ -10,7 +10,7 @@ type Amountable[I constraints.Integer] interface {
 	SetAmount(I)
 	GetAmount() I
 
-	New() Amountable[I]
+	New(r *rand.Rand) Amountable[I]
 }
 
 // Item represents a specific item with a weight for the drop chance. And an amount, it can be used to represent money for example.
@@ -45,7 +45,7 @@ func (ie *Item[I, T]) SetWeight(weight float64) {
 
 // GetItem returns the actual item.
 func (ie Item[I, T]) GetItem(r *rand.Rand) interface{} {
-	item := ie.Item.New()
+	item := ie.Item.New(r)
 
 	if ie.Min == 0 && ie.Max == 0 {
 		return item
@@ -59,6 +59,13 @@ func (ie Item[I, T]) GetItem(r *rand.Rand) interface{} {
 		amount := ie.Min + I(r.Intn(int(amounts)))*ie.Step
 		item.SetAmount(amount)
 	}
+
+	if item.GetAmount() < ie.Min {
+		item.SetAmount(ie.Min)
+	} else if item.GetAmount() > ie.Max {
+		item.SetAmount(ie.Max)
+	}
+
 	return item
 }
 

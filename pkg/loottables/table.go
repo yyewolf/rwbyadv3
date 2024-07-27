@@ -1,9 +1,10 @@
-package loots
+package loottables
 
 import (
 	"math/rand"
 
-	"github.com/yyewolf/rwbyadv3/pkg/loots/item"
+	"github.com/sirupsen/logrus"
+	"github.com/yyewolf/rwbyadv3/pkg/loottables/item"
 )
 
 // LootTable represents a list of LootTableEntries.
@@ -49,6 +50,8 @@ func (lt LootTable) Copy() LootTable {
 	for _, entry := range lt {
 		if entry, ok := entry.Copy().(LootTableEntry); ok {
 			out = append(out, entry)
+		} else {
+			logrus.WithField("entry", entry).Error("Failed to copy loot table entry")
 		}
 	}
 	return out
@@ -64,9 +67,8 @@ func (lt LootTable) ChooseRandomItems(r *rand.Rand, amount int) []interface{} {
 
 	// Collect always drop items and disable them for future consideration
 	for _, entry := range lt {
-		if entry.GetAlways() && entry.GetEnabled() {
+		if entry.GetAlways() {
 			alwaysDropItems = append(alwaysDropItems, entry)
-			entry.SetEnabled(false)
 		}
 	}
 

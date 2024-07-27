@@ -1,6 +1,8 @@
-package loots
+package loottables
 
-import "math/rand"
+import (
+	"math/rand"
+)
 
 type SubLootTable struct {
 	Weight float64
