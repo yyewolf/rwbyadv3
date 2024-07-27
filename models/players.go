@@ -138,6 +138,7 @@ var PlayerWhere = struct {
 var PlayerRels = struct {
 	IDGithubStar        string
 	SelectedCard        string
+	Daily               string
 	GithubStar          string
 	PlayerLimit         string
 	Auctions            string
@@ -155,6 +156,7 @@ var PlayerRels = struct {
 }{
 	IDGithubStar:        "IDGithubStar",
 	SelectedCard:        "SelectedCard",
+	Daily:               "Daily",
 	GithubStar:          "GithubStar",
 	PlayerLimit:         "PlayerLimit",
 	Auctions:            "Auctions",
@@ -175,6 +177,7 @@ var PlayerRels = struct {
 type playerR struct {
 	IDGithubStar        *GithubStar             `boil:"IDGithubStar" json:"IDGithubStar" toml:"IDGithubStar" yaml:"IDGithubStar"`
 	SelectedCard        *Card                   `boil:"SelectedCard" json:"SelectedCard" toml:"SelectedCard" yaml:"SelectedCard"`
+	Daily               *Daily                  `boil:"Daily" json:"Daily" toml:"Daily" yaml:"Daily"`
 	GithubStar          *GithubStar             `boil:"GithubStar" json:"GithubStar" toml:"GithubStar" yaml:"GithubStar"`
 	PlayerLimit         *PlayerLimit            `boil:"PlayerLimit" json:"PlayerLimit" toml:"PlayerLimit" yaml:"PlayerLimit"`
 	Auctions            AuctionSlice            `boil:"Auctions" json:"Auctions" toml:"Auctions" yaml:"Auctions"`
@@ -208,6 +211,13 @@ func (r *playerR) GetSelectedCard() *Card {
 		return nil
 	}
 	return r.SelectedCard
+}
+
+func (r *playerR) GetDaily() *Daily {
+	if r == nil {
+		return nil
+	}
+	return r.Daily
 }
 
 func (r *playerR) GetGithubStar() *GithubStar {
@@ -666,6 +676,17 @@ func (o *Player) SelectedCard(mods ...qm.QueryMod) cardQuery {
 	return Cards(queryMods...)
 }
 
+// Daily pointed to by the foreign key.
+func (o *Player) Daily(mods ...qm.QueryMod) dailyQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"player_id\" = ?", o.ID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return Dailies(queryMods...)
+}
+
 // GithubStar pointed to by the foreign key.
 func (o *Player) GithubStar(mods ...qm.QueryMod) githubStarQuery {
 	queryMods := []qm.QueryMod{
@@ -1094,6 +1115,124 @@ func (playerL) LoadSelectedCard(ctx context.Context, e boil.ContextExecutor, sin
 					foreign.R = &cardR{}
 				}
 				foreign.R.SelectedCardPlayers = append(foreign.R.SelectedCardPlayers, local)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadDaily allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-1 relationship.
+func (playerL) LoadDaily(ctx context.Context, e boil.ContextExecutor, singular bool, maybePlayer interface{}, mods queries.Applicator) error {
+	var slice []*Player
+	var object *Player
+
+	if singular {
+		var ok bool
+		object, ok = maybePlayer.(*Player)
+		if !ok {
+			object = new(Player)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybePlayer))
+			}
+		}
+	} else {
+		s, ok := maybePlayer.(*[]*Player)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybePlayer))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &playerR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &playerR{}
+			}
+
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`dailies`),
+		qm.WhereIn(`dailies.player_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`dailies.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load Daily")
+	}
+
+	var resultSlice []*Daily
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice Daily")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for dailies")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for dailies")
+	}
+
+	if len(dailyAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.Daily = foreign
+		if foreign.R == nil {
+			foreign.R = &dailyR{}
+		}
+		foreign.R.Player = object
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.ID == foreign.PlayerID {
+				local.R.Daily = foreign
+				if foreign.R == nil {
+					foreign.R = &dailyR{}
+				}
+				foreign.R.Player = local
 				break
 			}
 		}
@@ -2850,6 +2989,64 @@ func (o *Player) RemoveSelectedCard(ctx context.Context, exec boil.ContextExecut
 		}
 		related.R.SelectedCardPlayers = related.R.SelectedCardPlayers[:ln-1]
 		break
+	}
+	return nil
+}
+
+// SetDailyG of the player to the related item.
+// Sets o.R.Daily to related.
+// Adds o to related.R.Player.
+// Uses the global database handle.
+func (o *Player) SetDailyG(ctx context.Context, insert bool, related *Daily) error {
+	return o.SetDaily(ctx, boil.GetContextDB(), insert, related)
+}
+
+// SetDaily of the player to the related item.
+// Sets o.R.Daily to related.
+// Adds o to related.R.Player.
+func (o *Player) SetDaily(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Daily) error {
+	var err error
+
+	if insert {
+		related.PlayerID = o.ID
+
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	} else {
+		updateQuery := fmt.Sprintf(
+			"UPDATE \"dailies\" SET %s WHERE %s",
+			strmangle.SetParamNames("\"", "\"", 1, []string{"player_id"}),
+			strmangle.WhereClause("\"", "\"", 2, dailyPrimaryKeyColumns),
+		)
+		values := []interface{}{o.ID, related.PlayerID}
+
+		if boil.IsDebug(ctx) {
+			writer := boil.DebugWriterFrom(ctx)
+			fmt.Fprintln(writer, updateQuery)
+			fmt.Fprintln(writer, values)
+		}
+		if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+			return errors.Wrap(err, "failed to update foreign table")
+		}
+
+		related.PlayerID = o.ID
+	}
+
+	if o.R == nil {
+		o.R = &playerR{
+			Daily: related,
+		}
+	} else {
+		o.R.Daily = related
+	}
+
+	if related.R == nil {
+		related.R = &dailyR{
+			Player: o,
+		}
+	} else {
+		related.R.Player = o
 	}
 	return nil
 }

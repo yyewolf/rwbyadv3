@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/yyewolf/rwbyadv3/pkg/loots/item"
 )
 
 type Exit struct {
@@ -48,4 +49,14 @@ func (m Exit) PickedUp(tx *sql.Tx, p *models.Player) {
 
 func (m Exit) RewardText(l []Loot) string {
 	return ""
+}
+
+func (m *Exit) GetAmount() int {
+	return 1
+}
+
+func (m *Exit) SetAmount(amount int) {}
+
+func (m *Exit) New() item.Amountable[int] {
+	return &Exit{}
 }

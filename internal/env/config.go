@@ -71,6 +71,12 @@ type Config struct {
 		Port string `env:"PORT" envDefault:"8080"`
 	} `envPrefix:"WEB_"`
 
+	// TopGG
+	TopGg struct {
+		Token string `env:"TOKEN"`
+		Url   string `env:"URL"`
+	} `envPrefix:"TOPGG_"`
+
 	// App parameters
 	App struct {
 		CardsLocation string `env:"CARDS_LOCATION" envDefault:"/cards/yml"`

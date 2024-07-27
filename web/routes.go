@@ -11,6 +11,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/web/dungeons"
 	"github.com/yyewolf/rwbyadv3/web/market"
 	"github.com/yyewolf/rwbyadv3/web/metrics"
+	"github.com/yyewolf/rwbyadv3/web/topgg"
 )
 
 type WebApp struct {
@@ -49,6 +50,8 @@ func (w *WebApp) RegisterRoutes() {
 	dungeons.NewDungeonsHandler(w.app, w.Group("/dungeons"))
 
 	cdn.NewCDNHandler(w.app, w.Group("/cdn"))
+
+	topgg.NewTopGgHandler(w.app, w.Group("/topgg"))
 }
 
 func (w *WebApp) Start() error {

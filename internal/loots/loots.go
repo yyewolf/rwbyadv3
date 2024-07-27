@@ -17,7 +17,3 @@ type Loot interface {
 	PickedUp(tx *sql.Tx, p *models.Player)
 	RewardText([]Loot) string
 }
-
-var PossibleLoots = []Loot{
-	MoneyBag{},
-}
