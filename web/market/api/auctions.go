@@ -309,6 +309,7 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 				SetTitle("Auction Bid").
 				SetColor(h.app.Config().App.BotColor).
 				SetDescriptionf("You have bid **%d** Liens on `%s`.", bidAmount, cardDescription).
+				SetEmbedFooter(h.app.Footer()).
 				Build(),
 		).
 		Build(),
@@ -323,6 +324,7 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 						SetTitle("Auction Outbid").
 						SetColor(h.app.Config().App.BotColor).
 						SetDescriptionf("You have been outbid on `%s` by **%d** Liens.", cardDescription, bidAmount).
+						SetEmbedFooter(h.app.Footer()).
 						Build(),
 				).
 				Build(),

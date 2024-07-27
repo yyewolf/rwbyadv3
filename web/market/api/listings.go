@@ -157,6 +157,7 @@ func (h *MarketApiHandler) PurchaseListing(c echo.Context) error {
 				SetTitle("Listing Purchase").
 				SetColor(h.app.Config().App.BotColor).
 				SetDescriptionf("You have purchased `%s` for **%d** Liens.", cardDescription, listing.Price).
+				SetEmbedFooter(h.app.Footer()).
 				Build(),
 		).
 		Build(),
@@ -167,6 +168,7 @@ func (h *MarketApiHandler) PurchaseListing(c echo.Context) error {
 				SetTitle("Listing Purchase").
 				SetColor(h.app.Config().App.BotColor).
 				SetDescriptionf("You have sold `%s` for **%d** Liens.", cardDescription, listing.Price).
+				SetEmbedFooter(h.app.Footer()).
 				Build(),
 		).
 		Build(),

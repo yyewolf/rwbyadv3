@@ -3,7 +3,7 @@ package dungeons
 import (
 	"math/rand"
 
-	"github.com/yyewolf/rwbyadv3/internal/dungeons/loots"
+	"github.com/yyewolf/rwbyadv3/internal/loots"
 	"github.com/yyewolf/rwbyadv3/internal/maze"
 )
 
@@ -63,14 +63,14 @@ func (d *Dungeon) GenerateLoots() {
 		var lootLocation = possiblePoints[idx]
 
 		// Pick a random loot
-		var loot = loots.PossibleLoots[d.r.Intn(len(loots.PossibleLoots))]
+		var loot = loots.DungeonLoots[d.r.Intn(len(loots.DungeonLoots))]
 		loot = loot.Generate(d.r, lootLocation)
 
 		d.Loots = append(d.Loots, loot)
 		possiblePoints = append(possiblePoints[:idx], possiblePoints[idx+1:]...)
 	}
 
-	l := loots.PossibleLoots[0].Generate(d.r, [2]int{3, 3})
+	l := loots.DungeonLoots[0].Generate(d.r, [2]int{3, 3})
 	d.Loots = append(d.Loots, l)
 
 	// Add exit to loots

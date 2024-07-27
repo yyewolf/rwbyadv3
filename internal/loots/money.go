@@ -7,9 +7,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/yyewolf/rwbyadv3/pkg/loots/item"
 )
 
-type MoneyBag struct {
+type Liens struct {
 	ID     string `json:"id"`
 	Type   string `json:"type"`
 	X      int    `json:"x"`
@@ -17,23 +18,23 @@ type MoneyBag struct {
 	Amount int    `json:"amount"`
 }
 
-func (m MoneyBag) GetID() string {
+func (m Liens) GetID() string {
 	return m.ID
 }
 
-func (m MoneyBag) GetType() string {
+func (m Liens) GetType() string {
 	return m.Type
 }
 
-func (m MoneyBag) GetX() int {
+func (m Liens) GetX() int {
 	return m.X
 }
 
-func (m MoneyBag) GetY() int {
+func (m Liens) GetY() int {
 	return m.Y
 }
 
-func (m MoneyBag) Generate(r *rand.Rand, point [2]int) Loot {
+func (m Liens) Generate(r *rand.Rand, point [2]int) Loot {
 	var buffer = make([]byte, 16)
 	r.Read(buffer)
 	m.ID = uuid.NewSHA1(uuid.NameSpaceDNS, buffer).String()
@@ -45,16 +46,28 @@ func (m MoneyBag) Generate(r *rand.Rand, point [2]int) Loot {
 	return m
 }
 
-func (m MoneyBag) PickedUp(tx *sql.Tx, p *models.Player) {
+func (m Liens) PickedUp(tx *sql.Tx, p *models.Player) {
 	p.Liens += int64(m.Amount)
 }
 
-func (m MoneyBag) RewardText(l []Loot) string {
+func (m Liens) RewardText(l []Loot) string {
 	amount := 0
 	for _, loot := range l {
 		if loot.GetType() == "money" {
-			amount += loot.(MoneyBag).Amount
+			amount += loot.(Liens).Amount
 		}
 	}
 	return fmt.Sprintf("You found **%d Ⱡ** (Liens)!", amount)
+}
+
+func (m *Liens) GetAmount() int {
+	return m.Amount
+}
+
+func (m *Liens) SetAmount(amount int) {
+	m.Amount = amount
+}
+
+func (m *Liens) New() item.Amountable[int] {
+	return &Liens{}
 }
