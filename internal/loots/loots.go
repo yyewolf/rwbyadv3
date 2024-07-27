@@ -2,18 +2,26 @@ package loots
 
 import (
 	"database/sql"
-	"math/rand"
 
 	"github.com/yyewolf/rwbyadv3/models"
 )
 
-type Loot interface {
+type DungeonLoot interface {
 	GetID() string
 	GetType() string
 	GetX() int
 	GetY() int
 
-	Generate(r *rand.Rand, point [2]int) Loot
+	Place(point [2]int) DungeonLoot
 	PickedUp(tx *sql.Tx, p *models.Player)
-	RewardText([]Loot) string
+
+	Loot
+}
+
+type Loot interface {
+	RewardText([]interface{}) string
+}
+
+var DungeonLoots = []DungeonLoot{
+	Liens{},
 }

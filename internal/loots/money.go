@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/yyewolf/rwbyadv3/models"
-	"github.com/yyewolf/rwbyadv3/pkg/loots/item"
+	"github.com/yyewolf/rwbyadv3/pkg/loottables/item"
 )
 
 type Liens struct {
@@ -34,15 +34,9 @@ func (m Liens) GetY() int {
 	return m.Y
 }
 
-func (m Liens) Generate(r *rand.Rand, point [2]int) Loot {
-	var buffer = make([]byte, 16)
-	r.Read(buffer)
-	m.ID = uuid.NewSHA1(uuid.NameSpaceDNS, buffer).String()
-
-	m.Type = "money"
+func (m Liens) Place(point [2]int) DungeonLoot {
 	m.X = point[0]
 	m.Y = point[1]
-	m.Amount = r.Intn(125) + 50
 	return m
 }
 
@@ -50,11 +44,14 @@ func (m Liens) PickedUp(tx *sql.Tx, p *models.Player) {
 	p.Liens += int64(m.Amount)
 }
 
-func (m Liens) RewardText(l []Loot) string {
+func (m Liens) RewardText(l []interface{}) string {
 	amount := 0
 	for _, loot := range l {
-		if loot.GetType() == "money" {
-			amount += loot.(Liens).Amount
+		switch loot := loot.(type) {
+		case *Liens:
+			amount += loot.Amount
+		case Liens:
+			amount += loot.Amount
 		}
 	}
 	return fmt.Sprintf("You found **%d Ⱡ** (Liens)!", amount)
@@ -68,6 +65,14 @@ func (m *Liens) SetAmount(amount int) {
 	m.Amount = amount
 }
 
-func (m *Liens) New() item.Amountable[int] {
-	return &Liens{}
+func (m *Liens) New(r *rand.Rand) item.Amountable[int] {
+	var buffer = make([]byte, 16)
+	r.Read(buffer)
+	m.ID = uuid.NewSHA1(uuid.NameSpaceDNS, buffer).String()
+
+	m.Type = "money"
+	return &Liens{
+		ID:   m.ID,
+		Type: m.Type,
+	}
 }

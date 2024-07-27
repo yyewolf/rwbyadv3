@@ -70,7 +70,7 @@ func EndDungeon(app interfaces.App) echo.HandlerFunc {
 			return c.JSON(500, err)
 		}
 
-		var pickedUpLoots []loots.Loot
+		var pickedUpLoots []interface{}
 
 		for _, loot := range d.Loots {
 			if !slices.Contains(req.Loots, loot.GetID()) {
