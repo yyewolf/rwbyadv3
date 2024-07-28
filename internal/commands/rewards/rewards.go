@@ -3,6 +3,7 @@ package rewards
 import (
 	"github.com/disgoorg/disgo/discord"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
+	"github.com/yyewolf/rwbyadv3/internal/commands/rewards/daily"
 	"github.com/yyewolf/rwbyadv3/internal/commands/rewards/stars"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 )
@@ -15,6 +16,7 @@ func NewMenu(ms *builder.MenuStore, app interfaces.App) *builder.Menu {
 		}),
 		builder.WithCommands(
 			stars.StarCommand(ms, app),
+			daily.DailyCommand(ms, app),
 		),
 	)
 }
