@@ -2,7 +2,6 @@ package loots
 
 import (
 	"database/sql"
-	"fmt"
 	"math/rand"
 
 	"github.com/google/uuid"
@@ -59,7 +58,6 @@ func (m *Exit) New(r *rand.Rand) item.Amountable[int] {
 	m.ID = uuid.NewSHA1(uuid.NameSpaceDNS, buffer).String()
 
 	m.Type = "exit"
-	fmt.Println("oof")
 	return &Exit{
 		ID:   m.ID,
 		Type: m.Type,
