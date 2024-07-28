@@ -36,12 +36,16 @@ func main() {
 
 	err := migrate.CreateAndMigrate()
 	if err != nil {
-		logrus.Fatal(err)
+		logrus.
+			WithError(err).
+			Fatal("cannot run migration")
 	}
 
 	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable", c.Database.User, c.Database.Pass, c.Database.Database, c.Database.Host, c.Database.Port))
 	if err != nil {
-		logrus.Fatal(err)
+		logrus.
+			WithError(err).
+			Fatal("cannot connect to database")
 	}
 
 	boil.SetDB(db)
@@ -54,7 +58,9 @@ func main() {
 		Logger:   slog.New(sloglogrus.Option{Logger: logrus.StandardLogger()}.NewLogrusHandler()),
 	})
 	if err != nil {
-		logrus.Fatal(err)
+		logrus.
+			WithError(err).
+			Fatal("cannot connecto to temporal")
 	}
 
 	w := worker.New(temporal, c.Temporal.TaskQueue, worker.Options{})
