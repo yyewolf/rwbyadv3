@@ -13,13 +13,13 @@ type DungeonLoot interface {
 	GetY() int
 
 	Place(point [2]int) DungeonLoot
-	PickedUp(tx *sql.Tx, p *models.Player)
 
 	Loot
 }
 
 type Loot interface {
 	RewardText([]interface{}) string
+	PickedUp(tx *sql.Tx, p *models.Player)
 }
 
 var DungeonLoots = []DungeonLoot{
