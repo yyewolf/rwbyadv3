@@ -25,7 +25,6 @@ func GetEmbeddableImage(cardType string, imageType string, format string) (io.Re
 		if err == nil {
 			break
 		}
-		fmt.Println(p)
 		p = path.Join(path.Dir(path.Dir(p)), imageType+"."+format)
 		if p == "cards/img" {
 			return nil, err

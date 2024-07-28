@@ -60,7 +60,7 @@ func main() {
 	if err != nil {
 		logrus.
 			WithError(err).
-			Fatal("cannot connecto to temporal")
+			Fatal("cannot connect to temporal")
 	}
 
 	w := worker.New(temporal, c.Temporal.TaskQueue, worker.Options{})
