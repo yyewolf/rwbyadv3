@@ -1,11 +1,19 @@
-package stars
+package daily
 
 import (
+	"context"
+	"math/rand"
+
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
+	"github.com/yyewolf/rwbyadv3/internal/loots"
+	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/yyewolf/rwbyadv3/pkg/loottables"
+	"github.com/yyewolf/rwbyadv3/pkg/loottables/item"
 )
 
 const (
@@ -44,7 +52,7 @@ func DailyCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 func (cmd *dailyCommand) HandleCommand(e *handler.CommandEvent) error {
 	player := e.Ctx.Value(builder.PlayerKey).(*models.Player)
 	daily := player.R.GetDaily()
-	if daily.HasVoted {
+	if !daily.HasVoted {
 		return e.Respond(
 			discord.InteractionResponseTypeCreateMessage,
 			discord.NewMessageCreateBuilder().
@@ -61,88 +69,71 @@ func (cmd *dailyCommand) HandleCommand(e *handler.CommandEvent) error {
 		)
 	}
 
-	// Do rewards
-	// money := (rand.Intn(225) + 68) * (ctx.Player.Status.DailyStreak%10 + 1)
-	// earnings = append(earnings, fmt.Sprintf("**%d**Ⱡ", money))
+	var random = rand.New(rand.NewSource(rand.Int63()))
 
-	// var normalLootBoxes int
-	// var normalGrimmBoxes int
-	// // random lootbox loot
-	// for i := 0; i < 3; i++ {
-	// 	rng := rand.Float64() * 100
-	// 	if rng < 7.5 {
-	// 		t := rand.Intn(2)
-	// 		if t == 0 {
-	// 			ctx.Player.Boxes.Boxes++
-	// 			normalLootBoxes++
-	// 		} else {
-	// 			ctx.Player.Boxes.GrimmBoxes++
-	// 			normalGrimmBoxes++
-	// 		}
-	// 	}
-	// }
+	// Create the loot table
+	var lootTable = loottables.New(
+		item.New(&loots.Liens{}, 10,
+			item.Unique[int, *loots.Liens](),
+			item.WithAmountRange[int, *loots.Liens](100, 1500, 1),
+			item.WithRepartitionFunc[int, *loots.Liens](item.RepartitionGaussian[int](120*(daily.Streak%7+1), 50))),
+		item.New(item.Nothing{}, 20),
+	)
 
-	// if normalLootBoxes == 3 {
-	// 	normalLootBoxes = 0
-	// 	ctx.Player.Boxes.Boxes -= 3
-	// 	ctx.Player.Boxes.RareBoxes++
-	// 	earnings = append(earnings, "**1** Rare Box")
-	// }
-	// if normalGrimmBoxes == 3 {
-	// 	normalGrimmBoxes = 0
-	// 	ctx.Player.Boxes.GrimmBoxes -= 3
-	// 	ctx.Player.Boxes.RareGrimmBoxes++
-	// 	earnings = append(earnings, "**1** Rare Grimm Box")
-	// }
+	list := lootTable.ChooseRandomItems(random, 5)
 
-	// if normalLootBoxes > 0 {
-	// 	earnings = append(earnings, fmt.Sprintf("**%d** Box(es)", normalLootBoxes))
-	// }
-	// if normalGrimmBoxes > 0 {
-	// 	earnings = append(earnings, fmt.Sprintf("**%d** Grimm Box(es)", normalGrimmBoxes))
-	// }
+	tx, err := boil.BeginTx(context.Background(), nil)
+	if err != nil {
+		return utils.CommandError(e, err)
+	}
 
-	// cp := ctx.Player.CalcCP(0.6)
-	// earnings = append(earnings, fmt.Sprintf("**%d** CP", cp))
+	// Give loots and create text
+	texts := make([]string, 0)
+	for _, loot := range list {
+		if loot, ok := loot.(loots.Loot); ok {
+			loot.PickedUp(tx, player)
+			texts = append(texts, loot.RewardText(list))
+		}
+	}
 
-	// content := &discordgo.MessageEmbed{
-	// 	Title:       fmt.Sprintf("Daily Reward : (%d 🔥)", ctx.Player.Status.DailyStreak),
-	// 	Description: "Thank you for your vote!\n\nYou earned :\n",
-	// 	Thumbnail: &discordgo.MessageEmbedThumbnail{
-	// 		URL: ctx.Author.AvatarURL("512"),
-	// 	},
-	// 	Color: config.Botcolor,
-	// }
+	// Remove capability from player to claim again
+	daily.HasVoted = false
+	_, err = player.R.Daily.Update(
+		e.Ctx,
+		tx,
+		boil.Whitelist(
+			models.DailyColumns.HasVoted,
+		),
+	)
+	if err != nil {
+		tx.Rollback()
+		return utils.CommandError(e, err)
+	}
 
-	// for _, earning := range earnings {
-	// 	content.Description += fmt.Sprintf("=> %s\n", earning)
-	// }
+	err = tx.Commit()
+	if err != nil {
+		return utils.CommandError(e, err)
+	}
 
-	// ctx.Reply(discord.ReplyParams{
-	// 	Content: content,
-	// })
-
-	// ctx.GiveCP(cp, true)
-	// ctx.Player.Boxes.Save()
-
-	// tx, err := boil.BeginTx(e.Ctx, nil)
-	// if err != nil {
-	// 	return utils.CommandError(e, err)
-	// }
-
-	// daily.HasVoted = false
-	// _, err = player.R.Daily.Update(
-	// 	e.Ctx,
-	// 	tx,
-	// 	boil.Whitelist(
-	// 		models.DailyColumns.HasVoted,
-	// 		models.DailyColumns.LastVoteAt,
-	// 		models.DailyColumns.Streak,
-	// 	),
-	// )
-	// if err != nil {
-	// 	return utils.CommandError(e, err)
-	// }
-
-	return nil
+	return e.Respond(
+		discord.InteractionResponseTypeCreateMessage,
+		discord.NewMessageCreateBuilder().
+			SetEmbeds(
+				discord.NewEmbedBuilder().
+					SetTitlef("Daily Reward : (%d 🔥)", daily.Streak).
+					SetColor(cmd.app.Config().App.BotColor).
+					SetDescriptionf(
+						utils.Joinln(
+							"Thank you for your vote!",
+							"Here's what you got :",
+							"",
+							utils.Joinln(texts...),
+						),
+					).
+					SetEmbedFooter(cmd.app.Footer()).
+					Build(),
+			).
+			SetEphemeral(true).
+			Build(),
+	)
 }
