@@ -1,13 +1,15 @@
 package market
 
 import (
-	"github.com/yyewolf/rwbyadv3/models"
-	"github.com/astaxie/beego/utils/pagination"
-	"github.com/xeonx/timeago"
-	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"fmt"
 	"strconv"
+	
+	"github.com/astaxie/beego/utils/pagination"
+	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/web/templates/icons"
+	"github.com/yyewolf/rwbyadv3/web/templates/layout"
+	"github.com/xeonx/timeago"
 )
 
 templ Listing(listing *models.Listing) {
@@ -123,7 +125,7 @@ templ ListingModal(listing *models.Listing) {
 
 templ Listings(listings []*models.Listing, pagination *pagination.Paginator) {
 	for i, listing := range listings {
-		if i == len(listings) - 1 {
+		if i == len(listings) - 1 && pagination.HasNext() {
 			<div
 				class=""
 				hx-get={ pagination.PageLinkNext() }
@@ -144,6 +146,46 @@ templ LatestListings(listings []*models.Listing) {
 	for _, listing := range listings {
 		<div>
 			@Listing(listing)
+		</div>
+	}
+}
+
+templ SearchListings() {
+	@layout.MarketBase(
+		"Search Listings",
+		false,
+		[]string{},
+		[]string{},
+	) {
+		<div
+			name="container"
+			class="container mx-auto lg:px-32 px-12"
+		>
+			<div name="listings-section">
+				<a
+					class="p-4 text-2xl font-bold flex flex-row w-full justify-between items-center"
+				>
+					<span>Listings</span>
+				</a>
+				
+				<div id="search-listings" class="p-4 text-md font-bold flex flex-row w-full justify-center">
+					<label for="search" class="sr-only">Search</label>
+					<input type="search" 
+						name="q" placeholder="Begin Typing To Search Listings..." 
+						class="p-2 border-2 border-gray-300 rounded-md"
+						hx-params="*"
+						hx-get="/market/api/listings"
+						hx-trigger="input changed delay:500ms, search" 
+						hx-target="#listing-container" 
+						hx-indicator=".htmx-indicator">
+				</div>
+
+				<div id="listing-container" class="container gap-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 p-4" hx-get="/market/api/listings" hx-trigger="load">
+					<div class="htmx-indicator">
+						Loading...
+					</div>
+				</div>
+			</div>
 		</div>
 	}
 }

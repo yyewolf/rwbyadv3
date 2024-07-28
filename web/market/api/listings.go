@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/astaxie/beego/utils/pagination"
 	"github.com/disgoorg/disgo/discord"
@@ -16,7 +17,7 @@ import (
 )
 
 var (
-	listingsPerPage = 20
+	listingsPerPage = 5
 )
 
 func (h *MarketApiHandler) GetListings(c echo.Context) error {
@@ -27,6 +28,15 @@ func (h *MarketApiHandler) GetListings(c echo.Context) error {
 
 	paginator := pagination.NewPaginator(c.Request(), listingsPerPage, amount)
 
+	query := c.QueryParam("q")
+	if c.Request().Header.Get("HX-Request") == "true" && query == "" {
+		parsedUrl, err := url.ParseRequestURI(c.Request().Header.Get("HX-Current-URL"))
+		if err != nil {
+			return err
+		}
+		query = parsedUrl.Query().Get("q")
+	}
+
 	listings, err := models.Listings(
 		qm.Offset(paginator.Offset()),
 		qm.Limit(listingsPerPage),
@@ -36,6 +46,17 @@ func (h *MarketApiHandler) GetListings(c echo.Context) error {
 		qm.Load(
 			qm.Rels(models.ListingRels.Card, models.CardRels.CardsStat),
 		),
+		qm.OrderBy(models.ListingColumns.CreatedAt+" DESC"),
+
+		// Join Player and Card for filtering
+		qm.InnerJoin(models.TableNames.Players+" p on p."+models.PlayerColumns.ID+"="+models.TableNames.Listings+"."+models.ListingColumns.PlayerID),
+		qm.InnerJoin(models.TableNames.Cards+" c on c."+models.CardColumns.ID+"="+models.TableNames.Listings+"."+models.ListingColumns.CardID),
+		qm.InnerJoin(models.TableNames.CardTypes+" t on t."+models.CardTypeColumns.CardType+"=c."+models.CardColumns.CardType),
+
+		qm.Or2(models.ListingWhere.Note.ILIKE("%"+query+"%")),
+		qm.Or("p."+models.PlayerColumns.Username+" ILIKE '%"+query+"%'"),
+		qm.Or("t."+models.CardTypeColumns.Name+" ILIKE '%"+query+"%'"),
+		qm.Or("t."+models.CardTypeColumns.Categories+" ILIKE '%"+query+"%'"),
 	).AllG(context.Background())
 	if err != nil {
 		return err

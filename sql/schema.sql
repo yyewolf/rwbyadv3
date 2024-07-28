@@ -119,6 +119,17 @@ CREATE TABLE public.auth_github_states (
 
 
 --
+-- Name: card_types; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.card_types (
+    card_type character varying(50) NOT NULL,
+    name character varying(50) NOT NULL,
+    categories character varying(50) NOT NULL
+);
+
+
+--
 -- Name: cards; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -367,6 +378,14 @@ ALTER TABLE ONLY public.auth_discord_states
 
 ALTER TABLE ONLY public.auth_github_states
     ADD CONSTRAINT auth_github_states_pkey PRIMARY KEY (state);
+
+
+--
+-- Name: card_types card_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.card_types
+    ADD CONSTRAINT card_types_pkey PRIMARY KEY (card_type);
 
 
 --
@@ -712,4 +731,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240625191041'),
     ('20240626084657'),
     ('20240706095548'),
-    ('20240726065110');
+    ('20240726065110'),
+    ('20240728132345');
