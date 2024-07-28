@@ -9,4 +9,6 @@ import (
 
 func RegisterViewsRoutes(app interfaces.App, g *echo.Group) {
 	g.GET("/", echo.WrapHandler(templ.Handler(market.Main())))
+	g.GET("/search/listings", echo.WrapHandler(templ.Handler(market.SearchListings())))
+	g.GET("/search/auctions", echo.WrapHandler(templ.Handler(market.SearchAuctions())))
 }

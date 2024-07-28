@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"math"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -19,8 +20,55 @@ import (
 )
 
 var (
-	auctionsPerPage = 20
+	auctionsPerPage = 5
 )
+
+func (h *MarketApiHandler) GetAuctions(c echo.Context) error {
+	amount, err := models.Auctions(
+		qm.Where(models.AuctionColumns.EndsAt + " > NOW()"),
+	).CountG(context.Background())
+	if err != nil {
+		return err
+	}
+
+	paginator := pagination.NewPaginator(c.Request(), auctionsPerPage, amount)
+
+	query := c.QueryParam("q")
+	if c.Request().Header.Get("HX-Request") == "true" && query == "" {
+		parsedUrl, err := url.ParseRequestURI(c.Request().Header.Get("HX-Current-URL"))
+		if err != nil {
+			return err
+		}
+		query = parsedUrl.Query().Get("q")
+	}
+
+	auctions, err := models.Auctions(
+		qm.Where(models.AuctionColumns.EndsAt+" > NOW()"),
+		qm.Offset(paginator.Offset()),
+		qm.Limit(auctionsPerPage),
+		qm.Load(
+			models.AuctionRels.Player,
+		),
+		qm.Load(
+			qm.Rels(models.AuctionRels.Card, models.CardRels.CardsStat),
+		),
+		qm.OrderBy(models.AuctionColumns.CreatedAt+" DESC"),
+
+		// Join Player and Card for filtering
+		qm.InnerJoin(models.TableNames.Players+" p on p."+models.PlayerColumns.ID+"="+models.TableNames.Auctions+"."+models.AuctionColumns.PlayerID),
+		qm.InnerJoin(models.TableNames.Cards+" c on c."+models.CardColumns.ID+"="+models.TableNames.Auctions+"."+models.AuctionColumns.CardID),
+		qm.InnerJoin(models.TableNames.CardTypes+" t on t."+models.CardTypeColumns.CardType+"=c."+models.CardColumns.CardType),
+
+		qm.Or("p."+models.PlayerColumns.Username+" ILIKE '%"+query+"%'"),
+		qm.Or("t."+models.CardTypeColumns.Name+" ILIKE '%"+query+"%'"),
+		qm.Or("t."+models.CardTypeColumns.Categories+" ILIKE '%"+query+"%'"),
+	).AllG(context.Background())
+	if err != nil {
+		return err
+	}
+
+	return templates.RenderView(c, market.Auctions(auctions, paginator))
+}
 
 func (h *MarketApiHandler) GetAuction(c echo.Context) error {
 	auctionID := c.Param("auctionId")
@@ -89,38 +137,6 @@ func (h *MarketApiHandler) GetAuctionTimeleft(c echo.Context) error {
 	}
 
 	return templates.RenderView(c, market.AuctionTimeleft(auction))
-}
-
-func (h *MarketApiHandler) GetAuctions(c echo.Context) error {
-	amount, err := models.Auctions(
-		qm.Where(models.AuctionColumns.EndsAt + " > NOW()"),
-	).CountG(context.Background())
-	if err != nil {
-		return err
-	}
-
-	paginator := pagination.NewPaginator(c.Request(), auctionsPerPage, amount)
-
-	auctions, err := models.Auctions(
-		qm.Where(models.AuctionColumns.EndsAt+" > NOW()"),
-		qm.Offset(paginator.Offset()),
-		qm.Limit(auctionsPerPage),
-		qm.Load(
-			models.AuctionRels.AuctionsBids,
-			qm.OrderBy(models.AuctionsBidColumns.Price+" DESC"),
-		),
-		qm.Load(
-			models.AuctionRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.AuctionRels.Card, models.CardRels.CardsStat),
-		),
-	).AllG(context.Background())
-	if err != nil {
-		return err
-	}
-
-	return templates.RenderView(c, market.Auctions(auctions, paginator))
 }
 
 func (h *MarketApiHandler) GetLatestAuctions(c echo.Context) error {

@@ -9,6 +9,7 @@ var TableNames = struct {
 	AuthCookies         string
 	AuthDiscordStates   string
 	AuthGithubStates    string
+	CardTypes           string
 	Cards               string
 	CardsStats          string
 	Dailies             string
@@ -28,6 +29,7 @@ var TableNames = struct {
 	AuthCookies:         "auth_cookies",
 	AuthDiscordStates:   "auth_discord_states",
 	AuthGithubStates:    "auth_github_states",
+	CardTypes:           "card_types",
 	Cards:               "cards",
 	CardsStats:          "cards_stats",
 	Dailies:             "dailies",

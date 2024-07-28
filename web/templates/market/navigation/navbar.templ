@@ -28,11 +28,11 @@ templ Navbar(loggedIn bool, activePage string) {
 					</div>
 					<div class="hidden sm:block sm:ml-6">
 						<div class="flex space-x-4">
-							<a href="/" class={ "px-3 py-2 rounded-md text-sm font-medium " + ButtonClass(activePage, "/") }>Home</a>
-							<a href="/about" class={ "px-3 py-2 rounded-md text-sm font-medium " + ButtonClass(activePage, "/about") }>About</a>
-							<a href="/contact" class={ "px-3 py-2 rounded-md text-sm font-medium " + ButtonClass(activePage, "/contact") }>Contact</a>
+							<a href="/market" class={ "px-3 py-2 rounded-md text-sm font-medium " + ButtonClass(activePage, "/") }>Home</a>
+							<a href="/market/about" class={ "px-3 py-2 rounded-md text-sm font-medium " + ButtonClass(activePage, "/about") }>About</a>
+							<a href="/market/contact" class={ "px-3 py-2 rounded-md text-sm font-medium " + ButtonClass(activePage, "/contact") }>Contact</a>
 							if loggedIn {
-								<a href="/logout" class={ "px-3 py-2 rounded-md text-sm font-medium " + ButtonClass(activePage, "/logout") }>Logout</a>
+								<a href="/market/logout" class={ "px-3 py-2 rounded-md text-sm font-medium " + ButtonClass(activePage, "/logout") }>Logout</a>
 							}
 						</div>
 					</div>
