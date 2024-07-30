@@ -44,3 +44,6 @@ bin/*
 tmp/
 
 !.gitkeep
+
+# IntelliJ
+.idea/

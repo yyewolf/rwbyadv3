@@ -11,9 +11,7 @@ import (
 
 func TestSimpleTable(t *testing.T) {
 	simpleTable := New(
-		item.New(&loots.Liens{}, 2,
-			item.WithAmountRange[int, *loots.Liens](30, 150, 1),
-		),
+		item.New(&loots.Liens{}, 2).WithAmountRange(30, 150, 1),
 	)
 
 	r := rand.New(rand.NewSource(1))
@@ -27,27 +25,31 @@ func TestSimpleTable(t *testing.T) {
 
 func TestAdvancedTable(t *testing.T) {
 	advancedTable := New(
-		item.New(&loots.Liens{}, 1,
-			item.WithAmountRange[int, *loots.Liens](60, 150, 3),
-			item.Always[int, *loots.Liens](),
-			item.Unique[int, *loots.Liens](),
-		),
+		item.New(&loots.Liens{}, 1).
+			WithAmountRange(60, 150, 3).
+			AlwaysDrop().
+			OnlyDropOnce(),
 
 		NewSubLootTable(1,
-			Always(),
-			WithCount(2),
+			AlwaysDrop(),
+			Drop(2),
 			WithEntries(
-				item.New(&loots.Exit{}, 1, item.Always[int, *loots.Exit]()),
-				item.New(&loots.Liens{}, 1, item.WithAmountRange[int, *loots.Liens](160, 250, 1), item.WithRepartitionFunc[int, *loots.Liens](item.RepartitionGaussian[int](190, 10))),
+				item.New(&loots.Exit{}, 1).
+					AlwaysDrop(),
+				item.New(&loots.Liens{}, 1).
+					WithAmountRange(160, 250, 1).
+					WithRepartitionFunc(item.RepartitionGaussian(190, 10)),
 				item.New(item.Nothing{}, 8),
 			),
 		),
 
 		NewSubLootTable(1,
-			Always(),
-			WithCount(1),
+			AlwaysDrop(),
+			Drop(1),
 			WithEntries(
-				item.New(&loots.Liens{}, 1, item.WithAmountRange[int, *loots.Liens](20, 100, 1), item.WithRepartitionFunc[int, *loots.Liens](item.RepartitionGaussian[int](50, 2))),
+				item.New(&loots.Liens{}, 1).
+					WithAmountRange(20, 100, 1).
+					WithRepartitionFunc(item.RepartitionGaussian(50, 2)),
 				item.New(item.Nothing{}, 64),
 			),
 		),

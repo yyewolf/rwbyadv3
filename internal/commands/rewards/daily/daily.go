@@ -73,10 +73,7 @@ func (cmd *dailyCommand) HandleCommand(e *handler.CommandEvent) error {
 
 	// Create the loot table
 	var lootTable = loottables.New(
-		item.New(&loots.Liens{}, 10,
-			item.Unique[int, *loots.Liens](),
-			item.WithAmountRange[int, *loots.Liens](100, 1500, 1),
-			item.WithRepartitionFunc[int, *loots.Liens](item.RepartitionGaussian[int](120*(daily.Streak%7+1), 50))),
+		item.New(&loots.Liens{}, 10).OnlyDropOnce().WithAmountRange(100, 1500, 1).WithRepartitionFunc(item.RepartitionGaussian(120*(daily.Streak%7+1), 50)),
 		item.New(item.Nothing{}, 20),
 	)
 

@@ -105,38 +105,30 @@ func (ie Item[I, T]) Copy() interface{} {
 }
 
 // New creates a new ItemWithAmount with the specified item and weight and step.
-func New[I constraints.Integer, T Amountable[I]](item T, weight float64, opts ...func(*Item[I, T])) *Item[I, T] {
+func New[I constraints.Integer, T Amountable[I]](item T, weight float64) *Item[I, T] {
 	out := Item[I, T]{Item: item, Weight: weight, Enabled: true}
-
-	for _, opt := range opts {
-		opt(&out)
-	}
 
 	return &out
 }
 
-func WithRepartitionFunc[I constraints.Integer, T Amountable[I]](repartitionFunc func(*rand.Rand) I) func(*Item[I, T]) {
-	return func(i *Item[I, T]) {
-		i.RepartitionFunc = repartitionFunc
-	}
+func (i *Item[I, T]) WithRepartitionFunc(repartitionFunc func(*rand.Rand) I) *Item[I, T] {
+	i.RepartitionFunc = repartitionFunc
+	return i
 }
 
-func WithAmountRange[I constraints.Integer, T Amountable[I]](min, max, step I) func(*Item[I, T]) {
-	return func(i *Item[I, T]) {
-		i.Min = min
-		i.Max = max
-		i.Step = step
-	}
+func (i *Item[I, T]) WithAmountRange(min, max, step I) *Item[I, T] {
+	i.Min = min
+	i.Max = max
+	i.Step = step
+	return i
 }
 
-func Always[I constraints.Integer, T Amountable[I]]() func(*Item[I, T]) {
-	return func(i *Item[I, T]) {
-		i.Always = true
-	}
+func (i *Item[I, T]) AlwaysDrop() *Item[I, T] {
+	i.Always = true
+	return i
 }
 
-func Unique[I constraints.Integer, T Amountable[I]]() func(*Item[I, T]) {
-	return func(i *Item[I, T]) {
-		i.Unique = true
-	}
+func (i *Item[I, T]) OnlyDropOnce() *Item[I, T] {
+	i.Unique = true
+	return i
 }

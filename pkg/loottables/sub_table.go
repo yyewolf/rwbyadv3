@@ -93,13 +93,13 @@ func Unique() func(*SubLootTable) {
 	}
 }
 
-func WithCount(count int) func(*SubLootTable) {
+func Drop(count int) func(*SubLootTable) {
 	return func(lt *SubLootTable) {
 		lt.Count = count
 	}
 }
 
-func Always() func(*SubLootTable) {
+func AlwaysDrop() func(*SubLootTable) {
 	return func(lt *SubLootTable) {
 		lt.Always = true
 	}

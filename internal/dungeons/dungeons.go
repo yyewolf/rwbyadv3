@@ -60,21 +60,21 @@ func (d *Dungeon) GenerateLoots() {
 	// Create the loot table
 	var lootTable = loottables.New(
 		loottables.NewSubLootTable(1,
-			loottables.Always(),
+			loottables.AlwaysDrop(),
 			loottables.Unique(),
-			loottables.WithCount(dynamicLootCount),
+			loottables.Drop(dynamicLootCount),
 			loottables.WithEntries(
-				item.New(&loots.Liens{}, one*4, item.WithAmountRange[int, *loots.Liens](50, 200, 1), item.WithRepartitionFunc[int, *loots.Liens](item.RepartitionGaussian[int](120, 50))),
+				item.New(&loots.Liens{}, one*4).WithAmountRange(50, 200, 1).WithRepartitionFunc(item.RepartitionGaussian(120, 50)),
 				// item.New(item.Nothing{}, one),
 			),
 		),
 
 		loottables.NewSubLootTable(1,
-			loottables.Always(),
+			loottables.AlwaysDrop(),
 			loottables.Unique(),
-			loottables.WithCount(1),
+			loottables.Drop(1),
 			loottables.WithEntries(
-				item.New(&loots.Exit{}, 1, item.Always[int, *loots.Exit](), item.Unique[int, *loots.Exit]()),
+				item.New(&loots.Exit{}, 1).AlwaysDrop().OnlyDropOnce(),
 			),
 		),
 	)
