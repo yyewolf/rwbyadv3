@@ -1,6 +1,6 @@
 ### Build the main web assets
 ###
-FROM node:22.5-alpine AS web-builder-main
+FROM node:22.8-alpine AS web-builder-main
 # Install make 
 RUN apk add --no-cache make
 WORKDIR /app
@@ -12,7 +12,7 @@ RUN make assets
 
 ### Build the dungeons assets
 ###
-FROM node:22.5-alpine AS web-builder-dungeons
+FROM node:22.8-alpine AS web-builder-dungeons
 # Install make 
 RUN apk add --no-cache make
 WORKDIR /app/dungeons
