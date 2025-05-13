@@ -153,6 +153,8 @@ var PlayerRels = struct {
 	PlayerCardFavorites string
 	PlayerCards         string
 	PlayerCardsDecks    string
+	ReceiverTrades      string
+	SenderTrades        string
 }{
 	IDGithubStar:        "IDGithubStar",
 	SelectedCard:        "SelectedCard",
@@ -171,6 +173,8 @@ var PlayerRels = struct {
 	PlayerCardFavorites: "PlayerCardFavorites",
 	PlayerCards:         "PlayerCards",
 	PlayerCardsDecks:    "PlayerCardsDecks",
+	ReceiverTrades:      "ReceiverTrades",
+	SenderTrades:        "SenderTrades",
 }
 
 // playerR is where relationships are stored.
@@ -192,6 +196,8 @@ type playerR struct {
 	PlayerCardFavorites PlayerCardFavoriteSlice `boil:"PlayerCardFavorites" json:"PlayerCardFavorites" toml:"PlayerCardFavorites" yaml:"PlayerCardFavorites"`
 	PlayerCards         PlayerCardSlice         `boil:"PlayerCards" json:"PlayerCards" toml:"PlayerCards" yaml:"PlayerCards"`
 	PlayerCardsDecks    PlayerCardsDeckSlice    `boil:"PlayerCardsDecks" json:"PlayerCardsDecks" toml:"PlayerCardsDecks" yaml:"PlayerCardsDecks"`
+	ReceiverTrades      TradeSlice              `boil:"ReceiverTrades" json:"ReceiverTrades" toml:"ReceiverTrades" yaml:"ReceiverTrades"`
+	SenderTrades        TradeSlice              `boil:"SenderTrades" json:"SenderTrades" toml:"SenderTrades" yaml:"SenderTrades"`
 }
 
 // NewStruct creates a new relationship struct
@@ -316,6 +322,20 @@ func (r *playerR) GetPlayerCardsDecks() PlayerCardsDeckSlice {
 		return nil
 	}
 	return r.PlayerCardsDecks
+}
+
+func (r *playerR) GetReceiverTrades() TradeSlice {
+	if r == nil {
+		return nil
+	}
+	return r.ReceiverTrades
+}
+
+func (r *playerR) GetSenderTrades() TradeSlice {
+	if r == nil {
+		return nil
+	}
+	return r.SenderTrades
 }
 
 // playerL is where Load methods for each relationship are stored.
@@ -875,6 +895,34 @@ func (o *Player) PlayerCardsDecks(mods ...qm.QueryMod) playerCardsDeckQuery {
 	)
 
 	return PlayerCardsDecks(queryMods...)
+}
+
+// ReceiverTrades retrieves all the trade's Trades with an executor via receiver_id column.
+func (o *Player) ReceiverTrades(mods ...qm.QueryMod) tradeQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"trades\".\"receiver_id\"=?", o.ID),
+	)
+
+	return Trades(queryMods...)
+}
+
+// SenderTrades retrieves all the trade's Trades with an executor via sender_id column.
+func (o *Player) SenderTrades(mods ...qm.QueryMod) tradeQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"trades\".\"sender_id\"=?", o.ID),
+	)
+
+	return Trades(queryMods...)
 }
 
 // LoadIDGithubStar allows an eager lookup of values, cached into the
@@ -2842,6 +2890,234 @@ func (playerL) LoadPlayerCardsDecks(ctx context.Context, e boil.ContextExecutor,
 	return nil
 }
 
+// LoadReceiverTrades allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (playerL) LoadReceiverTrades(ctx context.Context, e boil.ContextExecutor, singular bool, maybePlayer interface{}, mods queries.Applicator) error {
+	var slice []*Player
+	var object *Player
+
+	if singular {
+		var ok bool
+		object, ok = maybePlayer.(*Player)
+		if !ok {
+			object = new(Player)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybePlayer))
+			}
+		}
+	} else {
+		s, ok := maybePlayer.(*[]*Player)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybePlayer))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &playerR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &playerR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`trades`),
+		qm.WhereIn(`trades.receiver_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`trades.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load trades")
+	}
+
+	var resultSlice []*Trade
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice trades")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on trades")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for trades")
+	}
+
+	if len(tradeAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.ReceiverTrades = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &tradeR{}
+			}
+			foreign.R.Receiver = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.ReceiverID {
+				local.R.ReceiverTrades = append(local.R.ReceiverTrades, foreign)
+				if foreign.R == nil {
+					foreign.R = &tradeR{}
+				}
+				foreign.R.Receiver = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadSenderTrades allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (playerL) LoadSenderTrades(ctx context.Context, e boil.ContextExecutor, singular bool, maybePlayer interface{}, mods queries.Applicator) error {
+	var slice []*Player
+	var object *Player
+
+	if singular {
+		var ok bool
+		object, ok = maybePlayer.(*Player)
+		if !ok {
+			object = new(Player)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybePlayer))
+			}
+		}
+	} else {
+		s, ok := maybePlayer.(*[]*Player)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybePlayer)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybePlayer))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &playerR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &playerR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`trades`),
+		qm.WhereIn(`trades.sender_id in ?`, argsSlice...),
+		qmhelper.WhereIsNull(`trades.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load trades")
+	}
+
+	var resultSlice []*Trade
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice trades")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on trades")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for trades")
+	}
+
+	if len(tradeAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.SenderTrades = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &tradeR{}
+			}
+			foreign.R.Sender = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.SenderID {
+				local.R.SenderTrades = append(local.R.SenderTrades, foreign)
+				if foreign.R == nil {
+					foreign.R = &tradeR{}
+				}
+				foreign.R.Sender = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // SetIDGithubStarG of the player to the related item.
 // Sets o.R.IDGithubStar to related.
 // Adds o to related.R.IDPlayer.
@@ -3999,6 +4275,130 @@ func (o *Player) AddPlayerCardsDecks(ctx context.Context, exec boil.ContextExecu
 			}
 		} else {
 			rel.R.Player = o
+		}
+	}
+	return nil
+}
+
+// AddReceiverTradesG adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.ReceiverTrades.
+// Sets related.R.Receiver appropriately.
+// Uses the global database handle.
+func (o *Player) AddReceiverTradesG(ctx context.Context, insert bool, related ...*Trade) error {
+	return o.AddReceiverTrades(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// AddReceiverTrades adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.ReceiverTrades.
+// Sets related.R.Receiver appropriately.
+func (o *Player) AddReceiverTrades(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Trade) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.ReceiverID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"trades\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"receiver_id"}),
+				strmangle.WhereClause("\"", "\"", 2, tradePrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.ReceiverID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &playerR{
+			ReceiverTrades: related,
+		}
+	} else {
+		o.R.ReceiverTrades = append(o.R.ReceiverTrades, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &tradeR{
+				Receiver: o,
+			}
+		} else {
+			rel.R.Receiver = o
+		}
+	}
+	return nil
+}
+
+// AddSenderTradesG adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.SenderTrades.
+// Sets related.R.Sender appropriately.
+// Uses the global database handle.
+func (o *Player) AddSenderTradesG(ctx context.Context, insert bool, related ...*Trade) error {
+	return o.AddSenderTrades(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// AddSenderTrades adds the given related objects to the existing relationships
+// of the player, optionally inserting them as new records.
+// Appends related to o.R.SenderTrades.
+// Sets related.R.Sender appropriately.
+func (o *Player) AddSenderTrades(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Trade) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.SenderID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"trades\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"sender_id"}),
+				strmangle.WhereClause("\"", "\"", 2, tradePrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.SenderID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &playerR{
+			SenderTrades: related,
+		}
+	} else {
+		o.R.SenderTrades = append(o.R.SenderTrades, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &tradeR{
+				Sender: o,
+			}
+		} else {
+			rel.R.Sender = o
 		}
 	}
 	return nil

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"github.com/yyewolf/rwbyadv3/web/trades"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -48,6 +49,10 @@ func (w *WebApp) RegisterRoutes() {
 	// Also redirect from /dungeons to /dungeons/
 	w.GET("/dungeons", RedirectTo("/dungeons/"))
 	dungeons.NewDungeonsHandler(w.app, w.Group("/dungeons"))
+
+	// Also redirect from /trades to /trades/
+	w.GET("/trades", RedirectTo("/trades/"))
+	trades.NewTradesHandler(w.app, w.Group("/trades"))
 
 	cdn.NewCDNHandler(w.app, w.Group("/cdn"))
 

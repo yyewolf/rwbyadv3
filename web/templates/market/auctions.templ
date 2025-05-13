@@ -200,7 +200,7 @@ templ AuctionModal(auction *models.Auction) {
 
 templ Auctions(auctions []*models.Auction, pagination *pagination.Paginator) {
 	for i, auction := range auctions {
-		if i == len(auctions) - 1 {
+		if i == len(auctions) - 1 && pagination.HasNext() {
 			<div
 				class=""
 				hx-get={ pagination.PageLinkNext() }

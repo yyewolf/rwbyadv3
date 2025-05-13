@@ -48,9 +48,9 @@ SET default_table_access_method = heap;
 --
 
 CREATE TABLE public.auctions (
-    id character varying(50) NOT NULL,
+    id uuid NOT NULL,
     player_id character varying(50) NOT NULL,
-    card_id character varying(50) NOT NULL,
+    card_id uuid NOT NULL,
     time_extensions integer DEFAULT 0 NOT NULL,
     ends_at timestamp with time zone NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -63,8 +63,8 @@ CREATE TABLE public.auctions (
 --
 
 CREATE TABLE public.auctions_bids (
-    id character varying(50) NOT NULL,
-    auction_id character varying(50) NOT NULL,
+    id uuid NOT NULL,
+    auction_id uuid NOT NULL,
     player_id character varying(50) NOT NULL,
     price bigint NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -134,7 +134,7 @@ CREATE TABLE public.card_types (
 --
 
 CREATE TABLE public.cards (
-    id character varying(50) NOT NULL,
+    id uuid NOT NULL,
     player_id character varying(50) NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -157,7 +157,7 @@ CREATE TABLE public.cards (
 --
 
 CREATE TABLE public.cards_stats (
-    card_id character varying(50) NOT NULL,
+    card_id uuid NOT NULL,
     health integer NOT NULL,
     armor integer NOT NULL,
     damage integer NOT NULL,
@@ -189,7 +189,7 @@ CREATE TABLE public.dailies (
 --
 
 CREATE TABLE public.dungeons (
-    id character varying(50) NOT NULL,
+    id uuid NOT NULL,
     player_id character varying(50) NOT NULL,
     seed bigint NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -217,7 +217,7 @@ CREATE TABLE public.github_stars (
 --
 
 CREATE TABLE public.jobs (
-    id character varying(100) NOT NULL,
+    id uuid NOT NULL,
     jobkey character varying(100) NOT NULL,
     retries integer DEFAULT 0 NOT NULL,
     run_at timestamp with time zone NOT NULL,
@@ -237,9 +237,9 @@ CREATE TABLE public.jobs (
 --
 
 CREATE TABLE public.listings (
-    id character varying(50) NOT NULL,
+    id uuid NOT NULL,
     player_id character varying(50) NOT NULL,
-    card_id character varying(50) NOT NULL,
+    card_id uuid NOT NULL,
     price bigint NOT NULL,
     note character varying(500) NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -253,7 +253,7 @@ CREATE TABLE public.listings (
 --
 
 CREATE TABLE public.loot_boxes (
-    id character varying(50) NOT NULL,
+    id uuid NOT NULL,
     player_id character varying(50) NOT NULL,
     type public.loot_boxes_type NOT NULL,
     metadata json,
@@ -269,7 +269,7 @@ CREATE TABLE public.loot_boxes (
 
 CREATE TABLE public.player_card_favorites (
     player_id character varying(50) NOT NULL,
-    card_id character varying(50) NOT NULL,
+    card_id uuid NOT NULL,
     "position" integer NOT NULL
 );
 
@@ -280,7 +280,7 @@ CREATE TABLE public.player_card_favorites (
 
 CREATE TABLE public.player_cards (
     player_id character varying(50) NOT NULL,
-    card_id character varying(50) NOT NULL,
+    card_id uuid NOT NULL,
     "position" integer NOT NULL
 );
 
@@ -291,7 +291,7 @@ CREATE TABLE public.player_cards (
 
 CREATE TABLE public.player_cards_deck (
     player_id character varying(50) NOT NULL,
-    card_id character varying(50) NOT NULL,
+    card_id uuid NOT NULL,
     "position" integer NOT NULL
 );
 
@@ -319,7 +319,7 @@ CREATE TABLE public.players (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     deleted_at timestamp with time zone,
-    selected_card_id character varying(50),
+    selected_card_id uuid,
     liens bigint DEFAULT 500 NOT NULL,
     level integer DEFAULT 0 NOT NULL,
     xp bigint DEFAULT 0 NOT NULL,
@@ -337,6 +337,21 @@ CREATE TABLE public.players (
 
 CREATE TABLE public.schema_migrations (
     version character varying(128) NOT NULL
+);
+
+
+--
+-- Name: trades; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.trades (
+    id uuid NOT NULL,
+    sender_id character varying(50) NOT NULL,
+    receiver_id character varying(50) NOT NULL,
+    metadata json NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone
 );
 
 
@@ -509,11 +524,19 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: trades trades_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trades
+    ADD CONSTRAINT trades_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: auctions_bids auctions_bids_auction_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.auctions_bids
-    ADD CONSTRAINT auctions_bids_auction_id_fkey FOREIGN KEY (auction_id) REFERENCES public.auctions(id);
+    ADD CONSTRAINT auctions_bids_auction_id_fkey FOREIGN KEY (auction_id) REFERENCES public.auctions(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -521,7 +544,7 @@ ALTER TABLE ONLY public.auctions_bids
 --
 
 ALTER TABLE ONLY public.auctions_bids
-    ADD CONSTRAINT auctions_bids_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+    ADD CONSTRAINT auctions_bids_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -529,7 +552,7 @@ ALTER TABLE ONLY public.auctions_bids
 --
 
 ALTER TABLE ONLY public.auctions
-    ADD CONSTRAINT auctions_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id);
+    ADD CONSTRAINT auctions_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -537,7 +560,7 @@ ALTER TABLE ONLY public.auctions
 --
 
 ALTER TABLE ONLY public.auctions
-    ADD CONSTRAINT auctions_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+    ADD CONSTRAINT auctions_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -545,7 +568,7 @@ ALTER TABLE ONLY public.auctions
 --
 
 ALTER TABLE ONLY public.auth_cookies
-    ADD CONSTRAINT auth_cookies_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+    ADD CONSTRAINT auth_cookies_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -553,7 +576,7 @@ ALTER TABLE ONLY public.auth_cookies
 --
 
 ALTER TABLE ONLY public.auth_discord_states
-    ADD CONSTRAINT auth_discord_states_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+    ADD CONSTRAINT auth_discord_states_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -561,7 +584,7 @@ ALTER TABLE ONLY public.auth_discord_states
 --
 
 ALTER TABLE ONLY public.auth_github_states
-    ADD CONSTRAINT auth_github_states_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+    ADD CONSTRAINT auth_github_states_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -569,7 +592,7 @@ ALTER TABLE ONLY public.auth_github_states
 --
 
 ALTER TABLE ONLY public.cards
-    ADD CONSTRAINT cards_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+    ADD CONSTRAINT cards_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -577,7 +600,7 @@ ALTER TABLE ONLY public.cards
 --
 
 ALTER TABLE ONLY public.cards_stats
-    ADD CONSTRAINT cards_stats_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id) ON DELETE CASCADE;
+    ADD CONSTRAINT cards_stats_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -585,7 +608,7 @@ ALTER TABLE ONLY public.cards_stats
 --
 
 ALTER TABLE ONLY public.dungeons
-    ADD CONSTRAINT dungeons_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+    ADD CONSTRAINT dungeons_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -605,6 +628,14 @@ ALTER TABLE ONLY public.players
 
 
 --
+-- Name: dailies fk_player_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dailies
+    ADD CONSTRAINT fk_player_id FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
 -- Name: github_stars fk_player_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -621,19 +652,11 @@ ALTER TABLE ONLY public.player_limits
 
 
 --
--- Name: dailies fk_player_id; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.dailies
-    ADD CONSTRAINT fk_player_id FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
-
-
---
 -- Name: listings listings_card_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.listings
-    ADD CONSTRAINT listings_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id);
+    ADD CONSTRAINT listings_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -641,7 +664,7 @@ ALTER TABLE ONLY public.listings
 --
 
 ALTER TABLE ONLY public.listings
-    ADD CONSTRAINT listings_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+    ADD CONSTRAINT listings_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -649,7 +672,7 @@ ALTER TABLE ONLY public.listings
 --
 
 ALTER TABLE ONLY public.loot_boxes
-    ADD CONSTRAINT loot_boxes_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+    ADD CONSTRAINT loot_boxes_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -657,7 +680,7 @@ ALTER TABLE ONLY public.loot_boxes
 --
 
 ALTER TABLE ONLY public.player_card_favorites
-    ADD CONSTRAINT player_card_favorites_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id) ON DELETE CASCADE;
+    ADD CONSTRAINT player_card_favorites_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -665,7 +688,7 @@ ALTER TABLE ONLY public.player_card_favorites
 --
 
 ALTER TABLE ONLY public.player_card_favorites
-    ADD CONSTRAINT player_card_favorites_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+    ADD CONSTRAINT player_card_favorites_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -673,7 +696,7 @@ ALTER TABLE ONLY public.player_card_favorites
 --
 
 ALTER TABLE ONLY public.player_cards
-    ADD CONSTRAINT player_cards_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id) ON DELETE CASCADE;
+    ADD CONSTRAINT player_cards_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -681,7 +704,7 @@ ALTER TABLE ONLY public.player_cards
 --
 
 ALTER TABLE ONLY public.player_cards_deck
-    ADD CONSTRAINT player_cards_deck_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id) ON DELETE CASCADE;
+    ADD CONSTRAINT player_cards_deck_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -689,7 +712,7 @@ ALTER TABLE ONLY public.player_cards_deck
 --
 
 ALTER TABLE ONLY public.player_cards_deck
-    ADD CONSTRAINT player_cards_deck_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+    ADD CONSTRAINT player_cards_deck_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -697,7 +720,7 @@ ALTER TABLE ONLY public.player_cards_deck
 --
 
 ALTER TABLE ONLY public.player_cards
-    ADD CONSTRAINT player_cards_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id);
+    ADD CONSTRAINT player_cards_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -705,7 +728,23 @@ ALTER TABLE ONLY public.player_cards
 --
 
 ALTER TABLE ONLY public.players
-    ADD CONSTRAINT players_selected_card_id_fkey FOREIGN KEY (selected_card_id) REFERENCES public.cards(id);
+    ADD CONSTRAINT players_selected_card_id_fkey FOREIGN KEY (selected_card_id) REFERENCES public.cards(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: trades trades_receiver_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trades
+    ADD CONSTRAINT trades_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES public.players(id);
+
+
+--
+-- Name: trades trades_sender_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trades
+    ADD CONSTRAINT trades_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.players(id);
 
 
 --
@@ -732,4 +771,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240626084657'),
     ('20240706095548'),
     ('20240726065110'),
-    ('20240728132345');
+    ('20240728132345'),
+    ('20240731145108'),
+    ('20240731145242');

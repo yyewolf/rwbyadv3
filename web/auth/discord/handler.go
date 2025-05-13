@@ -116,6 +116,8 @@ func (h *DiscordAuthHandler) BeginAuth() echo.HandlerFunc {
 				state.RedirectURI = "/market"
 			case RedirectDungeons:
 				state.RedirectURI = "/dungeons/" + params.Get("dungeonId")
+			case RedirectTrades:
+				state.RedirectURI = "/trades/" + params.Get("tradeId")
 			default:
 				return ErrorPage(c, http.StatusForbidden)
 			}

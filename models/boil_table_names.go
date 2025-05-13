@@ -23,6 +23,7 @@ var TableNames = struct {
 	PlayerCardsDeck     string
 	PlayerLimits        string
 	Players             string
+	Trades              string
 }{
 	Auctions:            "auctions",
 	AuctionsBids:        "auctions_bids",
@@ -43,4 +44,5 @@ var TableNames = struct {
 	PlayerCardsDeck:     "player_cards_deck",
 	PlayerLimits:        "player_limits",
 	Players:             "players",
+	Trades:              "trades",
 }

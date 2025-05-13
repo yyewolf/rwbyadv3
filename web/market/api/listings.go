@@ -2,11 +2,10 @@ package api
 
 import (
 	"context"
-	"net/url"
-
 	"github.com/astaxie/beego/utils/pagination"
 	"github.com/disgoorg/disgo/discord"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"github.com/yyewolf/rwbyadv3/internal/notifications"
@@ -14,6 +13,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/models"
 	"github.com/yyewolf/rwbyadv3/web/templates"
 	"github.com/yyewolf/rwbyadv3/web/templates/market"
+	"net/url"
 )
 
 var (
@@ -53,12 +53,11 @@ func (h *MarketApiHandler) GetListings(c echo.Context) error {
 		qm.InnerJoin(models.TableNames.Cards+" c on c."+models.CardColumns.ID+"="+models.TableNames.Listings+"."+models.ListingColumns.CardID),
 		qm.InnerJoin(models.TableNames.CardTypes+" t on t."+models.CardTypeColumns.CardType+"=c."+models.CardColumns.CardType),
 
-		qm.Or2(models.ListingWhere.Note.ILIKE("%"+query+"%")),
-		qm.Or("p."+models.PlayerColumns.Username+" ILIKE '%"+query+"%'"),
-		qm.Or("t."+models.CardTypeColumns.Name+" ILIKE '%"+query+"%'"),
-		qm.Or("t."+models.CardTypeColumns.Categories+" ILIKE '%"+query+"%'"),
+		models.ListingWhere.DeletedAt.IsNull(),
+		qm.Or("\"listings\".\"note\" ILIKE ? OR p."+models.PlayerColumns.Username+" ILIKE ? OR t."+models.CardTypeColumns.Name+" ILIKE ? OR t."+models.CardTypeColumns.Categories+" ILIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%"),
 	).AllG(context.Background())
 	if err != nil {
+		logrus.WithError(err).Error("Failed to get listings")
 		return err
 	}
 

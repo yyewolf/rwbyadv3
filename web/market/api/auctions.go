@@ -43,7 +43,6 @@ func (h *MarketApiHandler) GetAuctions(c echo.Context) error {
 	}
 
 	auctions, err := models.Auctions(
-		qm.Where(models.AuctionColumns.EndsAt+" > NOW()"),
 		qm.Offset(paginator.Offset()),
 		qm.Limit(auctionsPerPage),
 		qm.Load(
@@ -59,9 +58,9 @@ func (h *MarketApiHandler) GetAuctions(c echo.Context) error {
 		qm.InnerJoin(models.TableNames.Cards+" c on c."+models.CardColumns.ID+"="+models.TableNames.Auctions+"."+models.AuctionColumns.CardID),
 		qm.InnerJoin(models.TableNames.CardTypes+" t on t."+models.CardTypeColumns.CardType+"=c."+models.CardColumns.CardType),
 
-		qm.Or("p."+models.PlayerColumns.Username+" ILIKE '%"+query+"%'"),
-		qm.Or("t."+models.CardTypeColumns.Name+" ILIKE '%"+query+"%'"),
-		qm.Or("t."+models.CardTypeColumns.Categories+" ILIKE '%"+query+"%'"),
+		models.AuctionWhere.DeletedAt.IsNull(),
+		models.AuctionWhere.EndsAt.GT(time.Now()),
+		qm.Or("p."+models.PlayerColumns.Username+" ILIKE ? OR t."+models.CardTypeColumns.Name+" ILIKE ? OR t."+models.CardTypeColumns.Categories+" ILIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%"),
 	).AllG(context.Background())
 	if err != nil {
 		return err
