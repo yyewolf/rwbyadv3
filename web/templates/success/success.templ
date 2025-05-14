@@ -19,10 +19,10 @@ templ Success(text, back, redirectTo string) {
 				If you are not redirected, click <a id="redirect" href={ templ.SafeURL(redirectTo) }>here</a>.
 			</p>
 			<script>
-				setTimeout(() => {{
+				setTimeout(() => {
 					// Click the link after 3 seconds
 					window.location = document.getElementById("redirect").href;
-				}}, 3000);
+				}, 3000);
 			</script>
 		}
 	</section>

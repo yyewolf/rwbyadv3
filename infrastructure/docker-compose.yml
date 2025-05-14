@@ -11,7 +11,7 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASS}
     volumes:
-      - ./db_data:/var/lib/postgresql/data
+      - postgresql_data:/var/lib/postgresql/data
 
   pgadmin:
     image: dpage/pgadmin4
@@ -31,8 +31,7 @@ services:
         - 5672:5672
         - 15672:15672
     volumes:
-        - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
-        - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+        - rabbitmq_data:/var/lib/rabbitmq/
 
   prometheus:
     image: prom/prometheus
@@ -42,7 +41,7 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
     restart: unless-stopped
     volumes:
-      - ./docker/prometheus:/etc/prometheus
+      - ../docker/prometheus:/etc/prometheus:ro
       - prom_data:/prometheus
 
   grafana:
@@ -54,7 +53,7 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=grafana
     volumes:
-      - ./docker/grafana:/etc/grafana/provisioning/datasources
+      - ../docker/grafana:/etc/grafana/provisioning/datasources:ro
       
   temporal:
     container_name: temporal
@@ -72,7 +71,7 @@ services:
     ports:
       - 7233:7233
     volumes:
-      - ./docker/temporal:/etc/temporal/config/dynamicconfig
+      - ../docker/temporal:/etc/temporal/config/dynamicconfig:ro
 
   temporal-admin-tools:
     container_name: temporal-admin-tools
@@ -106,3 +105,5 @@ services:
       
 volumes:
   prom_data:
+  postgresql_data:
+  rabbitmq_data:

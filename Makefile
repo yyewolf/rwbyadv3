@@ -23,5 +23,11 @@ generate:
 	$(MAKE) assets
 	go generate
 
+compose:
+	docker compose -f infrastructure/docker-compose.yml --env-file=.env $(filter-out $@,$(MAKECMDGOALS))
+
+dbmate:
+	go tool dbmate --env-file=.env $(filter-out $@,$(MAKECMDGOALS))
+
 serve:
 	air -c .air.toml
