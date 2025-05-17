@@ -1,0 +1,30 @@
+{{ define "player_utils" }}
+
+{{ $pkg := base $.Config.Package }}
+{{ template "header" $ }}
+
+func (p *Player) GetDungeonState() *PlayerDungeonState {
+	var t time.Time
+
+	if !p.Edges.Limits.DungeonsResetAt.IsZero() {
+		t = p.Edges.Limits.DungeonsResetAt
+	}
+
+	return &PlayerDungeonState{
+		Left:  p.Edges.Limits.DungeonsLeft,
+		Reset: t,
+
+		// TODO: Don't hardcode this...
+		Max: 3,
+	}
+}
+
+func (p *Player) LootBoxesCount() map[enums.LootBoxType]int {
+	var counts = make(map[enums.LootBoxType]int)
+	for _, b := range p.Edges.Lootboxes {
+		counts[b.Type]++
+	}
+	return counts
+}
+
+{{ end }}

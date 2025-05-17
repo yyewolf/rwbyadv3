@@ -3,10 +3,12 @@ package app
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/disgoorg/disgo"
 	"github.com/disgoorg/disgo/bot"
 	"github.com/disgoorg/disgo/cache"
+	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/events"
 	"github.com/disgoorg/disgo/gateway"
 	"github.com/disgoorg/disgo/handler"
@@ -58,6 +60,9 @@ type App struct {
 	// options
 	enableWeb bool
 	webApp    *web.WebApp
+
+	// cache
+	usr *discord.OAuth2User
 }
 
 func New(options ...Option) interfaces.App {
@@ -72,6 +77,23 @@ func New(options ...Option) interfaces.App {
 	)
 
 	app.handler = handler.New()
+
+	app.handler.Use(func(next handler.Handler) handler.Handler {
+		return func(e *handler.InteractionEvent) error {
+			start := time.Now()
+
+			err := next(e)
+
+			logrus.WithFields(logrus.Fields{
+				"channel":  e.Interaction.ChannelID(),
+				"guild":    e.Interaction.GuildID(),
+				"duration": time.Since(start),
+				"error":    err,
+			}).Info("command executed")
+
+			return err
+		}
+	})
 
 	discordClient, err := disgo.New(app.config.Discord.Token,
 		bot.WithLogger(slog.New(sloglogrus.Option{Level: slog.Level(logrus.GetLevel()), Logger: logrus.StandardLogger()}.NewLogrusHandler())),

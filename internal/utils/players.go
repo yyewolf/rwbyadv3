@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/models"
 )
@@ -133,6 +134,10 @@ func (Player) AvailableBalance(p *models.Player) int64 {
 
 func (p Player) MaxSlots(player *models.Player) int {
 	return player.BackpackLevel * p.c.App.BackpackSize
+}
+
+func (p Player) NewMaxSlots(player *ent.Player) int64 {
+	return player.BackpackLevel * int64(p.c.App.BackpackSize)
 }
 
 func (p Player) UsedSlots(player *models.Player) int {

@@ -40,9 +40,11 @@ func (a *App) loadCommandMentions() error {
 }
 
 func (a *App) Footer() *discord.EmbedFooter {
-	u, _ := a.Client().Rest().GetCurrentUser("")
+	if a.usr == nil {
+		a.usr, _ = a.Client().Rest().GetCurrentUser("")
+	}
 	return &discord.EmbedFooter{
 		Text:    "Made by Yewolf - Support: https://discord.gg/adJGyVxv7H",
-		IconURL: u.EffectiveAvatarURL(),
+		IconURL: a.usr.EffectiveAvatarURL(),
 	}
 }
