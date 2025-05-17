@@ -4,6 +4,7 @@ import (
 	"github.com/disgoorg/disgo/bot"
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/repo"
 	"go.temporal.io/sdk/client"
@@ -19,6 +20,7 @@ type App interface {
 	Handler() *handler.Mux
 	Client() bot.Client
 	EventHandler() JobHandler
+	Db() *ent.Client
 
 	// Temporal
 	Temporal() client.Client

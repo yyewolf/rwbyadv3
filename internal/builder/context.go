@@ -14,6 +14,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/card"
+	"github.com/yyewolf/rwbyadv3/ent/player"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/models"
 )
@@ -22,6 +25,7 @@ type ContextKey string
 
 var (
 	PlayerKey    ContextKey = "player"
+	NewPlayerKey ContextKey = "new_player"
 	ErrorKey     ContextKey = "error"
 	ContextIdKey ContextKey = "context_id"
 )
@@ -50,8 +54,11 @@ type ContextOption func(a *ContextBuilder)
 func FillPlayerContext(cb *ContextBuilder, userID snowflake.ID, ctx context.Context) (context.Context, error) {
 	var mods []qm.QueryMod
 
+	var query = cb.app.Db().Player.Query().Where(player.ID(userID.String()))
+
 	if cb.withPlayerGithubStars {
 		mods = append(mods, qm.Load(models.PlayerRels.GithubStar))
+		query.WithGithubStar()
 	}
 
 	if cb.withPlayerCards {
@@ -64,26 +71,37 @@ func FillPlayerContext(cb *ContextBuilder, userID snowflake.ID, ctx context.Cont
 				qm.Rels(models.PlayerRels.PlayerCards, models.PlayerCardRels.Card, models.CardRels.CardsStat),
 			),
 		)
+
+		query.WithCards(func(q *ent.CardQuery) {
+			q.Order(card.ByPosition())
+			q.WithStats()
+			q.WithType()
+		})
 	}
 
 	if cb.withPlayerLootBoxes {
 		mods = append(mods, qm.Load(models.PlayerRels.LootBoxes))
+		query.WithLootboxes()
 	}
 
 	if cb.withPlayerSelectedCard {
 		mods = append(mods, qm.Load(models.PlayerRels.SelectedCard))
+		query.WithSelectedCard()
 	}
 
 	if cb.withPlayerLimits {
 		mods = append(mods, qm.Load(models.PlayerRels.PlayerLimit))
+		query.WithLimits()
 	}
 
 	if cb.withPlayerDungeons {
 		mods = append(mods, qm.Load(models.PlayerRels.Dungeons))
+		query.WithDungeons()
 	}
 
 	if cb.withPlayerDaily {
 		mods = append(mods, qm.Load(models.PlayerRels.Daily))
+		query.WithDaily()
 	}
 
 	mods = append(mods,
@@ -97,7 +115,14 @@ func FillPlayerContext(cb *ContextBuilder, userID snowflake.ID, ctx context.Cont
 		return ctx, errors.New("auth error")
 	}
 
+	np, err := query.First(ctx)
+	if err != nil {
+		logrus.WithError(err).Error("error when fetching player")
+		return ctx, errors.New("auth error")
+	}
+
 	ctx = context.WithValue(ctx, PlayerKey, p)
+	ctx = context.WithValue(ctx, NewPlayerKey, np)
 	return ctx, nil
 }
 

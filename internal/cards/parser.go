@@ -2,13 +2,12 @@ package cards
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"reflect"
 
 	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/cardtype"
 	"gopkg.in/yaml.v3"
 )
 
@@ -81,7 +80,7 @@ func parseCard(location string) []*Card {
 
 var Cards map[string]*Card
 
-func ParseCards(location string) {
+func ParseCards(location string, entClient *ent.Client) {
 	// Location points to a folder that only contains .yml files
 	folder, err := os.Open(location)
 	if err != nil {
@@ -114,21 +113,28 @@ func ParseCards(location string) {
 
 		cardMap[card.ID] = card
 
-		cardType := models.CardType{
-			CardType:   card.ID,
-			Name:       card.Name,
-			Categories: fmt.Sprintf("%v", card.Categories),
-		}
-
+		// cardType := models.CardType{
+		// 	CardType:   card.ID,
+		// 	Name:       card.Name,
+		// 	Categories: fmt.Sprintf("%v", card.Categories),
+		// }
 		// Insert or update the cards in database
-		exists, _ := models.CardTypes(
-			models.CardTypeWhere.CardType.EQ(card.ID),
-		).ExistsG(context.Background())
-		if !exists {
-			cardType.InsertG(context.Background(), boil.Infer())
-		} else {
-			cardType.UpdateG(context.Background(), boil.Infer())
-		}
+		// exists, _ := models.CardTypes(
+		// 	models.CardTypeWhere.CardType.EQ(card.ID),
+		// ).ExistsG(context.Background())
+		// if !exists {
+		// 	cardType.InsertG(context.Background(), boil.Infer())
+		// } else {
+		// 	cardType.UpdateG(context.Background(), boil.Infer())
+		// }
+
+		entClient.CardType.Create().
+			SetID(card.ID).
+			SetName(card.Name).
+			SetCategories(card.Categories).
+			OnConflictColumns(cardtype.FieldID).
+			UpdateNewValues().
+			Exec(context.Background())
 	}
 
 	Cards = cardMap

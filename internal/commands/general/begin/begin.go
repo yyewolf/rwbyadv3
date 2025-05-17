@@ -1,17 +1,14 @@
 package begin
 
 import (
-	"context"
 	"strconv"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
-	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 const (
@@ -57,30 +54,10 @@ func BeginCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 }
 
 func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
-	tx, err := boil.BeginTx(e.Ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	p := models.Player{
-		ID: e.User().ID.String(),
-	}
-	err = p.SetGithubStar(context.Background(), tx, true, &models.GithubStar{
-		PlayerID: e.User().ID.String(),
-	})
-	if err != nil {
+	_, err := cmd.app.Db().Player.Get(e.Ctx, e.User().ID.String())
+	if err != nil && !ent.IsNotFound(err) {
 		return utils.CommandError(e, err)
-	}
-	err = p.SetPlayerLimit(context.Background(), tx, true, &models.PlayerLimit{
-		PlayerID:     e.User().ID.String(),
-		DungeonsLeft: 3,
-	})
-	if err != nil {
-		return utils.CommandError(e, err)
-	}
-	err = p.Insert(context.Background(), tx, boil.Infer())
-	if err != nil {
-		logrus.WithError(err).WithField("user_id", e.ID().String()).Error("error creating user in db")
+	} else if err == nil {
 		return e.Respond(
 			discord.InteractionResponseTypeCreateMessage,
 			discord.NewMessageCreateBuilder().
@@ -89,12 +66,38 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 		)
 	}
 
-	err = tx.Commit()
+	var player *ent.Player
+
+	err = utils.WithTx(e.Ctx, cmd.app.Db(), func(ntx *ent.Tx) error {
+		player, err = ntx.Player.Create().
+			SetID(e.User().ID.String()).
+			Save(e.Ctx)
+		if err != nil {
+			return err
+		}
+
+		_, err = ntx.GithubStar.Create().
+			SetPlayerID(e.User().ID.String()).
+			Save(e.Ctx)
+		if err != nil {
+			return err
+		}
+
+		_, err = ntx.PlayerLimit.Create().
+			SetPlayerID(e.User().ID.String()).
+			SetDungeonsLeft(3).
+			Save(e.Ctx)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
 		return utils.CommandError(e, err)
 	}
 
-	embed, components := cmd.generator(&p, 0)
+	embed, components := cmd.generator(player, 0)
 
 	return e.Respond(
 		discord.InteractionResponseTypeCreateMessage,
@@ -123,7 +126,7 @@ func (cmd *beginCommand) HandleInteraction(data discord.ButtonInteractionData, e
 	default:
 	}
 
-	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
 	embed, components := cmd.generator(p, page)
 

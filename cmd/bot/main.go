@@ -18,6 +18,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/app"
 	"github.com/yyewolf/rwbyadv3/internal/cards"
 	"github.com/yyewolf/rwbyadv3/internal/env"
@@ -26,12 +27,12 @@ import (
 
 func main() {
 	env.Load()
-	c := env.Get()
+	appConfig := env.Get()
 
-	u, _ := url.Parse(fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", c.Database.User, c.Database.Pass, c.Database.Host, c.Database.Port, c.Database.Database))
-	migrate := dbmate.New(u)
-	migrate.SchemaFile = c.Database.SchemaFile
-	migrate.MigrationsDir = []string{c.Database.MigrationsFolder}
+	databaseURL, _ := url.Parse(fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", appConfig.Database.User, appConfig.Database.Pass, appConfig.Database.Host, appConfig.Database.Port, appConfig.Database.Database))
+	migrate := dbmate.New(databaseURL)
+	migrate.SchemaFile = appConfig.Database.SchemaFile
+	migrate.MigrationsDir = []string{appConfig.Database.MigrationsFolder}
 	migrate.Log = logrus.New().Writer()
 
 	err := migrate.CreateAndMigrate()
@@ -41,7 +42,19 @@ func main() {
 			Fatal("cannot run migration")
 	}
 
-	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable", c.Database.User, c.Database.Pass, c.Database.Database, c.Database.Host, c.Database.Port))
+	urlTest := *databaseURL
+	q := urlTest.Query()
+	q.Add("search_path", "test")
+	urlTest.RawQuery = q.Encode()
+
+	entClient, err := ent.Open("postgres", urlTest.String())
+	if err != nil {
+		logrus.
+			WithError(err).
+			Fatal("cannot open ent client")
+	}
+
+	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable", appConfig.Database.User, appConfig.Database.Pass, appConfig.Database.Database, appConfig.Database.Host, appConfig.Database.Port))
 	if err != nil {
 		logrus.
 			WithError(err).
@@ -50,11 +63,11 @@ func main() {
 
 	boil.SetDB(db)
 
-	cards.ParseCards(c.App.CardsLocation)
+	cards.ParseCards(appConfig.App.CardsLocation, entClient)
 
 	// Create the temporal client
 	temporal, err := client.Dial(client.Options{
-		HostPort: fmt.Sprintf("%s:%s", c.Temporal.Host, c.Temporal.Port),
+		HostPort: fmt.Sprintf("%s:%s", appConfig.Temporal.Host, appConfig.Temporal.Port),
 		Logger:   slog.New(sloglogrus.Option{Logger: logrus.StandardLogger()}.NewLogrusHandler()),
 	})
 	if err != nil {
@@ -63,12 +76,13 @@ func main() {
 			Fatal("cannot connect to temporal")
 	}
 
-	w := worker.New(temporal, c.Temporal.TaskQueue, worker.Options{})
+	temporalWorker := worker.New(temporal, appConfig.Temporal.TaskQueue, worker.Options{})
 
 	app := app.New(
-		app.WithConfig(c),
+		app.WithConfig(appConfig),
 		app.WithWeb(),
-		app.WithTemporal(temporal, w),
+		app.WithTemporal(temporal, temporalWorker),
+		app.WithDatabase(entClient),
 	)
 
 	hooks.RegisterHooks(app)
