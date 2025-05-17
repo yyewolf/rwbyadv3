@@ -9,6 +9,7 @@ import (
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/sirupsen/logrus"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/cards"
 	"github.com/yyewolf/rwbyadv3/models"
 )
@@ -118,6 +119,11 @@ func (card Card) Message(c *models.Card) (*discord.File, discord.Embed, *discord
 }
 
 func (card Card) IconURI(c *models.Card) string {
+	uri, _ := url.JoinPath(Players.c.App.BaseURI, cards.MustGetImageURI(c.CardType, "icon", "webp"))
+	return uri
+}
+
+func (card Card) NewIconURI(c *ent.Card) string {
 	uri, _ := url.JoinPath(Players.c.App.BaseURI, cards.MustGetImageURI(c.CardType, "icon", "webp"))
 	return uri
 }

@@ -7,27 +7,27 @@ import (
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/snowflake/v2"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/temporal"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/workflow"
 )
 
 type CardLevelUpParams struct {
-	Player *models.Player
-	Card   *models.Card
+	Player *ent.Player
+	Card   *ent.Card
 }
 
-func DispatchCardLevelUp(app interfaces.App, p *models.Player, c *models.Card) {
+func DispatchCardLevelUp(app interfaces.App, p *ent.Player, c *ent.Card) {
 	workflowOptions := client.StartWorkflowOptions{
 		ID:        fmt.Sprintf("card_level_up_%s_%d", c.ID, c.Level),
 		TaskQueue: app.Config().Temporal.TaskQueue,
 	}
 	app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, Repository.NotifyCardLevelUpWorkflow, &CardLevelUpParams{
 		Player: p,
-		Card:   p.R.SelectedCard,
+		Card:   c,
 	})
 }
 
@@ -54,7 +54,7 @@ func (n *NotificationsRepository) NotifyCardLevelUpActivity(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	primitive := utils.Cards.Primitive(params.Card)
+	primitive := params.Card.Primitive()
 	_, err = c.Rest().CreateMessage(ch.ID(), discord.NewMessageCreateBuilder().
 		SetEmbeds(
 			discord.NewEmbedBuilder().
@@ -67,9 +67,9 @@ func (n *NotificationsRepository) NotifyCardLevelUpActivity(ctx context.Context,
 					),
 					params.Player.ID, primitive.Name,
 					params.Card.Level,
-					params.Card.XP, params.Card.NextLevelXP,
+					params.Card.ExperiencePoints, params.Card.ExperiencePointsThreshold,
 				).
-				SetThumbnail(utils.Cards.IconURI(params.Card)).
+				SetThumbnail(utils.Cards.NewIconURI(params.Card)).
 				SetColor(n.app.Config().App.BotColor).
 				Build(),
 		).
