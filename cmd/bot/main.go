@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log/slog"
@@ -19,6 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/cardtype"
 	"github.com/yyewolf/rwbyadv3/internal/app"
 	"github.com/yyewolf/rwbyadv3/internal/cards"
 	"github.com/yyewolf/rwbyadv3/internal/env"
@@ -63,7 +65,17 @@ func main() {
 
 	boil.SetDB(db)
 
-	cards.ParseCards(appConfig.App.CardsLocation, entClient)
+	cards.ParseCards(appConfig.App.CardsLocation)
+
+	for _, card := range cards.Cards {
+		entClient.CardType.Create().
+			SetID(card.ID).
+			SetName(card.Name).
+			SetCategories(card.Categories).
+			OnConflictColumns(cardtype.FieldID).
+			UpdateNewValues().
+			Exec(context.Background())
+	}
 
 	// Create the temporal client
 	temporal, err := client.Dial(client.Options{

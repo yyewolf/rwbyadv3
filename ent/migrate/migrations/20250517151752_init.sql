@@ -11,7 +11,7 @@ CREATE UNIQUE INDEX "card_stats_card_id_key" ON "card_stats" ("card_id");
 -- Create "card_types" table
 CREATE TABLE "card_types" ("id" character varying NOT NULL, "name" character varying NOT NULL, "categories" jsonb NOT NULL, PRIMARY KEY ("id"));
 -- Create "cards" table
-CREATE TABLE "cards" ("id" uuid NOT NULL, "create_time" timestamptz NOT NULL, "update_time" timestamptz NOT NULL, "position" double precision NOT NULL, "available" boolean NOT NULL DEFAULT true, "level" bigint NOT NULL DEFAULT 1, "experience_points" bigint NOT NULL DEFAULT 0, "experience_points_threshold" bigint NOT NULL DEFAULT 0, "rarity" bigint NOT NULL, "buffs" bigint NOT NULL, "individual_value" double precision NOT NULL, "metadata" jsonb NOT NULL, "owned_at" timestamptz NOT NULL, "card_type" character varying NOT NULL, "player_id" character varying NOT NULL, PRIMARY KEY ("id"));
+CREATE TABLE "cards" ("id" uuid NOT NULL, "create_time" timestamptz NOT NULL, "update_time" timestamptz NOT NULL, "position" double precision NOT NULL, "available" boolean NOT NULL DEFAULT true, "level" bigint NOT NULL DEFAULT 1, "experience_points" bigint NOT NULL DEFAULT 0, "experience_points_threshold" bigint NOT NULL DEFAULT 0, "rarity" bigint NOT NULL, "buffs" bigint NOT NULL DEFAULT 0, "individual_value" double precision NOT NULL, "metadata" jsonb NOT NULL, "owned_at" timestamptz NOT NULL, "card_type" character varying NOT NULL, "player_id" character varying NOT NULL, PRIMARY KEY ("id"));
 -- Create "cookies" table
 CREATE TABLE "cookies" ("id" uuid NOT NULL, "create_time" timestamptz NOT NULL, "update_time" timestamptz NOT NULL, "expires_at" timestamptz NOT NULL, "player_id" character varying NOT NULL, PRIMARY KEY ("id"));
 -- Create "dailies" table

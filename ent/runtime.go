@@ -120,6 +120,8 @@ func init() {
 	card.RarityValidator = cardDescRarity.Validators[0].(func(int) error)
 	// cardDescBuffs is the schema descriptor for buffs field.
 	cardDescBuffs := cardFields[9].Descriptor()
+	// card.DefaultBuffs holds the default value on creation for the buffs field.
+	card.DefaultBuffs = cardDescBuffs.Default.(int)
 	// card.BuffsValidator is a validator for the "buffs" field. It is called by the builders before save.
 	card.BuffsValidator = cardDescBuffs.Validators[0].(func(int) error)
 	// cardDescIndividualValue is the schema descriptor for individual_value field.

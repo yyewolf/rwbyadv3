@@ -6,7 +6,7 @@ import (
 )
 
 func TestParsing(t *testing.T) {
-	ParseCards("../../cards/yml", nil)
+	ParseCards("../../cards/yml")
 
 	for _, card := range Cards {
 		fmt.Println(card)

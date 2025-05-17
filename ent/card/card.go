@@ -168,6 +168,8 @@ var (
 	ExperiencePointsThresholdValidator func(int64) error
 	// RarityValidator is a validator for the "rarity" field. It is called by the builders before save.
 	RarityValidator func(int) error
+	// DefaultBuffs holds the default value on creation for the "buffs" field.
+	DefaultBuffs int
 	// BuffsValidator is a validator for the "buffs" field. It is called by the builders before save.
 	BuffsValidator func(int) error
 	// IndividualValueValidator is a validator for the "individual_value" field. It is called by the builders before save.

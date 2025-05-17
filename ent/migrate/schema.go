@@ -94,7 +94,7 @@ var (
 		{Name: "experience_points", Type: field.TypeInt64, Default: 0},
 		{Name: "experience_points_threshold", Type: field.TypeInt64, Default: 0},
 		{Name: "rarity", Type: field.TypeInt},
-		{Name: "buffs", Type: field.TypeInt},
+		{Name: "buffs", Type: field.TypeInt, Default: 0},
 		{Name: "individual_value", Type: field.TypeFloat64},
 		{Name: "metadata", Type: field.TypeJSON},
 		{Name: "owned_at", Type: field.TypeTime},

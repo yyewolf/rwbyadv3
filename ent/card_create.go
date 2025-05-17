@@ -142,6 +142,14 @@ func (cc *CardCreate) SetBuffs(i int) *CardCreate {
 	return cc
 }
 
+// SetNillableBuffs sets the "buffs" field if the given value is not nil.
+func (cc *CardCreate) SetNillableBuffs(i *int) *CardCreate {
+	if i != nil {
+		cc.SetBuffs(*i)
+	}
+	return cc
+}
+
 // SetIndividualValue sets the "individual_value" field.
 func (cc *CardCreate) SetIndividualValue(f float64) *CardCreate {
 	cc.mutation.SetIndividualValue(f)
@@ -319,6 +327,10 @@ func (cc *CardCreate) defaults() {
 	if _, ok := cc.mutation.ExperiencePointsThreshold(); !ok {
 		v := card.DefaultExperiencePointsThreshold
 		cc.mutation.SetExperiencePointsThreshold(v)
+	}
+	if _, ok := cc.mutation.Buffs(); !ok {
+		v := card.DefaultBuffs
+		cc.mutation.SetBuffs(v)
 	}
 	if _, ok := cc.mutation.Metadata(); !ok {
 		v := card.DefaultMetadata

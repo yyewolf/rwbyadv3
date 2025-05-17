@@ -33,7 +33,7 @@ func (Card) Fields() []ent.Field {
 		field.Int64("experience_points_threshold").Default(0).NonNegative(),
 
 		field.Int("rarity").NonNegative(),
-		field.Int("buffs").NonNegative(),
+		field.Int("buffs").Default(0).NonNegative(),
 
 		field.Float("individual_value").Positive(),
 

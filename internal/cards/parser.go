@@ -1,13 +1,10 @@
 package cards
 
 import (
-	"context"
 	"os"
 	"reflect"
 
 	"github.com/sirupsen/logrus"
-	"github.com/yyewolf/rwbyadv3/ent"
-	"github.com/yyewolf/rwbyadv3/ent/cardtype"
 	"gopkg.in/yaml.v3"
 )
 
@@ -80,7 +77,7 @@ func parseCard(location string) []*Card {
 
 var Cards map[string]*Card
 
-func ParseCards(location string, entClient *ent.Client) {
+func ParseCards(location string) {
 	// Location points to a folder that only contains .yml files
 	folder, err := os.Open(location)
 	if err != nil {
@@ -128,13 +125,13 @@ func ParseCards(location string, entClient *ent.Client) {
 		// 	cardType.UpdateG(context.Background(), boil.Infer())
 		// }
 
-		entClient.CardType.Create().
-			SetID(card.ID).
-			SetName(card.Name).
-			SetCategories(card.Categories).
-			OnConflictColumns(cardtype.FieldID).
-			UpdateNewValues().
-			Exec(context.Background())
+		// entClient.CardType.Create().
+		// 	SetID(card.ID).
+		// 	SetName(card.Name).
+		// 	SetCategories(card.Categories).
+		// 	OnConflictColumns(cardtype.FieldID).
+		// 	UpdateNewValues().
+		// 	Exec(context.Background())
 	}
 
 	Cards = cardMap

@@ -144,8 +144,16 @@ func (p Player) UsedSlots(player *models.Player) int {
 	return len(player.R.PlayerCards) + player.SlotsReserved
 }
 
+func (p Player) NewUsedSlots(player *ent.Player) int64 {
+	return int64(len(player.Edges.Cards)) + player.BackpackReservedSlots
+}
+
 func (p Player) AvailableSlots(player *models.Player) int {
 	return p.MaxSlots(player) - p.UsedSlots(player)
+}
+
+func (p Player) NewAvailableSlots(player *ent.Player) int64 {
+	return p.NewMaxSlots(player) - p.NewUsedSlots(player)
 }
 
 // Leveling

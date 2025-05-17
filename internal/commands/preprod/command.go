@@ -129,7 +129,7 @@ func PreprodCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command 
 func (cmd *preprodCommand) DoLootBox(e *handler.CommandEvent) error {
 	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-	for _, t := range []enums.LootBoxType{enums.Classic, enums.Rare, enums.Special, enums.Limited} {
+	for _, t := range enums.LootBoxTypes() {
 		cmd.app.Db().LootBox.Create().
 			SetPlayerID(p.ID).
 			SetType(t).
