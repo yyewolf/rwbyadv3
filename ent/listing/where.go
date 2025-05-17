@@ -346,6 +346,16 @@ func NoteHasSuffix(v string) predicate.Listing {
 	return predicate.Listing(sql.FieldHasSuffix(FieldNote, v))
 }
 
+// NoteIsNil applies the IsNil predicate on the "note" field.
+func NoteIsNil() predicate.Listing {
+	return predicate.Listing(sql.FieldIsNull(FieldNote))
+}
+
+// NoteNotNil applies the NotNil predicate on the "note" field.
+func NoteNotNil() predicate.Listing {
+	return predicate.Listing(sql.FieldNotNull(FieldNote))
+}
+
 // NoteEqualFold applies the EqualFold predicate on the "note" field.
 func NoteEqualFold(v string) predicate.Listing {
 	return predicate.Listing(sql.FieldEqualFold(FieldNote, v))

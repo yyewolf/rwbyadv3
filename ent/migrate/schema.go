@@ -282,7 +282,7 @@ var (
 		{Name: "create_time", Type: field.TypeTime},
 		{Name: "update_time", Type: field.TypeTime},
 		{Name: "price", Type: field.TypeInt64},
-		{Name: "note", Type: field.TypeString},
+		{Name: "note", Type: field.TypeString, Nullable: true},
 		{Name: "card_id", Type: field.TypeUUID},
 		{Name: "player_id", Type: field.TypeString},
 	}

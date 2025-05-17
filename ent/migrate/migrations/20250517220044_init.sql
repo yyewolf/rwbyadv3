@@ -27,7 +27,7 @@ CREATE UNIQUE INDEX "github_stars_player_id_key" ON "github_stars" ("player_id")
 -- Create "jobs" table
 CREATE TABLE "jobs" ("id" uuid NOT NULL, "create_time" timestamptz NOT NULL, "update_time" timestamptz NOT NULL, "jobkey" character varying NOT NULL, "retries" bigint NOT NULL DEFAULT 0, "run_at" timestamptz NOT NULL, "params" jsonb NOT NULL, "last_run_id" bigint NOT NULL DEFAULT 0, "recurring" boolean NOT NULL DEFAULT false, "delta_time" bigint NOT NULL DEFAULT 0, "errored" boolean NOT NULL DEFAULT false, PRIMARY KEY ("id"));
 -- Create "listings" table
-CREATE TABLE "listings" ("id" uuid NOT NULL, "create_time" timestamptz NOT NULL, "update_time" timestamptz NOT NULL, "price" bigint NOT NULL, "note" character varying NOT NULL, "card_id" uuid NOT NULL, "player_id" character varying NOT NULL, PRIMARY KEY ("id"));
+CREATE TABLE "listings" ("id" uuid NOT NULL, "create_time" timestamptz NOT NULL, "update_time" timestamptz NOT NULL, "price" bigint NOT NULL, "note" character varying NULL, "card_id" uuid NOT NULL, "player_id" character varying NOT NULL, PRIMARY KEY ("id"));
 -- Create "loot_boxes" table
 CREATE TABLE "loot_boxes" ("id" uuid NOT NULL, "create_time" timestamptz NOT NULL, "update_time" timestamptz NOT NULL, "type" character varying NOT NULL, "player_id" character varying NOT NULL, PRIMARY KEY ("id"));
 -- Create "player_decks" table

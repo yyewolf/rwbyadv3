@@ -100,6 +100,12 @@ func (lu *ListingUpdate) SetNillableNote(s *string) *ListingUpdate {
 	return lu
 }
 
+// ClearNote clears the value of the "note" field.
+func (lu *ListingUpdate) ClearNote() *ListingUpdate {
+	lu.mutation.ClearNote()
+	return lu
+}
+
 // SetOwnedByID sets the "owned_by" edge to the Player entity by ID.
 func (lu *ListingUpdate) SetOwnedByID(id string) *ListingUpdate {
 	lu.mutation.SetOwnedByID(id)
@@ -208,6 +214,9 @@ func (lu *ListingUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := lu.mutation.Note(); ok {
 		_spec.SetField(listing.FieldNote, field.TypeString, value)
+	}
+	if lu.mutation.NoteCleared() {
+		_spec.ClearField(listing.FieldNote, field.TypeString)
 	}
 	if lu.mutation.OwnedByCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -356,6 +365,12 @@ func (luo *ListingUpdateOne) SetNillableNote(s *string) *ListingUpdateOne {
 	return luo
 }
 
+// ClearNote clears the value of the "note" field.
+func (luo *ListingUpdateOne) ClearNote() *ListingUpdateOne {
+	luo.mutation.ClearNote()
+	return luo
+}
+
 // SetOwnedByID sets the "owned_by" edge to the Player entity by ID.
 func (luo *ListingUpdateOne) SetOwnedByID(id string) *ListingUpdateOne {
 	luo.mutation.SetOwnedByID(id)
@@ -494,6 +509,9 @@ func (luo *ListingUpdateOne) sqlSave(ctx context.Context) (_node *Listing, err e
 	}
 	if value, ok := luo.mutation.Note(); ok {
 		_spec.SetField(listing.FieldNote, field.TypeString, value)
+	}
+	if luo.mutation.NoteCleared() {
+		_spec.ClearField(listing.FieldNote, field.TypeString)
 	}
 	if luo.mutation.OwnedByCleared() {
 		edge := &sqlgraph.EdgeSpec{

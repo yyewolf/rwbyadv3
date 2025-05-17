@@ -78,6 +78,14 @@ func (lc *ListingCreate) SetNote(s string) *ListingCreate {
 	return lc
 }
 
+// SetNillableNote sets the "note" field if the given value is not nil.
+func (lc *ListingCreate) SetNillableNote(s *string) *ListingCreate {
+	if s != nil {
+		lc.SetNote(*s)
+	}
+	return lc
+}
+
 // SetID sets the "id" field.
 func (lc *ListingCreate) SetID(u uuid.UUID) *ListingCreate {
 	lc.mutation.SetID(u)
@@ -178,9 +186,6 @@ func (lc *ListingCreate) check() error {
 		if err := listing.PriceValidator(v); err != nil {
 			return &ValidationError{Name: "price", err: fmt.Errorf(`ent: validator failed for field "Listing.price": %w`, err)}
 		}
-	}
-	if _, ok := lc.mutation.Note(); !ok {
-		return &ValidationError{Name: "note", err: errors.New(`ent: missing required field "Listing.note"`)}
 	}
 	if len(lc.mutation.OwnedByIDs()) == 0 {
 		return &ValidationError{Name: "owned_by", err: errors.New(`ent: missing required edge "Listing.owned_by"`)}
@@ -392,6 +397,12 @@ func (u *ListingUpsert) UpdateNote() *ListingUpsert {
 	return u
 }
 
+// ClearNote clears the value of the "note" field.
+func (u *ListingUpsert) ClearNote() *ListingUpsert {
+	u.SetNull(listing.FieldNote)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -517,6 +528,13 @@ func (u *ListingUpsertOne) SetNote(v string) *ListingUpsertOne {
 func (u *ListingUpsertOne) UpdateNote() *ListingUpsertOne {
 	return u.Update(func(s *ListingUpsert) {
 		s.UpdateNote()
+	})
+}
+
+// ClearNote clears the value of the "note" field.
+func (u *ListingUpsertOne) ClearNote() *ListingUpsertOne {
+	return u.Update(func(s *ListingUpsert) {
+		s.ClearNote()
 	})
 }
 
@@ -812,6 +830,13 @@ func (u *ListingUpsertBulk) SetNote(v string) *ListingUpsertBulk {
 func (u *ListingUpsertBulk) UpdateNote() *ListingUpsertBulk {
 	return u.Update(func(s *ListingUpsert) {
 		s.UpdateNote()
+	})
+}
+
+// ClearNote clears the value of the "note" field.
+func (u *ListingUpsertBulk) ClearNote() *ListingUpsertBulk {
+	return u.Update(func(s *ListingUpsert) {
+		s.ClearNote()
 	})
 }
 

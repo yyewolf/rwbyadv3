@@ -20,7 +20,7 @@ func (Listing) Fields() []ent.Field {
 		field.String("player_id"),
 		field.UUID("card_id", uuid.New()),
 		field.Int64("price").NonNegative(),
-		field.String("note"),
+		field.String("note").Optional(),
 	}
 }
 

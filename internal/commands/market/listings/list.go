@@ -1,22 +1,24 @@
 package listings
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"strconv"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/listing"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 var (
 	perPage = 10.0
 )
 
-func (cmd *listingsCommand) generator(username string, p *models.Player, page int) (discord.Embed, discord.ContainerComponent) {
+func (cmd *listingsCommand) generator(username string, p *ent.Player, page int) (discord.Embed, discord.ContainerComponent, error) {
 	embed := discord.NewEmbedBuilder()
 	embed.SetTitlef("%s's listings :", username)
 	// embed.SetDescriptionf("To select a character, please use %s.", cmd.app.CommandMention("select"))
@@ -24,9 +26,12 @@ func (cmd *listingsCommand) generator(username string, p *models.Player, page in
 	embed.SetEmbedFooter(cmd.app.Footer())
 
 	// Pagination here
-	cards := utils.Players.MarketListings(p)
-	total := len(cards)
-	maxPage := int(math.Ceil(float64(total)/perPage)) - 1
+	count, err := p.QueryListings().Count(context.Background())
+	if err != nil {
+		return discord.Embed{}, nil, err
+	}
+
+	maxPage := int(math.Ceil(float64(count)/perPage)) - 1
 
 	var field discord.EmbedField
 
@@ -38,22 +43,30 @@ func (cmd *listingsCommand) generator(username string, p *models.Player, page in
 	}
 
 	top := (page + 1) * int(perPage)
-	if top > len(cards) {
-		top = len(cards)
+	if top > count {
+		top = count
 	}
 
-	field.Name = fmt.Sprintf("Cards (page %d/%d) :", page+1, maxPage+1)
+	listings, err := p.QueryListings().
+		Order(listing.ByCreateTime()).
+		Offset(page * int(perPage)).
+		Limit(int(perPage)).
+		WithCard().
+		All(context.Background())
+	if err != nil {
+		return discord.Embed{}, nil, err
+	}
 
-	displayedCards := cards[page*int(perPage) : top]
+	field.Name = fmt.Sprintf("Listings (page %d/%d) :", page+1, maxPage+1)
 
-	for i, c := range displayedCards {
+	for i, listing := range listings {
 		idx := page*int(perPage) + i + 1
-		field.Value += fmt.Sprintf("`N°%d | %s`\n", idx, utils.Cards.FullString(c))
+		field.Value += fmt.Sprintf("`N°%d | %s`\n", idx, listing.Edges.Card.FullString())
 	}
 
-	if len(displayedCards) == 0 {
-		field.Name = "Cards :"
-		field.Value = "You have no cards to be shown."
+	if len(listings) == 0 {
+		field.Name = "Listings :"
+		field.Value = "You have no listings to be shown."
 	}
 
 	embed.AddFields(field)
@@ -64,18 +77,21 @@ func (cmd *listingsCommand) generator(username string, p *models.Player, page in
 		discord.NewSecondaryButton("◀️ Prev", customID+"/"+componentActionPrev),
 		discord.NewSecondaryButton("🔄 Refresh", customID+"/"+componentActionRefresh),
 		discord.NewSecondaryButton("▶️ Next", customID+"/"+componentActionNext),
-	)
+	), nil
 }
 
 func (cmd *listingsCommand) GetListings(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
 	username := e.User().Username
 	if e.User().GlobalName != nil {
 		username = *e.User().GlobalName
 	}
 
-	embed, components := cmd.generator(username, p, 0)
+	embed, components, err := cmd.generator(username, p, 0)
+	if err != nil {
+		return utils.CommandError(e, err)
+	}
 
 	return e.Respond(
 		discord.InteractionResponseTypeCreateMessage,
@@ -104,16 +120,19 @@ func (cmd *listingsCommand) HandleGetListingsInteraction(data discord.ButtonInte
 	default:
 	}
 
-	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
 	username := e.User().Username
 	if e.User().GlobalName != nil {
 		username = *e.User().GlobalName
 	}
 
-	embed, components := cmd.generator(username, p, page)
+	embed, components, err := cmd.generator(username, p, page)
+	if err != nil {
+		return utils.ComponentError(e, err)
+	}
 
-	_, err := e.UpdateInteractionResponse(
+	_, err = e.UpdateInteractionResponse(
 		discord.NewMessageUpdateBuilder().
 			AddEmbeds(embed).
 			AddContainerComponents(components).

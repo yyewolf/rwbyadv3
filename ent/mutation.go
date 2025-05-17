@@ -8865,9 +8865,22 @@ func (m *ListingMutation) OldNote(ctx context.Context) (v string, err error) {
 	return oldValue.Note, nil
 }
 
+// ClearNote clears the value of the "note" field.
+func (m *ListingMutation) ClearNote() {
+	m.note = nil
+	m.clearedFields[listing.FieldNote] = struct{}{}
+}
+
+// NoteCleared returns if the "note" field was cleared in this mutation.
+func (m *ListingMutation) NoteCleared() bool {
+	_, ok := m.clearedFields[listing.FieldNote]
+	return ok
+}
+
 // ResetNote resets all changes to the "note" field.
 func (m *ListingMutation) ResetNote() {
 	m.note = nil
+	delete(m.clearedFields, listing.FieldNote)
 }
 
 // SetOwnedByID sets the "owned_by" edge to the Player entity by id.
@@ -9126,7 +9139,11 @@ func (m *ListingMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ListingMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(listing.FieldNote) {
+		fields = append(fields, listing.FieldNote)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -9139,6 +9156,11 @@ func (m *ListingMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ListingMutation) ClearField(name string) error {
+	switch name {
+	case listing.FieldNote:
+		m.ClearNote()
+		return nil
+	}
 	return fmt.Errorf("unknown Listing nullable field %s", name)
 }
 
