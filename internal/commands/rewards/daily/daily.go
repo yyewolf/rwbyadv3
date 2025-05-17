@@ -1,17 +1,15 @@
 package daily
 
 import (
-	"context"
 	"math/rand"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/loots"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 	"github.com/yyewolf/rwbyadv3/pkg/loottables"
 	"github.com/yyewolf/rwbyadv3/pkg/loottables/item"
 )
@@ -50,8 +48,8 @@ func DailyCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 }
 
 func (cmd *dailyCommand) HandleCommand(e *handler.CommandEvent) error {
-	player := e.Ctx.Value(builder.PlayerKey).(*models.Player)
-	daily := player.R.GetDaily()
+	player := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+	daily := player.Edges.Daily
 	if !daily.HasVoted {
 		return e.Respond(
 			discord.InteractionResponseTypeCreateMessage,
@@ -73,41 +71,37 @@ func (cmd *dailyCommand) HandleCommand(e *handler.CommandEvent) error {
 
 	// Create the loot table
 	var lootTable = loottables.New(
-		item.New(&loots.Liens{}, 10).OnlyDropOnce().WithAmountRange(100, 1500, 1).WithRepartitionFunc(item.RepartitionGaussian(120*(daily.Streak%7+1), 50)),
+		item.New(&loots.Liens{}, 10).
+			OnlyDropOnce().
+			WithAmountRange(100, 1500, 1).
+			WithRepartitionFunc(
+				item.RepartitionGaussian(int(120*(daily.Streak%7+1)), 50),
+			),
 		item.New(item.Nothing{}, 20),
 	)
 
 	list := lootTable.ChooseRandomItems(random, 5)
 
-	tx, err := boil.BeginTx(context.Background(), nil)
-	if err != nil {
-		return utils.CommandError(e, err)
-	}
-
-	// Give loots and create text
 	texts := make([]string, 0)
-	for _, loot := range list {
-		if loot, ok := loot.(loots.Loot); ok {
-			loot.PickedUp(tx, player)
-			texts = append(texts, loot.RewardText(list))
+
+	err := utils.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
+		// Give loots and create text
+		for _, loot := range list {
+			if loot, ok := loot.(loots.Loot); ok {
+				loot.NewPickedUp(tx, player)
+				texts = append(texts, loot.RewardText(list))
+			}
 		}
-	}
 
-	// Remove capability from player to claim again
-	daily.HasVoted = false
-	_, err = player.R.Daily.Update(
-		e.Ctx,
-		tx,
-		boil.Whitelist(
-			models.DailyColumns.HasVoted,
-		),
-	)
-	if err != nil {
-		tx.Rollback()
-		return utils.CommandError(e, err)
-	}
+		err := tx.Daily.UpdateOne(daily).
+			SetHasVoted(false).
+			Exec(e.Ctx)
+		if err != nil {
+			return err
+		}
 
-	err = tx.Commit()
+		return nil
+	})
 	if err != nil {
 		return utils.CommandError(e, err)
 	}

@@ -1,11 +1,13 @@
 package loots
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"math/rand"
 
 	"github.com/google/uuid"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/models"
 	"github.com/yyewolf/rwbyadv3/pkg/loottables/item"
 )
@@ -42,6 +44,13 @@ func (m Liens) Place(point [2]int) DungeonLoot {
 
 func (m Liens) PickedUp(tx *sql.Tx, p *models.Player) {
 	p.Liens += int64(m.Amount)
+}
+
+func (m Liens) NewPickedUp(tx *ent.Tx, p *ent.Player) error {
+	err := tx.Player.UpdateOne(p).
+		AddLiens(int64(m.Amount)).
+		Exec(context.TODO())
+	return err
 }
 
 func (m Liens) RewardText(l []interface{}) string {
