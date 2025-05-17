@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/yyewolf/rwbyadv3/ent/auction"
 	"github.com/yyewolf/rwbyadv3/ent/auctionbid"
+	"github.com/yyewolf/rwbyadv3/ent/card"
 	"github.com/yyewolf/rwbyadv3/ent/player"
 )
 
@@ -72,9 +73,20 @@ func (ac *AuctionCreate) SetNillableID(u *uuid.UUID) *AuctionCreate {
 	return ac
 }
 
-// SetPlayer sets the "player" edge to the Player entity.
-func (ac *AuctionCreate) SetPlayer(p *Player) *AuctionCreate {
-	return ac.SetPlayerID(p.ID)
+// SetOwnedByID sets the "owned_by" edge to the Player entity by ID.
+func (ac *AuctionCreate) SetOwnedByID(id string) *AuctionCreate {
+	ac.mutation.SetOwnedByID(id)
+	return ac
+}
+
+// SetOwnedBy sets the "owned_by" edge to the Player entity.
+func (ac *AuctionCreate) SetOwnedBy(p *Player) *AuctionCreate {
+	return ac.SetOwnedByID(p.ID)
+}
+
+// SetCard sets the "card" edge to the Card entity.
+func (ac *AuctionCreate) SetCard(c *Card) *AuctionCreate {
+	return ac.SetCardID(c.ID)
 }
 
 // AddBidIDs adds the "bids" edge to the AuctionBid entity by IDs.
@@ -151,8 +163,11 @@ func (ac *AuctionCreate) check() error {
 	if _, ok := ac.mutation.EndsAt(); !ok {
 		return &ValidationError{Name: "ends_at", err: errors.New(`ent: missing required field "Auction.ends_at"`)}
 	}
-	if len(ac.mutation.PlayerIDs()) == 0 {
-		return &ValidationError{Name: "player", err: errors.New(`ent: missing required edge "Auction.player"`)}
+	if len(ac.mutation.OwnedByIDs()) == 0 {
+		return &ValidationError{Name: "owned_by", err: errors.New(`ent: missing required edge "Auction.owned_by"`)}
+	}
+	if len(ac.mutation.CardIDs()) == 0 {
+		return &ValidationError{Name: "card", err: errors.New(`ent: missing required edge "Auction.card"`)}
 	}
 	return nil
 }
@@ -190,10 +205,6 @@ func (ac *AuctionCreate) createSpec() (*Auction, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := ac.mutation.CardID(); ok {
-		_spec.SetField(auction.FieldCardID, field.TypeUUID, value)
-		_node.CardID = value
-	}
 	if value, ok := ac.mutation.TimeExtensions(); ok {
 		_spec.SetField(auction.FieldTimeExtensions, field.TypeInt, value)
 		_node.TimeExtensions = value
@@ -202,12 +213,12 @@ func (ac *AuctionCreate) createSpec() (*Auction, *sqlgraph.CreateSpec) {
 		_spec.SetField(auction.FieldEndsAt, field.TypeTime, value)
 		_node.EndsAt = value
 	}
-	if nodes := ac.mutation.PlayerIDs(); len(nodes) > 0 {
+	if nodes := ac.mutation.OwnedByIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   auction.PlayerTable,
-			Columns: []string{auction.PlayerColumn},
+			Inverse: true,
+			Table:   auction.OwnedByTable,
+			Columns: []string{auction.OwnedByColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(player.FieldID, field.TypeString),
@@ -217,6 +228,23 @@ func (ac *AuctionCreate) createSpec() (*Auction, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.PlayerID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := ac.mutation.CardIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   auction.CardTable,
+			Columns: []string{auction.CardColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(card.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.CardID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := ac.mutation.BidsIDs(); len(nodes) > 0 {

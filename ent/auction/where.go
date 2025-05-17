@@ -161,26 +161,6 @@ func CardIDNotIn(vs ...uuid.UUID) predicate.Auction {
 	return predicate.Auction(sql.FieldNotIn(FieldCardID, vs...))
 }
 
-// CardIDGT applies the GT predicate on the "card_id" field.
-func CardIDGT(v uuid.UUID) predicate.Auction {
-	return predicate.Auction(sql.FieldGT(FieldCardID, v))
-}
-
-// CardIDGTE applies the GTE predicate on the "card_id" field.
-func CardIDGTE(v uuid.UUID) predicate.Auction {
-	return predicate.Auction(sql.FieldGTE(FieldCardID, v))
-}
-
-// CardIDLT applies the LT predicate on the "card_id" field.
-func CardIDLT(v uuid.UUID) predicate.Auction {
-	return predicate.Auction(sql.FieldLT(FieldCardID, v))
-}
-
-// CardIDLTE applies the LTE predicate on the "card_id" field.
-func CardIDLTE(v uuid.UUID) predicate.Auction {
-	return predicate.Auction(sql.FieldLTE(FieldCardID, v))
-}
-
 // TimeExtensionsEQ applies the EQ predicate on the "time_extensions" field.
 func TimeExtensionsEQ(v int) predicate.Auction {
 	return predicate.Auction(sql.FieldEQ(FieldTimeExtensions, v))
@@ -261,21 +241,44 @@ func EndsAtLTE(v time.Time) predicate.Auction {
 	return predicate.Auction(sql.FieldLTE(FieldEndsAt, v))
 }
 
-// HasPlayer applies the HasEdge predicate on the "player" edge.
-func HasPlayer() predicate.Auction {
+// HasOwnedBy applies the HasEdge predicate on the "owned_by" edge.
+func HasOwnedBy() predicate.Auction {
 	return predicate.Auction(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, PlayerTable, PlayerColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, OwnedByTable, OwnedByColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasPlayerWith applies the HasEdge predicate on the "player" edge with a given conditions (other predicates).
-func HasPlayerWith(preds ...predicate.Player) predicate.Auction {
+// HasOwnedByWith applies the HasEdge predicate on the "owned_by" edge with a given conditions (other predicates).
+func HasOwnedByWith(preds ...predicate.Player) predicate.Auction {
 	return predicate.Auction(func(s *sql.Selector) {
-		step := newPlayerStep()
+		step := newOwnedByStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCard applies the HasEdge predicate on the "card" edge.
+func HasCard() predicate.Auction {
+	return predicate.Auction(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, CardTable, CardColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCardWith applies the HasEdge predicate on the "card" edge with a given conditions (other predicates).
+func HasCardWith(preds ...predicate.Card) predicate.Auction {
+	return predicate.Auction(func(s *sql.Selector) {
+		step := newCardStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

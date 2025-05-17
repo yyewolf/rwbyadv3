@@ -21,19 +21,28 @@ const (
 	FieldTimeExtensions = "time_extensions"
 	// FieldEndsAt holds the string denoting the ends_at field in the database.
 	FieldEndsAt = "ends_at"
-	// EdgePlayer holds the string denoting the player edge name in mutations.
-	EdgePlayer = "player"
+	// EdgeOwnedBy holds the string denoting the owned_by edge name in mutations.
+	EdgeOwnedBy = "owned_by"
+	// EdgeCard holds the string denoting the card edge name in mutations.
+	EdgeCard = "card"
 	// EdgeBids holds the string denoting the bids edge name in mutations.
 	EdgeBids = "bids"
 	// Table holds the table name of the auction in the database.
 	Table = "auctions"
-	// PlayerTable is the table that holds the player relation/edge.
-	PlayerTable = "auctions"
-	// PlayerInverseTable is the table name for the Player entity.
+	// OwnedByTable is the table that holds the owned_by relation/edge.
+	OwnedByTable = "auctions"
+	// OwnedByInverseTable is the table name for the Player entity.
 	// It exists in this package in order to avoid circular dependency with the "player" package.
-	PlayerInverseTable = "players"
-	// PlayerColumn is the table column denoting the player relation/edge.
-	PlayerColumn = "player_id"
+	OwnedByInverseTable = "players"
+	// OwnedByColumn is the table column denoting the owned_by relation/edge.
+	OwnedByColumn = "player_id"
+	// CardTable is the table that holds the card relation/edge.
+	CardTable = "auctions"
+	// CardInverseTable is the table name for the Card entity.
+	// It exists in this package in order to avoid circular dependency with the "card" package.
+	CardInverseTable = "cards"
+	// CardColumn is the table column denoting the card relation/edge.
+	CardColumn = "card_id"
 	// BidsTable is the table that holds the bids relation/edge.
 	BidsTable = "auction_bids"
 	// BidsInverseTable is the table name for the AuctionBid entity.
@@ -97,10 +106,17 @@ func ByEndsAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEndsAt, opts...).ToFunc()
 }
 
-// ByPlayerField orders the results by player field.
-func ByPlayerField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByOwnedByField orders the results by owned_by field.
+func ByOwnedByField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newPlayerStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newOwnedByStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByCardField orders the results by card field.
+func ByCardField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCardStep(), sql.OrderByField(field, opts...))
 	}
 }
 
@@ -117,11 +133,18 @@ func ByBids(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newBidsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newPlayerStep() *sqlgraph.Step {
+func newOwnedByStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(PlayerInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, PlayerTable, PlayerColumn),
+		sqlgraph.To(OwnedByInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, OwnedByTable, OwnedByColumn),
+	)
+}
+func newCardStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CardInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, CardTable, CardColumn),
 	)
 }
 func newBidsStep() *sqlgraph.Step {

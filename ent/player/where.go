@@ -760,6 +760,29 @@ func HasDailyWith(preds ...predicate.Daily) predicate.Player {
 	})
 }
 
+// HasAuctions applies the HasEdge predicate on the "auctions" edge.
+func HasAuctions() predicate.Player {
+	return predicate.Player(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, AuctionsTable, AuctionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAuctionsWith applies the HasEdge predicate on the "auctions" edge with a given conditions (other predicates).
+func HasAuctionsWith(preds ...predicate.Auction) predicate.Player {
+	return predicate.Player(func(s *sql.Selector) {
+		step := newAuctionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasListings applies the HasEdge predicate on the "listings" edge.
 func HasListings() predicate.Player {
 	return predicate.Player(func(s *sql.Selector) {

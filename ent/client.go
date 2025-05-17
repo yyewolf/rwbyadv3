@@ -446,15 +446,31 @@ func (c *AuctionClient) GetX(ctx context.Context, id uuid.UUID) *Auction {
 	return obj
 }
 
-// QueryPlayer queries the player edge of a Auction.
-func (c *AuctionClient) QueryPlayer(a *Auction) *PlayerQuery {
+// QueryOwnedBy queries the owned_by edge of a Auction.
+func (c *AuctionClient) QueryOwnedBy(a *Auction) *PlayerQuery {
 	query := (&PlayerClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := a.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(auction.Table, auction.FieldID, id),
 			sqlgraph.To(player.Table, player.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, auction.PlayerTable, auction.PlayerColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, auction.OwnedByTable, auction.OwnedByColumn),
+		)
+		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCard queries the card edge of a Auction.
+func (c *AuctionClient) QueryCard(a *Auction) *CardQuery {
+	query := (&CardClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := a.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(auction.Table, auction.FieldID, id),
+			sqlgraph.To(card.Table, card.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, auction.CardTable, auction.CardColumn),
 		)
 		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
 		return fromV, nil
@@ -2616,6 +2632,22 @@ func (c *PlayerClient) QueryDaily(pl *Player) *DailyQuery {
 			sqlgraph.From(player.Table, player.FieldID, id),
 			sqlgraph.To(daily.Table, daily.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, player.DailyTable, player.DailyColumn),
+		)
+		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAuctions queries the auctions edge of a Player.
+func (c *PlayerClient) QueryAuctions(pl *Player) *AuctionQuery {
+	query := (&AuctionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, id),
+			sqlgraph.To(auction.Table, auction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, player.AuctionsTable, player.AuctionsColumn),
 		)
 		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
 		return fromV, nil

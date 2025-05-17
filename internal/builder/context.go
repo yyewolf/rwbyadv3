@@ -43,6 +43,7 @@ type ContextBuilder struct {
 	withPlayer             bool
 	withPlayerGithubStars  bool
 	withPlayerCards        bool
+	withPlayerAuctions     bool
 	withPlayerLootBoxes    bool
 	withPlayerSelectedCard bool
 	withPlayerLimits       bool
@@ -77,6 +78,15 @@ func FillPlayerContext(cb *ContextBuilder, userID snowflake.ID, ctx context.Cont
 			q.Order(card.ByPosition())
 			q.WithStats()
 			q.WithType()
+		})
+	}
+
+	if cb.withPlayerAuctions {
+		query.WithAuctions(func(q *ent.AuctionQuery) {
+			q.WithCard(func(q *ent.CardQuery) {
+				q.WithType()
+				q.WithStats()
+			})
 		})
 	}
 
@@ -265,6 +275,12 @@ func WithPlayer() func(a *ContextBuilder) {
 func WithPlayerGithubStars() func(a *ContextBuilder) {
 	return func(a *ContextBuilder) {
 		a.withPlayerGithubStars = true
+	}
+}
+
+func WithPlayerAuctions() func(a *ContextBuilder) {
+	return func(a *ContextBuilder) {
+		a.withPlayerAuctions = true
 	}
 }
 

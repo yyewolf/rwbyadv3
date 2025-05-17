@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/yyewolf/rwbyadv3/ent/auction"
 	"github.com/yyewolf/rwbyadv3/ent/auctionbid"
+	"github.com/yyewolf/rwbyadv3/ent/card"
 	"github.com/yyewolf/rwbyadv3/ent/player"
 	"github.com/yyewolf/rwbyadv3/ent/predicate"
 )
@@ -22,12 +23,13 @@ import (
 // AuctionQuery is the builder for querying Auction entities.
 type AuctionQuery struct {
 	config
-	ctx        *QueryContext
-	order      []auction.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Auction
-	withPlayer *PlayerQuery
-	withBids   *AuctionBidQuery
+	ctx         *QueryContext
+	order       []auction.OrderOption
+	inters      []Interceptor
+	predicates  []predicate.Auction
+	withOwnedBy *PlayerQuery
+	withCard    *CardQuery
+	withBids    *AuctionBidQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -64,8 +66,8 @@ func (aq *AuctionQuery) Order(o ...auction.OrderOption) *AuctionQuery {
 	return aq
 }
 
-// QueryPlayer chains the current query on the "player" edge.
-func (aq *AuctionQuery) QueryPlayer() *PlayerQuery {
+// QueryOwnedBy chains the current query on the "owned_by" edge.
+func (aq *AuctionQuery) QueryOwnedBy() *PlayerQuery {
 	query := (&PlayerClient{config: aq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := aq.prepareQuery(ctx); err != nil {
@@ -78,7 +80,29 @@ func (aq *AuctionQuery) QueryPlayer() *PlayerQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(auction.Table, auction.FieldID, selector),
 			sqlgraph.To(player.Table, player.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, auction.PlayerTable, auction.PlayerColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, auction.OwnedByTable, auction.OwnedByColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCard chains the current query on the "card" edge.
+func (aq *AuctionQuery) QueryCard() *CardQuery {
+	query := (&CardClient{config: aq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := aq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := aq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(auction.Table, auction.FieldID, selector),
+			sqlgraph.To(card.Table, card.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, auction.CardTable, auction.CardColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
 		return fromU, nil
@@ -295,27 +319,39 @@ func (aq *AuctionQuery) Clone() *AuctionQuery {
 		return nil
 	}
 	return &AuctionQuery{
-		config:     aq.config,
-		ctx:        aq.ctx.Clone(),
-		order:      append([]auction.OrderOption{}, aq.order...),
-		inters:     append([]Interceptor{}, aq.inters...),
-		predicates: append([]predicate.Auction{}, aq.predicates...),
-		withPlayer: aq.withPlayer.Clone(),
-		withBids:   aq.withBids.Clone(),
+		config:      aq.config,
+		ctx:         aq.ctx.Clone(),
+		order:       append([]auction.OrderOption{}, aq.order...),
+		inters:      append([]Interceptor{}, aq.inters...),
+		predicates:  append([]predicate.Auction{}, aq.predicates...),
+		withOwnedBy: aq.withOwnedBy.Clone(),
+		withCard:    aq.withCard.Clone(),
+		withBids:    aq.withBids.Clone(),
 		// clone intermediate query.
 		sql:  aq.sql.Clone(),
 		path: aq.path,
 	}
 }
 
-// WithPlayer tells the query-builder to eager-load the nodes that are connected to
-// the "player" edge. The optional arguments are used to configure the query builder of the edge.
-func (aq *AuctionQuery) WithPlayer(opts ...func(*PlayerQuery)) *AuctionQuery {
+// WithOwnedBy tells the query-builder to eager-load the nodes that are connected to
+// the "owned_by" edge. The optional arguments are used to configure the query builder of the edge.
+func (aq *AuctionQuery) WithOwnedBy(opts ...func(*PlayerQuery)) *AuctionQuery {
 	query := (&PlayerClient{config: aq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	aq.withPlayer = query
+	aq.withOwnedBy = query
+	return aq
+}
+
+// WithCard tells the query-builder to eager-load the nodes that are connected to
+// the "card" edge. The optional arguments are used to configure the query builder of the edge.
+func (aq *AuctionQuery) WithCard(opts ...func(*CardQuery)) *AuctionQuery {
+	query := (&CardClient{config: aq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	aq.withCard = query
 	return aq
 }
 
@@ -408,8 +444,9 @@ func (aq *AuctionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Auct
 	var (
 		nodes       = []*Auction{}
 		_spec       = aq.querySpec()
-		loadedTypes = [2]bool{
-			aq.withPlayer != nil,
+		loadedTypes = [3]bool{
+			aq.withOwnedBy != nil,
+			aq.withCard != nil,
 			aq.withBids != nil,
 		}
 	)
@@ -431,9 +468,15 @@ func (aq *AuctionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Auct
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := aq.withPlayer; query != nil {
-		if err := aq.loadPlayer(ctx, query, nodes, nil,
-			func(n *Auction, e *Player) { n.Edges.Player = e }); err != nil {
+	if query := aq.withOwnedBy; query != nil {
+		if err := aq.loadOwnedBy(ctx, query, nodes, nil,
+			func(n *Auction, e *Player) { n.Edges.OwnedBy = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := aq.withCard; query != nil {
+		if err := aq.loadCard(ctx, query, nodes, nil,
+			func(n *Auction, e *Card) { n.Edges.Card = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -447,7 +490,7 @@ func (aq *AuctionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Auct
 	return nodes, nil
 }
 
-func (aq *AuctionQuery) loadPlayer(ctx context.Context, query *PlayerQuery, nodes []*Auction, init func(*Auction), assign func(*Auction, *Player)) error {
+func (aq *AuctionQuery) loadOwnedBy(ctx context.Context, query *PlayerQuery, nodes []*Auction, init func(*Auction), assign func(*Auction, *Player)) error {
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*Auction)
 	for i := range nodes {
@@ -469,6 +512,35 @@ func (aq *AuctionQuery) loadPlayer(ctx context.Context, query *PlayerQuery, node
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "player_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (aq *AuctionQuery) loadCard(ctx context.Context, query *CardQuery, nodes []*Auction, init func(*Auction), assign func(*Auction, *Card)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Auction)
+	for i := range nodes {
+		fk := nodes[i].CardID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(card.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "card_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -532,8 +604,11 @@ func (aq *AuctionQuery) querySpec() *sqlgraph.QuerySpec {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
-		if aq.withPlayer != nil {
+		if aq.withOwnedBy != nil {
 			_spec.Node.AddColumnOnce(auction.FieldPlayerID)
+		}
+		if aq.withCard != nil {
+			_spec.Node.AddColumnOnce(auction.FieldCardID)
 		}
 	}
 	if ps := aq.predicates; len(ps) > 0 {

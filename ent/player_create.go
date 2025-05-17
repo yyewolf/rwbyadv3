@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/yyewolf/rwbyadv3/ent/auction"
 	"github.com/yyewolf/rwbyadv3/ent/card"
 	"github.com/yyewolf/rwbyadv3/ent/daily"
 	"github.com/yyewolf/rwbyadv3/ent/dungeon"
@@ -311,6 +312,21 @@ func (pc *PlayerCreate) SetNillableDailyID(id *int) *PlayerCreate {
 // SetDaily sets the "daily" edge to the Daily entity.
 func (pc *PlayerCreate) SetDaily(d *Daily) *PlayerCreate {
 	return pc.SetDailyID(d.ID)
+}
+
+// AddAuctionIDs adds the "auctions" edge to the Auction entity by IDs.
+func (pc *PlayerCreate) AddAuctionIDs(ids ...uuid.UUID) *PlayerCreate {
+	pc.mutation.AddAuctionIDs(ids...)
+	return pc
+}
+
+// AddAuctions adds the "auctions" edges to the Auction entity.
+func (pc *PlayerCreate) AddAuctions(a ...*Auction) *PlayerCreate {
+	ids := make([]uuid.UUID, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return pc.AddAuctionIDs(ids...)
 }
 
 // AddListingIDs adds the "listings" edge to the Listing entity by IDs.
@@ -693,6 +709,22 @@ func (pc *PlayerCreate) createSpec() (*Player, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(daily.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.AuctionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.AuctionsTable,
+			Columns: []string{player.AuctionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(auction.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

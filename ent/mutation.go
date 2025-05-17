@@ -68,13 +68,14 @@ type AuctionMutation struct {
 	op                 Op
 	typ                string
 	id                 *uuid.UUID
-	card_id            *uuid.UUID
 	time_extensions    *int
 	addtime_extensions *int
 	ends_at            *time.Time
 	clearedFields      map[string]struct{}
-	player             *string
-	clearedplayer      bool
+	owned_by           *string
+	clearedowned_by    bool
+	card               *uuid.UUID
+	clearedcard        bool
 	bids               map[uuid.UUID]struct{}
 	removedbids        map[uuid.UUID]struct{}
 	clearedbids        bool
@@ -189,12 +190,12 @@ func (m *AuctionMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 
 // SetPlayerID sets the "player_id" field.
 func (m *AuctionMutation) SetPlayerID(s string) {
-	m.player = &s
+	m.owned_by = &s
 }
 
 // PlayerID returns the value of the "player_id" field in the mutation.
 func (m *AuctionMutation) PlayerID() (r string, exists bool) {
-	v := m.player
+	v := m.owned_by
 	if v == nil {
 		return
 	}
@@ -220,17 +221,17 @@ func (m *AuctionMutation) OldPlayerID(ctx context.Context) (v string, err error)
 
 // ResetPlayerID resets all changes to the "player_id" field.
 func (m *AuctionMutation) ResetPlayerID() {
-	m.player = nil
+	m.owned_by = nil
 }
 
 // SetCardID sets the "card_id" field.
 func (m *AuctionMutation) SetCardID(u uuid.UUID) {
-	m.card_id = &u
+	m.card = &u
 }
 
 // CardID returns the value of the "card_id" field in the mutation.
 func (m *AuctionMutation) CardID() (r uuid.UUID, exists bool) {
-	v := m.card_id
+	v := m.card
 	if v == nil {
 		return
 	}
@@ -256,7 +257,7 @@ func (m *AuctionMutation) OldCardID(ctx context.Context) (v uuid.UUID, err error
 
 // ResetCardID resets all changes to the "card_id" field.
 func (m *AuctionMutation) ResetCardID() {
-	m.card_id = nil
+	m.card = nil
 }
 
 // SetTimeExtensions sets the "time_extensions" field.
@@ -351,31 +352,71 @@ func (m *AuctionMutation) ResetEndsAt() {
 	m.ends_at = nil
 }
 
-// ClearPlayer clears the "player" edge to the Player entity.
-func (m *AuctionMutation) ClearPlayer() {
-	m.clearedplayer = true
+// SetOwnedByID sets the "owned_by" edge to the Player entity by id.
+func (m *AuctionMutation) SetOwnedByID(id string) {
+	m.owned_by = &id
+}
+
+// ClearOwnedBy clears the "owned_by" edge to the Player entity.
+func (m *AuctionMutation) ClearOwnedBy() {
+	m.clearedowned_by = true
 	m.clearedFields[auction.FieldPlayerID] = struct{}{}
 }
 
-// PlayerCleared reports if the "player" edge to the Player entity was cleared.
-func (m *AuctionMutation) PlayerCleared() bool {
-	return m.clearedplayer
+// OwnedByCleared reports if the "owned_by" edge to the Player entity was cleared.
+func (m *AuctionMutation) OwnedByCleared() bool {
+	return m.clearedowned_by
 }
 
-// PlayerIDs returns the "player" edge IDs in the mutation.
+// OwnedByID returns the "owned_by" edge ID in the mutation.
+func (m *AuctionMutation) OwnedByID() (id string, exists bool) {
+	if m.owned_by != nil {
+		return *m.owned_by, true
+	}
+	return
+}
+
+// OwnedByIDs returns the "owned_by" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// PlayerID instead. It exists only for internal usage by the builders.
-func (m *AuctionMutation) PlayerIDs() (ids []string) {
-	if id := m.player; id != nil {
+// OwnedByID instead. It exists only for internal usage by the builders.
+func (m *AuctionMutation) OwnedByIDs() (ids []string) {
+	if id := m.owned_by; id != nil {
 		ids = append(ids, *id)
 	}
 	return
 }
 
-// ResetPlayer resets all changes to the "player" edge.
-func (m *AuctionMutation) ResetPlayer() {
-	m.player = nil
-	m.clearedplayer = false
+// ResetOwnedBy resets all changes to the "owned_by" edge.
+func (m *AuctionMutation) ResetOwnedBy() {
+	m.owned_by = nil
+	m.clearedowned_by = false
+}
+
+// ClearCard clears the "card" edge to the Card entity.
+func (m *AuctionMutation) ClearCard() {
+	m.clearedcard = true
+	m.clearedFields[auction.FieldCardID] = struct{}{}
+}
+
+// CardCleared reports if the "card" edge to the Card entity was cleared.
+func (m *AuctionMutation) CardCleared() bool {
+	return m.clearedcard
+}
+
+// CardIDs returns the "card" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// CardID instead. It exists only for internal usage by the builders.
+func (m *AuctionMutation) CardIDs() (ids []uuid.UUID) {
+	if id := m.card; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetCard resets all changes to the "card" edge.
+func (m *AuctionMutation) ResetCard() {
+	m.card = nil
+	m.clearedcard = false
 }
 
 // AddBidIDs adds the "bids" edge to the AuctionBid entity by ids.
@@ -467,10 +508,10 @@ func (m *AuctionMutation) Type() string {
 // AddedFields().
 func (m *AuctionMutation) Fields() []string {
 	fields := make([]string, 0, 4)
-	if m.player != nil {
+	if m.owned_by != nil {
 		fields = append(fields, auction.FieldPlayerID)
 	}
-	if m.card_id != nil {
+	if m.card != nil {
 		fields = append(fields, auction.FieldCardID)
 	}
 	if m.time_extensions != nil {
@@ -631,9 +672,12 @@ func (m *AuctionMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *AuctionMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.player != nil {
-		edges = append(edges, auction.EdgePlayer)
+	edges := make([]string, 0, 3)
+	if m.owned_by != nil {
+		edges = append(edges, auction.EdgeOwnedBy)
+	}
+	if m.card != nil {
+		edges = append(edges, auction.EdgeCard)
 	}
 	if m.bids != nil {
 		edges = append(edges, auction.EdgeBids)
@@ -645,8 +689,12 @@ func (m *AuctionMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *AuctionMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case auction.EdgePlayer:
-		if id := m.player; id != nil {
+	case auction.EdgeOwnedBy:
+		if id := m.owned_by; id != nil {
+			return []ent.Value{*id}
+		}
+	case auction.EdgeCard:
+		if id := m.card; id != nil {
 			return []ent.Value{*id}
 		}
 	case auction.EdgeBids:
@@ -661,7 +709,7 @@ func (m *AuctionMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *AuctionMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedbids != nil {
 		edges = append(edges, auction.EdgeBids)
 	}
@@ -684,9 +732,12 @@ func (m *AuctionMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *AuctionMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.clearedplayer {
-		edges = append(edges, auction.EdgePlayer)
+	edges := make([]string, 0, 3)
+	if m.clearedowned_by {
+		edges = append(edges, auction.EdgeOwnedBy)
+	}
+	if m.clearedcard {
+		edges = append(edges, auction.EdgeCard)
 	}
 	if m.clearedbids {
 		edges = append(edges, auction.EdgeBids)
@@ -698,8 +749,10 @@ func (m *AuctionMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *AuctionMutation) EdgeCleared(name string) bool {
 	switch name {
-	case auction.EdgePlayer:
-		return m.clearedplayer
+	case auction.EdgeOwnedBy:
+		return m.clearedowned_by
+	case auction.EdgeCard:
+		return m.clearedcard
 	case auction.EdgeBids:
 		return m.clearedbids
 	}
@@ -710,8 +763,11 @@ func (m *AuctionMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *AuctionMutation) ClearEdge(name string) error {
 	switch name {
-	case auction.EdgePlayer:
-		m.ClearPlayer()
+	case auction.EdgeOwnedBy:
+		m.ClearOwnedBy()
+		return nil
+	case auction.EdgeCard:
+		m.ClearCard()
 		return nil
 	}
 	return fmt.Errorf("unknown Auction unique edge %s", name)
@@ -721,8 +777,11 @@ func (m *AuctionMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *AuctionMutation) ResetEdge(name string) error {
 	switch name {
-	case auction.EdgePlayer:
-		m.ResetPlayer()
+	case auction.EdgeOwnedBy:
+		m.ResetOwnedBy()
+		return nil
+	case auction.EdgeCard:
+		m.ResetCard()
 		return nil
 	case auction.EdgeBids:
 		m.ResetBids()
@@ -9806,6 +9865,9 @@ type PlayerMutation struct {
 	clearedgithub_star             bool
 	daily                          *int
 	cleareddaily                   bool
+	auctions                       map[uuid.UUID]struct{}
+	removedauctions                map[uuid.UUID]struct{}
+	clearedauctions                bool
 	listings                       map[uuid.UUID]struct{}
 	removedlistings                map[uuid.UUID]struct{}
 	clearedlistings                bool
@@ -10830,6 +10892,60 @@ func (m *PlayerMutation) ResetDaily() {
 	m.cleareddaily = false
 }
 
+// AddAuctionIDs adds the "auctions" edge to the Auction entity by ids.
+func (m *PlayerMutation) AddAuctionIDs(ids ...uuid.UUID) {
+	if m.auctions == nil {
+		m.auctions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.auctions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAuctions clears the "auctions" edge to the Auction entity.
+func (m *PlayerMutation) ClearAuctions() {
+	m.clearedauctions = true
+}
+
+// AuctionsCleared reports if the "auctions" edge to the Auction entity was cleared.
+func (m *PlayerMutation) AuctionsCleared() bool {
+	return m.clearedauctions
+}
+
+// RemoveAuctionIDs removes the "auctions" edge to the Auction entity by IDs.
+func (m *PlayerMutation) RemoveAuctionIDs(ids ...uuid.UUID) {
+	if m.removedauctions == nil {
+		m.removedauctions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.auctions, ids[i])
+		m.removedauctions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAuctions returns the removed IDs of the "auctions" edge to the Auction entity.
+func (m *PlayerMutation) RemovedAuctionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedauctions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AuctionsIDs returns the "auctions" edge IDs in the mutation.
+func (m *PlayerMutation) AuctionsIDs() (ids []uuid.UUID) {
+	for id := range m.auctions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAuctions resets all changes to the "auctions" edge.
+func (m *PlayerMutation) ResetAuctions() {
+	m.auctions = nil
+	m.clearedauctions = false
+	m.removedauctions = nil
+}
+
 // AddListingIDs adds the "listings" edge to the Listing entity by ids.
 func (m *PlayerMutation) AddListingIDs(ids ...uuid.UUID) {
 	if m.listings == nil {
@@ -11337,7 +11453,7 @@ func (m *PlayerMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *PlayerMutation) AddedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 11)
 	if m.limits != nil {
 		edges = append(edges, player.EdgeLimits)
 	}
@@ -11361,6 +11477,9 @@ func (m *PlayerMutation) AddedEdges() []string {
 	}
 	if m.daily != nil {
 		edges = append(edges, player.EdgeDaily)
+	}
+	if m.auctions != nil {
+		edges = append(edges, player.EdgeAuctions)
 	}
 	if m.listings != nil {
 		edges = append(edges, player.EdgeListings)
@@ -11415,6 +11534,12 @@ func (m *PlayerMutation) AddedIDs(name string) []ent.Value {
 		if id := m.daily; id != nil {
 			return []ent.Value{*id}
 		}
+	case player.EdgeAuctions:
+		ids := make([]ent.Value, 0, len(m.auctions))
+		for id := range m.auctions {
+			ids = append(ids, id)
+		}
+		return ids
 	case player.EdgeListings:
 		ids := make([]ent.Value, 0, len(m.listings))
 		for id := range m.listings {
@@ -11433,7 +11558,7 @@ func (m *PlayerMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *PlayerMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 11)
 	if m.removedcards != nil {
 		edges = append(edges, player.EdgeCards)
 	}
@@ -11445,6 +11570,9 @@ func (m *PlayerMutation) RemovedEdges() []string {
 	}
 	if m.removedlootboxes != nil {
 		edges = append(edges, player.EdgeLootboxes)
+	}
+	if m.removedauctions != nil {
+		edges = append(edges, player.EdgeAuctions)
 	}
 	if m.removedlistings != nil {
 		edges = append(edges, player.EdgeListings)
@@ -11483,6 +11611,12 @@ func (m *PlayerMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case player.EdgeAuctions:
+		ids := make([]ent.Value, 0, len(m.removedauctions))
+		for id := range m.removedauctions {
+			ids = append(ids, id)
+		}
+		return ids
 	case player.EdgeListings:
 		ids := make([]ent.Value, 0, len(m.removedlistings))
 		for id := range m.removedlistings {
@@ -11501,7 +11635,7 @@ func (m *PlayerMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *PlayerMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 11)
 	if m.clearedlimits {
 		edges = append(edges, player.EdgeLimits)
 	}
@@ -11525,6 +11659,9 @@ func (m *PlayerMutation) ClearedEdges() []string {
 	}
 	if m.cleareddaily {
 		edges = append(edges, player.EdgeDaily)
+	}
+	if m.clearedauctions {
+		edges = append(edges, player.EdgeAuctions)
 	}
 	if m.clearedlistings {
 		edges = append(edges, player.EdgeListings)
@@ -11555,6 +11692,8 @@ func (m *PlayerMutation) EdgeCleared(name string) bool {
 		return m.clearedgithub_star
 	case player.EdgeDaily:
 		return m.cleareddaily
+	case player.EdgeAuctions:
+		return m.clearedauctions
 	case player.EdgeListings:
 		return m.clearedlistings
 	case player.EdgeDungeons:
@@ -11610,6 +11749,9 @@ func (m *PlayerMutation) ResetEdge(name string) error {
 		return nil
 	case player.EdgeDaily:
 		m.ResetDaily()
+		return nil
+	case player.EdgeAuctions:
+		m.ResetAuctions()
 		return nil
 	case player.EdgeListings:
 		m.ResetListings()

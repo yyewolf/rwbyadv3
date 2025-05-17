@@ -52,6 +52,8 @@ const (
 	EdgeGithubStar = "github_star"
 	// EdgeDaily holds the string denoting the daily edge name in mutations.
 	EdgeDaily = "daily"
+	// EdgeAuctions holds the string denoting the auctions edge name in mutations.
+	EdgeAuctions = "auctions"
 	// EdgeListings holds the string denoting the listings edge name in mutations.
 	EdgeListings = "listings"
 	// EdgeDungeons holds the string denoting the dungeons edge name in mutations.
@@ -114,6 +116,13 @@ const (
 	DailyInverseTable = "dailies"
 	// DailyColumn is the table column denoting the daily relation/edge.
 	DailyColumn = "player_id"
+	// AuctionsTable is the table that holds the auctions relation/edge.
+	AuctionsTable = "auctions"
+	// AuctionsInverseTable is the table name for the Auction entity.
+	// It exists in this package in order to avoid circular dependency with the "auction" package.
+	AuctionsInverseTable = "auctions"
+	// AuctionsColumn is the table column denoting the auctions relation/edge.
+	AuctionsColumn = "player_id"
 	// ListingsTable is the table that holds the listings relation/edge.
 	ListingsTable = "listings"
 	// ListingsInverseTable is the table name for the Listing entity.
@@ -365,6 +374,20 @@ func ByDailyField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
+// ByAuctionsCount orders the results by auctions count.
+func ByAuctionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAuctionsStep(), opts...)
+	}
+}
+
+// ByAuctions orders the results by auctions terms.
+func ByAuctions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAuctionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByListingsCount orders the results by listings count.
 func ByListingsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -474,6 +497,13 @@ func newDailyStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DailyInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2O, false, DailyTable, DailyColumn),
+	)
+}
+func newAuctionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AuctionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AuctionsTable, AuctionsColumn),
 	)
 }
 func newListingsStep() *sqlgraph.Step {

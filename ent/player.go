@@ -68,6 +68,8 @@ type PlayerEdges struct {
 	GithubStar *GithubStar `json:"github_star,omitempty"`
 	// Daily holds the value of the daily edge.
 	Daily *Daily `json:"daily,omitempty"`
+	// Auctions holds the value of the auctions edge.
+	Auctions []*Auction `json:"auctions,omitempty"`
 	// Listings holds the value of the listings edge.
 	Listings []*Listing `json:"listings,omitempty"`
 	// Dungeons holds the value of the dungeons edge.
@@ -78,7 +80,7 @@ type PlayerEdges struct {
 	PlayerDecks []*PlayerDeck `json:"player_decks,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [12]bool
+	loadedTypes [13]bool
 }
 
 // LimitsOrErr returns the Limits value or an error if the edge
@@ -161,10 +163,19 @@ func (e PlayerEdges) DailyOrErr() (*Daily, error) {
 	return nil, &NotLoadedError{edge: "daily"}
 }
 
+// AuctionsOrErr returns the Auctions value or an error if the edge
+// was not loaded in eager-loading.
+func (e PlayerEdges) AuctionsOrErr() ([]*Auction, error) {
+	if e.loadedTypes[8] {
+		return e.Auctions, nil
+	}
+	return nil, &NotLoadedError{edge: "auctions"}
+}
+
 // ListingsOrErr returns the Listings value or an error if the edge
 // was not loaded in eager-loading.
 func (e PlayerEdges) ListingsOrErr() ([]*Listing, error) {
-	if e.loadedTypes[8] {
+	if e.loadedTypes[9] {
 		return e.Listings, nil
 	}
 	return nil, &NotLoadedError{edge: "listings"}
@@ -173,7 +184,7 @@ func (e PlayerEdges) ListingsOrErr() ([]*Listing, error) {
 // DungeonsOrErr returns the Dungeons value or an error if the edge
 // was not loaded in eager-loading.
 func (e PlayerEdges) DungeonsOrErr() ([]*Dungeon, error) {
-	if e.loadedTypes[9] {
+	if e.loadedTypes[10] {
 		return e.Dungeons, nil
 	}
 	return nil, &NotLoadedError{edge: "dungeons"}
@@ -182,7 +193,7 @@ func (e PlayerEdges) DungeonsOrErr() ([]*Dungeon, error) {
 // PlayerFavoriteCardsOrErr returns the PlayerFavoriteCards value or an error if the edge
 // was not loaded in eager-loading.
 func (e PlayerEdges) PlayerFavoriteCardsOrErr() ([]*PlayerFavoriteCards, error) {
-	if e.loadedTypes[10] {
+	if e.loadedTypes[11] {
 		return e.PlayerFavoriteCards, nil
 	}
 	return nil, &NotLoadedError{edge: "player_favorite_cards"}
@@ -191,7 +202,7 @@ func (e PlayerEdges) PlayerFavoriteCardsOrErr() ([]*PlayerFavoriteCards, error) 
 // PlayerDecksOrErr returns the PlayerDecks value or an error if the edge
 // was not loaded in eager-loading.
 func (e PlayerEdges) PlayerDecksOrErr() ([]*PlayerDeck, error) {
-	if e.loadedTypes[11] {
+	if e.loadedTypes[12] {
 		return e.PlayerDecks, nil
 	}
 	return nil, &NotLoadedError{edge: "player_decks"}
@@ -348,6 +359,11 @@ func (pl *Player) QueryGithubStar() *GithubStarQuery {
 // QueryDaily queries the "daily" edge of the Player entity.
 func (pl *Player) QueryDaily() *DailyQuery {
 	return NewPlayerClient(pl.config).QueryDaily(pl)
+}
+
+// QueryAuctions queries the "auctions" edge of the Player entity.
+func (pl *Player) QueryAuctions() *AuctionQuery {
+	return NewPlayerClient(pl.config).QueryAuctions(pl)
 }
 
 // QueryListings queries the "listings" edge of the Player entity.

@@ -1,7 +1,7 @@
 -- Create "auction_bids" table
 CREATE TABLE "auction_bids" ("id" uuid NOT NULL, "create_time" timestamptz NOT NULL, "update_time" timestamptz NOT NULL, "price" bigint NOT NULL, "auction_id" uuid NOT NULL, "player_id" character varying NOT NULL, PRIMARY KEY ("id"));
 -- Create "auctions" table
-CREATE TABLE "auctions" ("id" uuid NOT NULL, "card_id" uuid NOT NULL, "time_extensions" bigint NOT NULL DEFAULT 0, "ends_at" timestamptz NOT NULL, "player_id" character varying NOT NULL, PRIMARY KEY ("id"));
+CREATE TABLE "auctions" ("id" uuid NOT NULL, "time_extensions" bigint NOT NULL DEFAULT 0, "ends_at" timestamptz NOT NULL, "card_id" uuid NOT NULL, "player_id" character varying NOT NULL, PRIMARY KEY ("id"));
 -- Create "auth_states" table
 CREATE TABLE "auth_states" ("id" uuid NOT NULL, "create_time" timestamptz NOT NULL, "update_time" timestamptz NOT NULL, "redirect_uri" character varying NULL, "expires_at" timestamptz NOT NULL, "type" character varying NOT NULL, "player_id" character varying NOT NULL, PRIMARY KEY ("id"));
 -- Create "card_stats" table
@@ -47,7 +47,7 @@ CREATE TABLE "players" ("id" character varying NOT NULL, "create_time" timestamp
 -- Modify "auction_bids" table
 ALTER TABLE "auction_bids" ADD CONSTRAINT "auction_bids_auctions_bids" FOREIGN KEY ("auction_id") REFERENCES "auctions" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, ADD CONSTRAINT "auction_bids_players_player" FOREIGN KEY ("player_id") REFERENCES "players" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
 -- Modify "auctions" table
-ALTER TABLE "auctions" ADD CONSTRAINT "auctions_players_player" FOREIGN KEY ("player_id") REFERENCES "players" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
+ALTER TABLE "auctions" ADD CONSTRAINT "auctions_cards_card" FOREIGN KEY ("card_id") REFERENCES "cards" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, ADD CONSTRAINT "auctions_players_auctions" FOREIGN KEY ("player_id") REFERENCES "players" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
 -- Modify "auth_states" table
 ALTER TABLE "auth_states" ADD CONSTRAINT "auth_states_players_player" FOREIGN KEY ("player_id") REFERENCES "players" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
 -- Modify "card_stats" table

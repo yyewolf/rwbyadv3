@@ -58,14 +58,12 @@ func (cmd *inventoryCommand) generator(username string, p *ent.Player, page int)
 
 	field.Name = fmt.Sprintf("Cards (page %d/%d) :", page+1, maxPage+1)
 
-	displayedCards := cards[page*int(perPage) : top]
-
-	for i, c := range displayedCards {
+	for i, c := range cards {
 		idx := page*int(perPage) + i + 1
 		field.Value += fmt.Sprintf("`N°%d | %s`\n", idx, c.FullString())
 	}
 
-	if len(displayedCards) == 0 {
+	if len(cards) == 0 {
 		field.Name = "Cards :"
 		field.Value = "You have no cards to be shown."
 	}

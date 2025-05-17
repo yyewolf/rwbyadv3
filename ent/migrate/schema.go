@@ -11,9 +11,9 @@ var (
 	// AuctionsColumns holds the columns for the "auctions" table.
 	AuctionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
-		{Name: "card_id", Type: field.TypeUUID},
 		{Name: "time_extensions", Type: field.TypeInt, Default: 0},
 		{Name: "ends_at", Type: field.TypeTime},
+		{Name: "card_id", Type: field.TypeUUID},
 		{Name: "player_id", Type: field.TypeString},
 	}
 	// AuctionsTable holds the schema information for the "auctions" table.
@@ -23,7 +23,13 @@ var (
 		PrimaryKey: []*schema.Column{AuctionsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "auctions_players_player",
+				Symbol:     "auctions_cards_card",
+				Columns:    []*schema.Column{AuctionsColumns[3]},
+				RefColumns: []*schema.Column{CardsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "auctions_players_auctions",
 				Columns:    []*schema.Column{AuctionsColumns[4]},
 				RefColumns: []*schema.Column{PlayersColumns[0]},
 				OnDelete:   schema.NoAction,
@@ -467,7 +473,8 @@ var (
 )
 
 func init() {
-	AuctionsTable.ForeignKeys[0].RefTable = PlayersTable
+	AuctionsTable.ForeignKeys[0].RefTable = CardsTable
+	AuctionsTable.ForeignKeys[1].RefTable = PlayersTable
 	AuctionBidsTable.ForeignKeys[0].RefTable = AuctionsTable
 	AuctionBidsTable.ForeignKeys[1].RefTable = PlayersTable
 	AuthStatesTable.ForeignKeys[0].RefTable = PlayersTable

@@ -26,7 +26,8 @@ func (Auction) Fields() []ent.Field {
 // Edges of the Auction.
 func (Auction) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("player", Player.Type).Unique().Required().Field("player_id"),
+		edge.From("owned_by", Player.Type).Ref("auctions").Unique().Required().Field("player_id"),
+		edge.To("card", Card.Type).Unique().Required().Field("card_id"),
 		edge.To("bids", AuctionBid.Type),
 	}
 }

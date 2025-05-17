@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/yyewolf/rwbyadv3/ent/auction"
 	"github.com/yyewolf/rwbyadv3/ent/card"
 	"github.com/yyewolf/rwbyadv3/ent/daily"
 	"github.com/yyewolf/rwbyadv3/ent/dungeon"
@@ -41,6 +42,7 @@ type PlayerQuery struct {
 	withSelectedCard        *CardQuery
 	withGithubStar          *GithubStarQuery
 	withDaily               *DailyQuery
+	withAuctions            *AuctionQuery
 	withListings            *ListingQuery
 	withDungeons            *DungeonQuery
 	withPlayerFavoriteCards *PlayerFavoriteCardsQuery
@@ -250,6 +252,28 @@ func (pq *PlayerQuery) QueryDaily() *DailyQuery {
 			sqlgraph.From(player.Table, player.FieldID, selector),
 			sqlgraph.To(daily.Table, daily.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, player.DailyTable, player.DailyColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAuctions chains the current query on the "auctions" edge.
+func (pq *PlayerQuery) QueryAuctions() *AuctionQuery {
+	query := (&AuctionClient{config: pq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, selector),
+			sqlgraph.To(auction.Table, auction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, player.AuctionsTable, player.AuctionsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -545,6 +569,7 @@ func (pq *PlayerQuery) Clone() *PlayerQuery {
 		withSelectedCard:        pq.withSelectedCard.Clone(),
 		withGithubStar:          pq.withGithubStar.Clone(),
 		withDaily:               pq.withDaily.Clone(),
+		withAuctions:            pq.withAuctions.Clone(),
 		withListings:            pq.withListings.Clone(),
 		withDungeons:            pq.withDungeons.Clone(),
 		withPlayerFavoriteCards: pq.withPlayerFavoriteCards.Clone(),
@@ -640,6 +665,17 @@ func (pq *PlayerQuery) WithDaily(opts ...func(*DailyQuery)) *PlayerQuery {
 		opt(query)
 	}
 	pq.withDaily = query
+	return pq
+}
+
+// WithAuctions tells the query-builder to eager-load the nodes that are connected to
+// the "auctions" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PlayerQuery) WithAuctions(opts ...func(*AuctionQuery)) *PlayerQuery {
+	query := (&AuctionClient{config: pq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withAuctions = query
 	return pq
 }
 
@@ -765,7 +801,7 @@ func (pq *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 	var (
 		nodes       = []*Player{}
 		_spec       = pq.querySpec()
-		loadedTypes = [12]bool{
+		loadedTypes = [13]bool{
 			pq.withLimits != nil,
 			pq.withCards != nil,
 			pq.withFavoriteCards != nil,
@@ -774,6 +810,7 @@ func (pq *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 			pq.withSelectedCard != nil,
 			pq.withGithubStar != nil,
 			pq.withDaily != nil,
+			pq.withAuctions != nil,
 			pq.withListings != nil,
 			pq.withDungeons != nil,
 			pq.withPlayerFavoriteCards != nil,
@@ -847,6 +884,13 @@ func (pq *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 	if query := pq.withDaily; query != nil {
 		if err := pq.loadDaily(ctx, query, nodes, nil,
 			func(n *Player, e *Daily) { n.Edges.Daily = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withAuctions; query != nil {
+		if err := pq.loadAuctions(ctx, query, nodes,
+			func(n *Player) { n.Edges.Auctions = []*Auction{} },
+			func(n *Player, e *Auction) { n.Edges.Auctions = append(n.Edges.Auctions, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1160,6 +1204,36 @@ func (pq *PlayerQuery) loadDaily(ctx context.Context, query *DailyQuery, nodes [
 	}
 	query.Where(predicate.Daily(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(player.DailyColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.PlayerID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "player_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (pq *PlayerQuery) loadAuctions(ctx context.Context, query *AuctionQuery, nodes []*Player, init func(*Player), assign func(*Player, *Auction)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Player)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(auction.FieldPlayerID)
+	}
+	query.Where(predicate.Auction(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(player.AuctionsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/yyewolf/rwbyadv3/ent/auction"
 	"github.com/yyewolf/rwbyadv3/ent/card"
 	"github.com/yyewolf/rwbyadv3/ent/daily"
 	"github.com/yyewolf/rwbyadv3/ent/dungeon"
@@ -345,6 +346,21 @@ func (pu *PlayerUpdate) SetDaily(d *Daily) *PlayerUpdate {
 	return pu.SetDailyID(d.ID)
 }
 
+// AddAuctionIDs adds the "auctions" edge to the Auction entity by IDs.
+func (pu *PlayerUpdate) AddAuctionIDs(ids ...uuid.UUID) *PlayerUpdate {
+	pu.mutation.AddAuctionIDs(ids...)
+	return pu
+}
+
+// AddAuctions adds the "auctions" edges to the Auction entity.
+func (pu *PlayerUpdate) AddAuctions(a ...*Auction) *PlayerUpdate {
+	ids := make([]uuid.UUID, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return pu.AddAuctionIDs(ids...)
+}
+
 // AddListingIDs adds the "listings" edge to the Listing entity by IDs.
 func (pu *PlayerUpdate) AddListingIDs(ids ...uuid.UUID) *PlayerUpdate {
 	pu.mutation.AddListingIDs(ids...)
@@ -486,6 +502,27 @@ func (pu *PlayerUpdate) ClearGithubStar() *PlayerUpdate {
 func (pu *PlayerUpdate) ClearDaily() *PlayerUpdate {
 	pu.mutation.ClearDaily()
 	return pu
+}
+
+// ClearAuctions clears all "auctions" edges to the Auction entity.
+func (pu *PlayerUpdate) ClearAuctions() *PlayerUpdate {
+	pu.mutation.ClearAuctions()
+	return pu
+}
+
+// RemoveAuctionIDs removes the "auctions" edge to Auction entities by IDs.
+func (pu *PlayerUpdate) RemoveAuctionIDs(ids ...uuid.UUID) *PlayerUpdate {
+	pu.mutation.RemoveAuctionIDs(ids...)
+	return pu
+}
+
+// RemoveAuctions removes "auctions" edges to Auction entities.
+func (pu *PlayerUpdate) RemoveAuctions(a ...*Auction) *PlayerUpdate {
+	ids := make([]uuid.UUID, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return pu.RemoveAuctionIDs(ids...)
 }
 
 // ClearListings clears all "listings" edges to the Listing entity.
@@ -986,6 +1023,51 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if pu.mutation.AuctionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.AuctionsTable,
+			Columns: []string{player.AuctionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(auction.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedAuctionsIDs(); len(nodes) > 0 && !pu.mutation.AuctionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.AuctionsTable,
+			Columns: []string{player.AuctionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(auction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.AuctionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.AuctionsTable,
+			Columns: []string{player.AuctionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(auction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if pu.mutation.ListingsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -1405,6 +1487,21 @@ func (puo *PlayerUpdateOne) SetDaily(d *Daily) *PlayerUpdateOne {
 	return puo.SetDailyID(d.ID)
 }
 
+// AddAuctionIDs adds the "auctions" edge to the Auction entity by IDs.
+func (puo *PlayerUpdateOne) AddAuctionIDs(ids ...uuid.UUID) *PlayerUpdateOne {
+	puo.mutation.AddAuctionIDs(ids...)
+	return puo
+}
+
+// AddAuctions adds the "auctions" edges to the Auction entity.
+func (puo *PlayerUpdateOne) AddAuctions(a ...*Auction) *PlayerUpdateOne {
+	ids := make([]uuid.UUID, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return puo.AddAuctionIDs(ids...)
+}
+
 // AddListingIDs adds the "listings" edge to the Listing entity by IDs.
 func (puo *PlayerUpdateOne) AddListingIDs(ids ...uuid.UUID) *PlayerUpdateOne {
 	puo.mutation.AddListingIDs(ids...)
@@ -1546,6 +1643,27 @@ func (puo *PlayerUpdateOne) ClearGithubStar() *PlayerUpdateOne {
 func (puo *PlayerUpdateOne) ClearDaily() *PlayerUpdateOne {
 	puo.mutation.ClearDaily()
 	return puo
+}
+
+// ClearAuctions clears all "auctions" edges to the Auction entity.
+func (puo *PlayerUpdateOne) ClearAuctions() *PlayerUpdateOne {
+	puo.mutation.ClearAuctions()
+	return puo
+}
+
+// RemoveAuctionIDs removes the "auctions" edge to Auction entities by IDs.
+func (puo *PlayerUpdateOne) RemoveAuctionIDs(ids ...uuid.UUID) *PlayerUpdateOne {
+	puo.mutation.RemoveAuctionIDs(ids...)
+	return puo
+}
+
+// RemoveAuctions removes "auctions" edges to Auction entities.
+func (puo *PlayerUpdateOne) RemoveAuctions(a ...*Auction) *PlayerUpdateOne {
+	ids := make([]uuid.UUID, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return puo.RemoveAuctionIDs(ids...)
 }
 
 // ClearListings clears all "listings" edges to the Listing entity.
@@ -2069,6 +2187,51 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(daily.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.AuctionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.AuctionsTable,
+			Columns: []string{player.AuctionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(auction.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedAuctionsIDs(); len(nodes) > 0 && !puo.mutation.AuctionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.AuctionsTable,
+			Columns: []string{player.AuctionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(auction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.AuctionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.AuctionsTable,
+			Columns: []string{player.AuctionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(auction.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

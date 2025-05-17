@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/yyewolf/rwbyadv3/ent/auction"
+	"github.com/yyewolf/rwbyadv3/ent/card"
 	"github.com/yyewolf/rwbyadv3/ent/player"
 )
 
@@ -35,30 +36,43 @@ type Auction struct {
 
 // AuctionEdges holds the relations/edges for other nodes in the graph.
 type AuctionEdges struct {
-	// Player holds the value of the player edge.
-	Player *Player `json:"player,omitempty"`
+	// OwnedBy holds the value of the owned_by edge.
+	OwnedBy *Player `json:"owned_by,omitempty"`
+	// Card holds the value of the card edge.
+	Card *Card `json:"card,omitempty"`
 	// Bids holds the value of the bids edge.
 	Bids []*AuctionBid `json:"bids,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
-// PlayerOrErr returns the Player value or an error if the edge
+// OwnedByOrErr returns the OwnedBy value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e AuctionEdges) PlayerOrErr() (*Player, error) {
-	if e.Player != nil {
-		return e.Player, nil
+func (e AuctionEdges) OwnedByOrErr() (*Player, error) {
+	if e.OwnedBy != nil {
+		return e.OwnedBy, nil
 	} else if e.loadedTypes[0] {
 		return nil, &NotFoundError{label: player.Label}
 	}
-	return nil, &NotLoadedError{edge: "player"}
+	return nil, &NotLoadedError{edge: "owned_by"}
+}
+
+// CardOrErr returns the Card value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e AuctionEdges) CardOrErr() (*Card, error) {
+	if e.Card != nil {
+		return e.Card, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: card.Label}
+	}
+	return nil, &NotLoadedError{edge: "card"}
 }
 
 // BidsOrErr returns the Bids value or an error if the edge
 // was not loaded in eager-loading.
 func (e AuctionEdges) BidsOrErr() ([]*AuctionBid, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Bids, nil
 	}
 	return nil, &NotLoadedError{edge: "bids"}
@@ -135,9 +149,14 @@ func (a *Auction) Value(name string) (ent.Value, error) {
 	return a.selectValues.Get(name)
 }
 
-// QueryPlayer queries the "player" edge of the Auction entity.
-func (a *Auction) QueryPlayer() *PlayerQuery {
-	return NewAuctionClient(a.config).QueryPlayer(a)
+// QueryOwnedBy queries the "owned_by" edge of the Auction entity.
+func (a *Auction) QueryOwnedBy() *PlayerQuery {
+	return NewAuctionClient(a.config).QueryOwnedBy(a)
+}
+
+// QueryCard queries the "card" edge of the Auction entity.
+func (a *Auction) QueryCard() *CardQuery {
+	return NewAuctionClient(a.config).QueryCard(a)
 }
 
 // QueryBids queries the "bids" edge of the Auction entity.

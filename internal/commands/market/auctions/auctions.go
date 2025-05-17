@@ -60,13 +60,12 @@ func AuctionsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command
 				app,
 				cmd.AddAuctionB,
 				builder.WithPlayer(),
-				builder.WithPlayerCards(),
 			))
+
 			h.Command("/auctions/list", builder.WithContext(
 				app,
 				cmd.GetAuctions,
 				builder.WithPlayer(),
-				builder.WithPlayerCards(),
 			))
 
 			h.ButtonComponent("/"+componentId, builder.WithContextD(

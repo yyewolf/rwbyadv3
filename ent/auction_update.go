@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/yyewolf/rwbyadv3/ent/auction"
 	"github.com/yyewolf/rwbyadv3/ent/auctionbid"
+	"github.com/yyewolf/rwbyadv3/ent/card"
 	"github.com/yyewolf/rwbyadv3/ent/player"
 	"github.com/yyewolf/rwbyadv3/ent/predicate"
 )
@@ -94,9 +95,20 @@ func (au *AuctionUpdate) SetNillableEndsAt(t *time.Time) *AuctionUpdate {
 	return au
 }
 
-// SetPlayer sets the "player" edge to the Player entity.
-func (au *AuctionUpdate) SetPlayer(p *Player) *AuctionUpdate {
-	return au.SetPlayerID(p.ID)
+// SetOwnedByID sets the "owned_by" edge to the Player entity by ID.
+func (au *AuctionUpdate) SetOwnedByID(id string) *AuctionUpdate {
+	au.mutation.SetOwnedByID(id)
+	return au
+}
+
+// SetOwnedBy sets the "owned_by" edge to the Player entity.
+func (au *AuctionUpdate) SetOwnedBy(p *Player) *AuctionUpdate {
+	return au.SetOwnedByID(p.ID)
+}
+
+// SetCard sets the "card" edge to the Card entity.
+func (au *AuctionUpdate) SetCard(c *Card) *AuctionUpdate {
+	return au.SetCardID(c.ID)
 }
 
 // AddBidIDs adds the "bids" edge to the AuctionBid entity by IDs.
@@ -119,9 +131,15 @@ func (au *AuctionUpdate) Mutation() *AuctionMutation {
 	return au.mutation
 }
 
-// ClearPlayer clears the "player" edge to the Player entity.
-func (au *AuctionUpdate) ClearPlayer() *AuctionUpdate {
-	au.mutation.ClearPlayer()
+// ClearOwnedBy clears the "owned_by" edge to the Player entity.
+func (au *AuctionUpdate) ClearOwnedBy() *AuctionUpdate {
+	au.mutation.ClearOwnedBy()
+	return au
+}
+
+// ClearCard clears the "card" edge to the Card entity.
+func (au *AuctionUpdate) ClearCard() *AuctionUpdate {
+	au.mutation.ClearCard()
 	return au
 }
 
@@ -175,8 +193,11 @@ func (au *AuctionUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (au *AuctionUpdate) check() error {
-	if au.mutation.PlayerCleared() && len(au.mutation.PlayerIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Auction.player"`)
+	if au.mutation.OwnedByCleared() && len(au.mutation.OwnedByIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Auction.owned_by"`)
+	}
+	if au.mutation.CardCleared() && len(au.mutation.CardIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Auction.card"`)
 	}
 	return nil
 }
@@ -193,9 +214,6 @@ func (au *AuctionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := au.mutation.CardID(); ok {
-		_spec.SetField(auction.FieldCardID, field.TypeUUID, value)
-	}
 	if value, ok := au.mutation.TimeExtensions(); ok {
 		_spec.SetField(auction.FieldTimeExtensions, field.TypeInt, value)
 	}
@@ -205,12 +223,12 @@ func (au *AuctionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := au.mutation.EndsAt(); ok {
 		_spec.SetField(auction.FieldEndsAt, field.TypeTime, value)
 	}
-	if au.mutation.PlayerCleared() {
+	if au.mutation.OwnedByCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   auction.PlayerTable,
-			Columns: []string{auction.PlayerColumn},
+			Inverse: true,
+			Table:   auction.OwnedByTable,
+			Columns: []string{auction.OwnedByColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(player.FieldID, field.TypeString),
@@ -218,15 +236,44 @@ func (au *AuctionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := au.mutation.PlayerIDs(); len(nodes) > 0 {
+	if nodes := au.mutation.OwnedByIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   auction.PlayerTable,
-			Columns: []string{auction.PlayerColumn},
+			Inverse: true,
+			Table:   auction.OwnedByTable,
+			Columns: []string{auction.OwnedByColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(player.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if au.mutation.CardCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   auction.CardTable,
+			Columns: []string{auction.CardColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(card.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := au.mutation.CardIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   auction.CardTable,
+			Columns: []string{auction.CardColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(card.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -362,9 +409,20 @@ func (auo *AuctionUpdateOne) SetNillableEndsAt(t *time.Time) *AuctionUpdateOne {
 	return auo
 }
 
-// SetPlayer sets the "player" edge to the Player entity.
-func (auo *AuctionUpdateOne) SetPlayer(p *Player) *AuctionUpdateOne {
-	return auo.SetPlayerID(p.ID)
+// SetOwnedByID sets the "owned_by" edge to the Player entity by ID.
+func (auo *AuctionUpdateOne) SetOwnedByID(id string) *AuctionUpdateOne {
+	auo.mutation.SetOwnedByID(id)
+	return auo
+}
+
+// SetOwnedBy sets the "owned_by" edge to the Player entity.
+func (auo *AuctionUpdateOne) SetOwnedBy(p *Player) *AuctionUpdateOne {
+	return auo.SetOwnedByID(p.ID)
+}
+
+// SetCard sets the "card" edge to the Card entity.
+func (auo *AuctionUpdateOne) SetCard(c *Card) *AuctionUpdateOne {
+	return auo.SetCardID(c.ID)
 }
 
 // AddBidIDs adds the "bids" edge to the AuctionBid entity by IDs.
@@ -387,9 +445,15 @@ func (auo *AuctionUpdateOne) Mutation() *AuctionMutation {
 	return auo.mutation
 }
 
-// ClearPlayer clears the "player" edge to the Player entity.
-func (auo *AuctionUpdateOne) ClearPlayer() *AuctionUpdateOne {
-	auo.mutation.ClearPlayer()
+// ClearOwnedBy clears the "owned_by" edge to the Player entity.
+func (auo *AuctionUpdateOne) ClearOwnedBy() *AuctionUpdateOne {
+	auo.mutation.ClearOwnedBy()
+	return auo
+}
+
+// ClearCard clears the "card" edge to the Card entity.
+func (auo *AuctionUpdateOne) ClearCard() *AuctionUpdateOne {
+	auo.mutation.ClearCard()
 	return auo
 }
 
@@ -456,8 +520,11 @@ func (auo *AuctionUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (auo *AuctionUpdateOne) check() error {
-	if auo.mutation.PlayerCleared() && len(auo.mutation.PlayerIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Auction.player"`)
+	if auo.mutation.OwnedByCleared() && len(auo.mutation.OwnedByIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Auction.owned_by"`)
+	}
+	if auo.mutation.CardCleared() && len(auo.mutation.CardIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Auction.card"`)
 	}
 	return nil
 }
@@ -491,9 +558,6 @@ func (auo *AuctionUpdateOne) sqlSave(ctx context.Context) (_node *Auction, err e
 			}
 		}
 	}
-	if value, ok := auo.mutation.CardID(); ok {
-		_spec.SetField(auction.FieldCardID, field.TypeUUID, value)
-	}
 	if value, ok := auo.mutation.TimeExtensions(); ok {
 		_spec.SetField(auction.FieldTimeExtensions, field.TypeInt, value)
 	}
@@ -503,12 +567,12 @@ func (auo *AuctionUpdateOne) sqlSave(ctx context.Context) (_node *Auction, err e
 	if value, ok := auo.mutation.EndsAt(); ok {
 		_spec.SetField(auction.FieldEndsAt, field.TypeTime, value)
 	}
-	if auo.mutation.PlayerCleared() {
+	if auo.mutation.OwnedByCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   auction.PlayerTable,
-			Columns: []string{auction.PlayerColumn},
+			Inverse: true,
+			Table:   auction.OwnedByTable,
+			Columns: []string{auction.OwnedByColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(player.FieldID, field.TypeString),
@@ -516,15 +580,44 @@ func (auo *AuctionUpdateOne) sqlSave(ctx context.Context) (_node *Auction, err e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := auo.mutation.PlayerIDs(); len(nodes) > 0 {
+	if nodes := auo.mutation.OwnedByIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   auction.PlayerTable,
-			Columns: []string{auction.PlayerColumn},
+			Inverse: true,
+			Table:   auction.OwnedByTable,
+			Columns: []string{auction.OwnedByColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(player.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if auo.mutation.CardCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   auction.CardTable,
+			Columns: []string{auction.CardColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(card.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := auo.mutation.CardIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   auction.CardTable,
+			Columns: []string{auction.CardColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(card.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

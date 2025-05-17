@@ -51,6 +51,7 @@ func (Player) Edges() []ent.Edge {
 		edge.To("selected_card", Card.Type).Unique().Field("selected_card_id"),
 		edge.To("github_star", GithubStar.Type).Unique(),
 		edge.To("daily", Daily.Type).Unique(),
+		edge.To("auctions", Auction.Type),
 		edge.To("listings", Listing.Type),
 		edge.To("dungeons", Dungeon.Type),
 	}
