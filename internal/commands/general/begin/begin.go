@@ -69,8 +69,13 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 	var player *ent.Player
 
 	err = utils.WithTx(e.Ctx, cmd.app.Db(), func(ntx *ent.Tx) error {
+		tempPlayer := ent.Player{
+			Level: 1,
+		}
+
 		player, err = ntx.Player.Create().
 			SetID(e.User().ID.String()).
+			SetExperiencePointsThreshold(tempPlayer.GetNextLevelXP()).
 			Save(e.Ctx)
 		if err != nil {
 			return err

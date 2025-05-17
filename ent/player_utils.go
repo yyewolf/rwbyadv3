@@ -3,6 +3,8 @@
 package ent
 
 import (
+	"math"
+	"math/rand"
 	"time"
 
 	"github.com/yyewolf/rwbyadv3/ent/schema/enums"
@@ -30,4 +32,32 @@ func (p *Player) LootBoxesCount() map[enums.LootBoxType]int {
 		counts[b.Type]++
 	}
 	return counts
+}
+
+func (p *Player) GetNextLevelXP() int64 {
+	return int64(10*int(math.Pow(float64(p.Level), 1.8)) + 20)
+}
+
+func (p *Player) GetXPReward(difficulty float64, boost bool) int64 {
+	rint := int(5*difficulty*math.Pow(float64(p.Level), 1.48)) + 10
+	add := difficulty*float64(rand.Intn(rint)) + 5 + math.Pow(float64(p.Level), 1.45)
+	if boost {
+		rint = int(((3 / 2) * difficulty) * float64(p.Level))
+		add = float64((rand.Intn(33+rint))+25) * (math.Pow(float64(p.Level), 0.84) + 1)
+	}
+	return int64(add)
+}
+
+func (p *Player) GiveXP(XP int64) (levelUp bool) {
+	for p.ExperiencePoints+XP > p.ExperiencePointsThreshold {
+		levelUp = true
+		//if level up
+		XP -= p.ExperiencePointsThreshold - p.ExperiencePoints
+		p.Level++
+		p.ExperiencePoints = 0
+		p.ExperiencePointsThreshold = p.GetNextLevelXP()
+	}
+	p.ExperiencePoints += XP
+	p.ExperiencePointsThreshold = p.GetNextLevelXP()
+	return levelUp
 }
