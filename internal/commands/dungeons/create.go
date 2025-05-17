@@ -7,13 +7,11 @@ import (
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
-	"github.com/google/uuid"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/internal/values"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 const (
@@ -39,7 +37,6 @@ func Command(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 				cmd.HandleCommand,
 				builder.WithPlayer(),
 				builder.WithPlayerLimits(),
-				builder.WithPlayerDungeons(),
 			))
 			return nil
 		}),
@@ -57,12 +54,16 @@ func Command(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 }
 
 func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+
+	dungeon, err := p.QueryDungeons().First(e.Ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return utils.CommandError(e, err)
+	}
 
 	// Check if player has an active dungeon
-	if len(p.R.Dungeons) > 0 {
-		dungeon := p.R.Dungeons[0]
-		dungeonUri, err := url.JoinPath(cmd.app.Config().App.BaseURI, "/dungeons/", dungeon.ID)
+	if err == nil {
+		dungeonUri, err := url.JoinPath(cmd.app.Config().App.BaseURI, "/dungeons/", dungeon.ID.String())
 		if err != nil {
 			return utils.CommandError(e, err)
 		}
@@ -81,7 +82,7 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 		)
 	}
 
-	if p.R.PlayerLimit.DungeonsLeft <= 0 {
+	if p.Edges.Limits.DungeonsLeft <= 0 {
 		return e.Respond(
 			discord.InteractionResponseTypeCreateMessage,
 			discord.NewMessageCreateBuilder().
@@ -90,46 +91,36 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 		)
 	}
 
-	p.R.PlayerLimit.DungeonsLeft--
-	if p.R.PlayerLimit.DungeonsResetAt.IsZero() {
+	p.Edges.Limits.DungeonsLeft--
+	if p.Edges.Limits.DungeonsResetAt.IsZero() {
 		if cmd.app.Config().Mode == values.Prod {
-			p.R.PlayerLimit.DungeonsResetAt.SetValid(time.Now().Add(24 * time.Hour))
+			p.Edges.Limits.DungeonsResetAt = time.Now().Add(24 * time.Hour)
 		} else {
-			p.R.PlayerLimit.DungeonsResetAt.SetValid(time.Now().Add(5 * time.Minute))
+			p.Edges.Limits.DungeonsResetAt = time.Now().Add(5 * time.Minute)
 		}
 	}
 
-	tx, err := boil.BeginTx(e.Ctx, nil)
-	if err != nil {
-		return utils.CommandError(e, err)
-	}
+	err = utils.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
+		_, err = tx.PlayerLimit.UpdateOne(p.Edges.Limits).
+			SetDungeonsLeft(p.Edges.Limits.DungeonsLeft).
+			SetDungeonsResetAt(p.Edges.Limits.DungeonsResetAt).
+			Save(e.Ctx)
+		if err != nil {
+			return err
+		}
 
-	_, err = p.R.PlayerLimit.Update(e.Ctx, tx, boil.Infer())
-	if err != nil {
-		tx.Rollback()
-		return utils.CommandError(e, err)
-	}
+		dungeon, err = tx.Dungeon.Create().
+			SetPlayerID(p.ID).
+			SetSeed(rand.Int63()).
+			Save(e.Ctx)
+		if err != nil {
+			return err
+		}
 
-	dungeon := &models.Dungeon{
-		ID:       uuid.NewString(),
-		PlayerID: p.ID,
+		return nil
+	})
 
-		Seed: rand.Int63(),
-	}
-
-	err = dungeon.Insert(e.Ctx, tx, boil.Infer())
-	if err != nil {
-		tx.Rollback()
-		return utils.CommandError(e, err)
-	}
-
-	dungeonUri, err := url.JoinPath(cmd.app.Config().App.BaseURI, "/dungeons/", dungeon.ID)
-	if err != nil {
-		tx.Rollback()
-		return utils.CommandError(e, err)
-	}
-
-	err = tx.Commit()
+	dungeonUri, err := url.JoinPath(cmd.app.Config().App.BaseURI, "/dungeons/", dungeon.ID.String())
 	if err != nil {
 		return utils.CommandError(e, err)
 	}

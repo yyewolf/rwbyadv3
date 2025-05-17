@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
@@ -176,10 +177,14 @@ func WithContext[K Event](app interfaces.App, handler func(e *K) error, opts ...
 			return errors.New("invalid handler passed")
 		}
 
-		logrus.
-			WithField("func", funcName).
-			WithField("user_id", (*e).User().ID).
-			Info("command")
+		startTime := time.Now()
+		defer func() {
+			logrus.
+				WithField("func", funcName).
+				WithField("user_id", (*e).User().ID).
+				WithField("duration", time.Since(startTime)).
+				Info("command")
+		}()
 
 		switch v := ctxVal.Interface().(type) {
 		default:
@@ -221,10 +226,14 @@ func WithContextD[D any, K Event](app interfaces.App, handler func(d D, e *K) er
 			return errors.New("invalid handler passed")
 		}
 
-		logrus.
-			WithField("func", funcName).
-			WithField("user_id", (*e).User().ID).
-			Info("command")
+		startTime := time.Now()
+		defer func() {
+			logrus.
+				WithField("func", funcName).
+				WithField("user_id", (*e).User().ID).
+				WithField("duration", time.Since(startTime)).
+				Info("command")
+		}()
 
 		switch v := ctxVal.Interface().(type) {
 		default:
