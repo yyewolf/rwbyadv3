@@ -2,17 +2,15 @@ package jobs
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"math"
 	"time"
 
 	"github.com/rabbitmq/amqp091-go"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/yyewolf/rwbyadv3/ent"
 )
 
-func setNextRun(job *models.Job) {
+func setNextRun(job *ent.Job) {
 	deltaT := float64(time.Since(job.RunAt).Seconds())
 	duration := float64(job.DeltaTime)
 	amountOfTimeItShouldHaveRan := int64(math.Floor(deltaT/duration)) + 1
@@ -20,15 +18,19 @@ func setNextRun(job *models.Job) {
 	job.RunAt = job.RunAt.Add(time.Duration(amountOfTimeItShouldHaveRan*job.DeltaTime) * time.Second)
 }
 
-func jobRunID(job *models.Job) int64 {
+func jobRunID(job *ent.Job) int64 {
 	deltaT := float64(time.Since(job.RunAt).Seconds())
 	duration := float64(job.DeltaTime)
 	amountOfTimeItShouldHaveRan := int64(math.Floor(deltaT/duration)) + 1
 
+	if amountOfTimeItShouldHaveRan < 0 {
+		amountOfTimeItShouldHaveRan = 0
+	}
+
 	return amountOfTimeItShouldHaveRan
 }
 
-func (j *JobHandler) reScheduleJob(job *models.Job) error {
+func (j *JobHandler) reScheduleJob(job *ent.Job) error {
 	if !job.Recurring && !job.Errored {
 		job.Retries++
 		job.RunAt = job.RunAt.Add(10 * time.Duration(math.Pow(2, float64(job.Retries))) * time.Second)
@@ -38,38 +40,36 @@ func (j *JobHandler) reScheduleJob(job *models.Job) error {
 		setNextRun(job)
 	}
 
-	tx, err := boil.BeginTx(context.Background(), &sql.TxOptions{})
-	if err != nil {
-		return err
-	}
+	ctx := context.Background()
 
-	_, err = job.Update(context.Background(), tx, boil.Infer())
-	if err != nil {
-		return err
-	}
+	return ent.WithTx(ctx, j.entClient, func(tx *ent.Tx) error {
+		job, err := tx.Job.UpdateOne(job).
+			SetRetries(job.Retries).
+			SetRunAt(job.RunAt).
+			Save(ctx)
 
-	bdy, err := json.Marshal(job)
-	if err != nil {
-		return err
-	}
+		bdy, err := json.Marshal(job)
+		if err != nil {
+			return err
+		}
 
-	err = j.ch.PublishWithContext(
-		context.Background(),
-		j.config.Rbmq.Jobs.Exchange,
-		job.Jobkey,
-		false,
-		false,
-		amqp091.Publishing{
-			Headers: amqp091.Table{
-				"x-delay": int(time.Until(job.RunAt).Seconds() * 1000),
+		err = j.ch.PublishWithContext(
+			context.Background(),
+			j.config.Rbmq.Jobs.Exchange,
+			job.Jobkey,
+			false,
+			false,
+			amqp091.Publishing{
+				Headers: amqp091.Table{
+					"x-delay": int(time.Until(job.RunAt).Seconds() * 1000),
+				},
+				Body: bdy,
 			},
-			Body: bdy,
-		},
-	)
-	if err != nil {
-		tx.Rollback()
-	}
-	tx.Commit()
+		)
+		if err != nil {
+			return err
+		}
 
-	return err
+		return nil
+	})
 }

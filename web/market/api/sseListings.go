@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -37,8 +36,6 @@ func (h *MarketApiHandler) OnRemoveListing(params map[string]interface{}) error 
 
 	var found bool
 	for _, cachedListing := range h.latestListings {
-		fmt.Println("cachedListing.ID", cachedListing.ID)
-		fmt.Println("id", id)
 		if cachedListing.ID == id {
 			found = true
 			break

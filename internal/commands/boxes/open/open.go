@@ -108,7 +108,7 @@ func (cmd *openCommand) HandleInteraction(data discord.ButtonInteractionData, e 
 
 	var c *ent.Card
 
-	err = utils.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
+	err = ent.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
 		err = tx.LootBox.DeleteOneID(currentLootbox.ID).Exec(e.Ctx)
 		if err != nil {
 			return err

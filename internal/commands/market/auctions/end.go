@@ -13,7 +13,6 @@ import (
 	"github.com/yyewolf/rwbyadv3/ent/auction"
 	"github.com/yyewolf/rwbyadv3/ent/auctionbid"
 	"github.com/yyewolf/rwbyadv3/internal/temporal"
-	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/workflow"
 )
@@ -124,7 +123,7 @@ func (cmd *auctionsCommand) AuctionEndActivity(ctx context.Context, auctionID st
 }
 
 func (cmd *auctionsCommand) auctionEndNoBid(auction *ent.Auction) error {
-	err := utils.WithTx(context.Background(), cmd.app.Db(), func(tx *ent.Tx) error {
+	err := ent.WithTx(context.Background(), cmd.app.Db(), func(tx *ent.Tx) error {
 		// Card transfer
 		card := auction.Edges.Card
 		card.PlayerID = auction.PlayerID
@@ -166,7 +165,7 @@ func (cmd *auctionsCommand) auctionEndNoBid(auction *ent.Auction) error {
 }
 
 func (cmd *auctionsCommand) auctionEndBidder(auction *ent.Auction, latestBid *ent.AuctionBid) error {
-	err := utils.WithTx(context.Background(), cmd.app.Db(), func(tx *ent.Tx) error {
+	err := ent.WithTx(context.Background(), cmd.app.Db(), func(tx *ent.Tx) error {
 		seller := auction.Edges.OwnedBy
 		bidder := latestBid.Edges.Player
 

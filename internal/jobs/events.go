@@ -2,58 +2,51 @@ package jobs
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"time"
 
 	"github.com/rabbitmq/amqp091-go"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/types"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
-func (j *JobHandler) SendEvent(key interfaces.JobKey, jobID string, params map[string]interface{}) (*models.Job, error) {
-	var p types.JSON
-	p.Marshal(params)
+func (j *JobHandler) SendEvent(key interfaces.JobKey, params map[string]interface{}) (*ent.Job, error) {
+	var job *ent.Job
+	var err error
 
-	job := &models.Job{
-		ID:     jobID,
-		Jobkey: string(key),
-		RunAt:  time.Now().Add(100 * time.Millisecond),
-		Params: p,
-	}
+	ctx := context.Background()
 
-	tx, err := boil.BeginTx(context.Background(), &sql.TxOptions{})
+	err = ent.WithTx(ctx, j.entClient, func(tx *ent.Tx) error {
+		job, err = tx.Job.Create().
+			SetJobkey(string(key)).
+			SetRunAt(time.Now().Add(100 * time.Millisecond)).
+			SetParams(params).
+			Save(ctx)
+
+		bdy, err := json.Marshal(job)
+		if err != nil {
+			return err
+		}
+
+		err = j.ch.PublishWithContext(
+			context.Background(),
+			j.config.Rbmq.Jobs.Exchange,
+			string(key),
+			false,
+			false,
+			amqp091.Publishing{
+				Body: bdy,
+			},
+		)
+		if err != nil {
+			j.reScheduleQueue = append(j.reScheduleQueue, job)
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	err = job.Insert(context.Background(), tx, boil.Infer())
-	if err != nil {
-		return nil, err
-	}
-
-	bdy, err := json.Marshal(job)
-	if err != nil {
-		return nil, err
-	}
-
-	err = j.ch.PublishWithContext(
-		context.Background(),
-		j.config.Rbmq.Jobs.Exchange,
-		string(key),
-		false,
-		false,
-		amqp091.Publishing{
-			Body: bdy,
-		},
-	)
-	if err != nil {
-		j.reScheduleQueue = append(j.reScheduleQueue, job)
-		tx.Rollback()
-	}
-	tx.Commit()
 
 	return job, err
 }

@@ -137,7 +137,7 @@ func (h *MarketApiHandler) PurchaseListing(c echo.Context) error {
 		return templates.RenderView(c, market.Error("You do not have enough slots in your backpack to purchase this card."))
 	}
 
-	utils.WithTx(c.Request().Context(), h.app.Db(), func(tx *ent.Tx) error {
+	ent.WithTx(c.Request().Context(), h.app.Db(), func(tx *ent.Tx) error {
 		err := tx.Player.UpdateOne(seller).
 			AddLiens(listing.Price).
 			Exec(c.Request().Context())

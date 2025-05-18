@@ -73,6 +73,7 @@ func New(options ...Option) interfaces.App {
 
 	app.jobHandler = jobs.New(
 		jobs.WithConfig(app.config),
+		jobs.WithDb(app.entClient),
 	)
 
 	app.handler = handler.New()

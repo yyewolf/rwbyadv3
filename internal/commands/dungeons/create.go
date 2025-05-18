@@ -100,7 +100,7 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 		}
 	}
 
-	err = utils.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
+	err = ent.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
 		_, err = tx.PlayerLimit.UpdateOne(p.Edges.Limits).
 			SetDungeonsLeft(p.Edges.Limits.DungeonsLeft).
 			SetDungeonsResetAt(p.Edges.Limits.DungeonsResetAt).

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/sirupsen/logrus"
-	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/yyewolf/rwbyadv3/ent"
 )
 
 func (j *JobHandler) Listen() error {
@@ -24,7 +24,7 @@ func (j *JobHandler) Listen() error {
 	}
 
 	for msg := range channel {
-		var job models.Job
+		var job ent.Job
 		d := msg.Body
 		err := json.Unmarshal(d, &job)
 		if err != nil {

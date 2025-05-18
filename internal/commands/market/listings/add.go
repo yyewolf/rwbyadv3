@@ -39,7 +39,7 @@ func (cmd *listingsCommand) AddListing(e *handler.CommandEvent) error {
 
 	price := int64(e.SlashCommandInteractionData().Int("price"))
 
-	err = utils.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
+	err = ent.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
 		_, err := tx.Listing.Create().
 			SetPlayerID(p.ID).
 			SetCardID(card.ID).

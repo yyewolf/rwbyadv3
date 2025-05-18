@@ -2,9 +2,10 @@ package jobs
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/models"
 )
@@ -42,70 +43,56 @@ func (j *JobHandler) CancelJob(key interfaces.JobKey, jobID string) error {
 	return nil
 }
 
-func (j *JobHandler) handleJob(job *models.Job) {
+func (j *JobHandler) handleJob(job *ent.Job) {
 	logrus.WithField("job_key", job.Jobkey).WithField("params", job.Params).Info("job started")
 	job.Errored = true
-	exists, err := models.JobExistsG(context.Background(), job.ID, job.Jobkey)
-	if err != nil {
-		logrus.WithField("job_key", job.Jobkey).Error("error checking existance")
-		j.reScheduleQueue = append(j.reScheduleQueue, job)
-		return
-	}
 
-	if !exists {
-		logrus.WithField("job_key", job.Jobkey).Error("job canceled")
+	savedJob, err := j.entClient.Job.Get(context.Background(), job.ID)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			logrus.WithField("job_key", job.Jobkey).Error("job not found, deleting")
+		} else {
+			logrus.WithField("job_key", job.Jobkey).Error("error checking existance")
+			j.reScheduleQueue = append(j.reScheduleQueue, job)
+		}
 		return
 	}
 
 	f, found := j.jobTypes[interfaces.JobKey(job.Jobkey)]
 	if !found {
 		logrus.WithField("job_key", job.Jobkey).Error("job type not found, deleting")
-		job.DeleteG(context.Background(), false)
+		j.entClient.Job.DeleteOne(job).Exec(context.Background())
 		return
 	}
 
 	oldID := job.LastRunID
-	tx, err := boil.BeginTx(context.Background(), nil)
-	if err != nil {
-		logrus.WithField("job_key", job.Jobkey).Error("couldn't start tx")
-		j.reScheduleQueue = append(j.reScheduleQueue, job)
-		tx.Rollback()
-		return
-	}
 
-	savedJob, err := models.FindJob(context.Background(), tx, job.ID, job.Jobkey)
-	if err != nil {
-		logrus.WithField("job_key", job.Jobkey).Error("couldn't get job from db")
-		j.reScheduleQueue = append(j.reScheduleQueue, job)
-		tx.Rollback()
-		return
-	}
+	ctx := context.TODO()
 
-	if savedJob.DeltaTime != job.DeltaTime {
-		logrus.WithField("job_key", job.Jobkey).Error("job delta time changed")
-		tx.Rollback()
-		return
-	}
+	err = ent.WithTx(ctx, j.entClient, func(tx *ent.Tx) error {
+		if savedJob.DeltaTime != job.DeltaTime {
+			return fmt.Errorf("job delta time changed")
+		}
 
-	if savedJob.LastRunID != oldID {
-		logrus.WithField("job_key", job.Jobkey).Error("job already ran")
-		tx.Rollback()
-		return
-	}
+		if savedJob.LastRunID != oldID {
+			return fmt.Errorf("job already ran")
+		}
 
-	savedJob.LastRunID = jobRunID(job)
-	savedJob.Update(context.Background(), tx, boil.Infer())
-	tx.Commit()
+		err = tx.Job.UpdateOne(savedJob).
+			SetLastRunID(jobRunID(savedJob)).
+			Exec(ctx)
+		if err != nil {
+			return err
+		}
 
-	params := make(map[string]interface{})
-	err = job.Params.Unmarshal(&params)
+		return nil
+	})
 	if err != nil {
 		logrus.WithField("job_key", job.Jobkey).Error(err)
-		j.reScheduleQueue = append(j.reScheduleQueue, job)
 		return
 	}
 
-	err = f(params)
+	err = f(job.Params)
 	if err != nil {
 		logrus.WithField("job_key", job.Jobkey).WithField("job_id", job.ID).Error(err)
 		j.reScheduleQueue = append(j.reScheduleQueue, job)
@@ -119,7 +106,7 @@ func (j *JobHandler) handleJob(job *models.Job) {
 		j.reScheduleQueue = append(j.reScheduleQueue, job)
 	} else {
 		// delete job
-		_, err = job.DeleteG(context.Background(), false)
+		err = j.entClient.Job.DeleteOne(job).Exec(context.Background())
 		if err != nil {
 			logrus.Error(err)
 		}

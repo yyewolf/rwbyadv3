@@ -80,7 +80,7 @@ func (n *NotificationsRepository) NotifyPlayerLevelUpWorkflow(ctx workflow.Conte
 
 	var newCtx = context.Background()
 
-	err := utils.WithTx(newCtx, n.app.Db(), func(tx *ent.Tx) error {
+	err := ent.WithTx(newCtx, n.app.Db(), func(tx *ent.Tx) error {
 		for range rewards.Boxes {
 			_, err := tx.LootBox.Create().
 				SetPlayerID(params.Player.ID).

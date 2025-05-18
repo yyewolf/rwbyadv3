@@ -84,7 +84,7 @@ func (cmd *dailyCommand) HandleCommand(e *handler.CommandEvent) error {
 
 	texts := make([]string, 0)
 
-	err := utils.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
+	err := ent.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
 		// Give loots and create text
 		for _, loot := range list {
 			if loot, ok := loot.(loots.Loot); ok {

@@ -86,7 +86,7 @@ func (cmd *auctionsCommand) AddAuction(data discord.ButtonInteractionData, e *ha
 
 	duration, _ := strconv.ParseInt(e.Vars["duration"], 10, 64)
 
-	err = utils.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
+	err = ent.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
 		endsAt := time.Now().Add(time.Duration(duration) * time.Hour)
 		if duration == 0 {
 			endsAt = time.Now().Add(time.Minute)

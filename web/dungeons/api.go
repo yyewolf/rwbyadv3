@@ -76,7 +76,7 @@ func EndDungeon(app interfaces.App) echo.HandlerFunc {
 		d := dungeons.NewDungeon(r)
 
 		var pickedUpLoots []interface{}
-		err = utils.WithTx(c.Request().Context(), app.Db(), func(tx *ent.Tx) error {
+		err = ent.WithTx(c.Request().Context(), app.Db(), func(tx *ent.Tx) error {
 			for _, loot := range d.Loots {
 				if !slices.Contains(req.Loots, loot.GetID()) {
 					continue

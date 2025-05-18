@@ -250,7 +250,7 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 		return templates.RenderView(c, market.Error("You are already in the auction."))
 	}
 
-	utils.WithTx(c.Request().Context(), h.app.Db(), func(tx *ent.Tx) error {
+	ent.WithTx(c.Request().Context(), h.app.Db(), func(tx *ent.Tx) error {
 		// Check if there's already a bid in place
 		if latestBid != nil {
 			err = tx.Player.UpdateOne(latestBid.Edges.Player).

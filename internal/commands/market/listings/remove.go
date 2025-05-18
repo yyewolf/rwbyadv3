@@ -39,7 +39,7 @@ func (cmd *listingsCommand) RemoveListing(e *handler.CommandEvent) error {
 		return utils.CommandError(e, err)
 	}
 
-	err = utils.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
+	err = ent.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
 		listing.Edges.Card.Metadata.Location = "inventory"
 
 		err = tx.Card.UpdateOne(listing.Edges.Card).

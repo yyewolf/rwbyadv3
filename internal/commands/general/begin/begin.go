@@ -68,7 +68,7 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 
 	var player *ent.Player
 
-	err = utils.WithTx(e.Ctx, cmd.app.Db(), func(ntx *ent.Tx) error {
+	err = ent.WithTx(e.Ctx, cmd.app.Db(), func(ntx *ent.Tx) error {
 		tempPlayer := ent.Player{
 			Level: 1,
 		}
