@@ -60,6 +60,14 @@ func (asc *AuthStateCreate) SetPlayerID(s string) *AuthStateCreate {
 	return asc
 }
 
+// SetNillablePlayerID sets the "player_id" field if the given value is not nil.
+func (asc *AuthStateCreate) SetNillablePlayerID(s *string) *AuthStateCreate {
+	if s != nil {
+		asc.SetPlayerID(*s)
+	}
+	return asc
+}
+
 // SetRedirectURI sets the "redirect_uri" field.
 func (asc *AuthStateCreate) SetRedirectURI(s string) *AuthStateCreate {
 	asc.mutation.SetRedirectURI(s)
@@ -162,9 +170,6 @@ func (asc *AuthStateCreate) check() error {
 	if _, ok := asc.mutation.UpdateTime(); !ok {
 		return &ValidationError{Name: "update_time", err: errors.New(`ent: missing required field "AuthState.update_time"`)}
 	}
-	if _, ok := asc.mutation.PlayerID(); !ok {
-		return &ValidationError{Name: "player_id", err: errors.New(`ent: missing required field "AuthState.player_id"`)}
-	}
 	if _, ok := asc.mutation.ExpiresAt(); !ok {
 		return &ValidationError{Name: "expires_at", err: errors.New(`ent: missing required field "AuthState.expires_at"`)}
 	}
@@ -175,9 +180,6 @@ func (asc *AuthStateCreate) check() error {
 		if err := authstate.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "AuthState.type": %w`, err)}
 		}
-	}
-	if len(asc.mutation.PlayerIDs()) == 0 {
-		return &ValidationError{Name: "player", err: errors.New(`ent: missing required edge "AuthState.player"`)}
 	}
 	return nil
 }
@@ -328,6 +330,12 @@ func (u *AuthStateUpsert) UpdatePlayerID() *AuthStateUpsert {
 	return u
 }
 
+// ClearPlayerID clears the value of the "player_id" field.
+func (u *AuthStateUpsert) ClearPlayerID() *AuthStateUpsert {
+	u.SetNull(authstate.FieldPlayerID)
+	return u
+}
+
 // SetRedirectURI sets the "redirect_uri" field.
 func (u *AuthStateUpsert) SetRedirectURI(v string) *AuthStateUpsert {
 	u.Set(authstate.FieldRedirectURI, v)
@@ -446,6 +454,13 @@ func (u *AuthStateUpsertOne) SetPlayerID(v string) *AuthStateUpsertOne {
 func (u *AuthStateUpsertOne) UpdatePlayerID() *AuthStateUpsertOne {
 	return u.Update(func(s *AuthStateUpsert) {
 		s.UpdatePlayerID()
+	})
+}
+
+// ClearPlayerID clears the value of the "player_id" field.
+func (u *AuthStateUpsertOne) ClearPlayerID() *AuthStateUpsertOne {
+	return u.Update(func(s *AuthStateUpsert) {
+		s.ClearPlayerID()
 	})
 }
 
@@ -741,6 +756,13 @@ func (u *AuthStateUpsertBulk) SetPlayerID(v string) *AuthStateUpsertBulk {
 func (u *AuthStateUpsertBulk) UpdatePlayerID() *AuthStateUpsertBulk {
 	return u.Update(func(s *AuthStateUpsert) {
 		s.UpdatePlayerID()
+	})
+}
+
+// ClearPlayerID clears the value of the "player_id" field.
+func (u *AuthStateUpsertBulk) ClearPlayerID() *AuthStateUpsertBulk {
+	return u.Update(func(s *AuthStateUpsert) {
+		s.ClearPlayerID()
 	})
 }
 

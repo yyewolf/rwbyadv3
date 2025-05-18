@@ -75,7 +75,7 @@ var (
 		{Name: "redirect_uri", Type: field.TypeString, Nullable: true},
 		{Name: "expires_at", Type: field.TypeTime},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"discord_login", "discord_check_star"}},
-		{Name: "player_id", Type: field.TypeString},
+		{Name: "player_id", Type: field.TypeString, Nullable: true},
 	}
 	// AuthStatesTable holds the schema information for the "auth_states" table.
 	AuthStatesTable = &schema.Table{
@@ -87,7 +87,7 @@ var (
 				Symbol:     "auth_states_players_player",
 				Columns:    []*schema.Column{AuthStatesColumns[6]},
 				RefColumns: []*schema.Column{PlayersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.SetNull,
 			},
 		},
 	}

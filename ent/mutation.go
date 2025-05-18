@@ -1808,9 +1808,22 @@ func (m *AuthStateMutation) OldPlayerID(ctx context.Context) (v string, err erro
 	return oldValue.PlayerID, nil
 }
 
+// ClearPlayerID clears the value of the "player_id" field.
+func (m *AuthStateMutation) ClearPlayerID() {
+	m.player = nil
+	m.clearedFields[authstate.FieldPlayerID] = struct{}{}
+}
+
+// PlayerIDCleared returns if the "player_id" field was cleared in this mutation.
+func (m *AuthStateMutation) PlayerIDCleared() bool {
+	_, ok := m.clearedFields[authstate.FieldPlayerID]
+	return ok
+}
+
 // ResetPlayerID resets all changes to the "player_id" field.
 func (m *AuthStateMutation) ResetPlayerID() {
 	m.player = nil
+	delete(m.clearedFields, authstate.FieldPlayerID)
 }
 
 // SetRedirectURI sets the "redirect_uri" field.
@@ -1942,7 +1955,7 @@ func (m *AuthStateMutation) ClearPlayer() {
 
 // PlayerCleared reports if the "player" edge to the Player entity was cleared.
 func (m *AuthStateMutation) PlayerCleared() bool {
-	return m.clearedplayer
+	return m.PlayerIDCleared() || m.clearedplayer
 }
 
 // PlayerIDs returns the "player" edge IDs in the mutation.
@@ -2136,6 +2149,9 @@ func (m *AuthStateMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *AuthStateMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(authstate.FieldPlayerID) {
+		fields = append(fields, authstate.FieldPlayerID)
+	}
 	if m.FieldCleared(authstate.FieldRedirectURI) {
 		fields = append(fields, authstate.FieldRedirectURI)
 	}
@@ -2153,6 +2169,9 @@ func (m *AuthStateMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *AuthStateMutation) ClearField(name string) error {
 	switch name {
+	case authstate.FieldPlayerID:
+		m.ClearPlayerID()
+		return nil
 	case authstate.FieldRedirectURI:
 		m.ClearRedirectURI()
 		return nil

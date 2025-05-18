@@ -217,6 +217,16 @@ func PlayerIDHasSuffix(v string) predicate.AuthState {
 	return predicate.AuthState(sql.FieldHasSuffix(FieldPlayerID, v))
 }
 
+// PlayerIDIsNil applies the IsNil predicate on the "player_id" field.
+func PlayerIDIsNil() predicate.AuthState {
+	return predicate.AuthState(sql.FieldIsNull(FieldPlayerID))
+}
+
+// PlayerIDNotNil applies the NotNil predicate on the "player_id" field.
+func PlayerIDNotNil() predicate.AuthState {
+	return predicate.AuthState(sql.FieldNotNull(FieldPlayerID))
+}
+
 // PlayerIDEqualFold applies the EqualFold predicate on the "player_id" field.
 func PlayerIDEqualFold(v string) predicate.AuthState {
 	return predicate.AuthState(sql.FieldEqualFold(FieldPlayerID, v))

@@ -50,6 +50,12 @@ func (asu *AuthStateUpdate) SetNillablePlayerID(s *string) *AuthStateUpdate {
 	return asu
 }
 
+// ClearPlayerID clears the value of the "player_id" field.
+func (asu *AuthStateUpdate) ClearPlayerID() *AuthStateUpdate {
+	asu.mutation.ClearPlayerID()
+	return asu
+}
+
 // SetRedirectURI sets the "redirect_uri" field.
 func (asu *AuthStateUpdate) SetRedirectURI(s string) *AuthStateUpdate {
 	asu.mutation.SetRedirectURI(s)
@@ -157,9 +163,6 @@ func (asu *AuthStateUpdate) check() error {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "AuthState.type": %w`, err)}
 		}
 	}
-	if asu.mutation.PlayerCleared() && len(asu.mutation.PlayerIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "AuthState.player"`)
-	}
 	return nil
 }
 
@@ -256,6 +259,12 @@ func (asuo *AuthStateUpdateOne) SetNillablePlayerID(s *string) *AuthStateUpdateO
 	if s != nil {
 		asuo.SetPlayerID(*s)
 	}
+	return asuo
+}
+
+// ClearPlayerID clears the value of the "player_id" field.
+func (asuo *AuthStateUpdateOne) ClearPlayerID() *AuthStateUpdateOne {
+	asuo.mutation.ClearPlayerID()
 	return asuo
 }
 
@@ -378,9 +387,6 @@ func (asuo *AuthStateUpdateOne) check() error {
 		if err := authstate.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "AuthState.type": %w`, err)}
 		}
-	}
-	if asuo.mutation.PlayerCleared() && len(asuo.mutation.PlayerIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "AuthState.player"`)
 	}
 	return nil
 }

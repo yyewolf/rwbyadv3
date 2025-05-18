@@ -18,7 +18,7 @@ type AuthState struct {
 func (AuthState) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.New()).Default(uuid.New),
-		field.String("player_id"),
+		field.String("player_id").Optional(),
 		field.String("redirect_uri").Optional(),
 		field.Time("expires_at"),
 		field.Enum("type").GoType(enums.AuthStateTypes("")),
@@ -34,6 +34,6 @@ func (AuthState) Mixin() []ent.Mixin {
 // Edges of the AuthState.
 func (AuthState) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("player", Player.Type).Unique().Required().Field("player_id"),
+		edge.To("player", Player.Type).Unique().Field("player_id"),
 	}
 }
