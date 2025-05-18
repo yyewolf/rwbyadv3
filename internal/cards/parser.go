@@ -109,29 +109,6 @@ func ParseCards(location string) {
 		}
 
 		cardMap[card.ID] = card
-
-		// cardType := models.CardType{
-		// 	CardType:   card.ID,
-		// 	Name:       card.Name,
-		// 	Categories: fmt.Sprintf("%v", card.Categories),
-		// }
-		// Insert or update the cards in database
-		// exists, _ := models.CardTypes(
-		// 	models.CardTypeWhere.CardType.EQ(card.ID),
-		// ).ExistsG(context.Background())
-		// if !exists {
-		// 	cardType.InsertG(context.Background(), boil.Infer())
-		// } else {
-		// 	cardType.UpdateG(context.Background(), boil.Infer())
-		// }
-
-		// entClient.CardType.Create().
-		// 	SetID(card.ID).
-		// 	SetName(card.Name).
-		// 	SetCategories(card.Categories).
-		// 	OnConflictColumns(cardtype.FieldID).
-		// 	UpdateNewValues().
-		// 	Exec(context.Background())
 	}
 
 	Cards = cardMap

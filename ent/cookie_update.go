@@ -127,7 +127,7 @@ func (cu *CookieUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := cu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(cookie.Table, cookie.Columns, sqlgraph.NewFieldSpec(cookie.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(cookie.Table, cookie.Columns, sqlgraph.NewFieldSpec(cookie.FieldID, field.TypeString))
 	if ps := cu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -301,7 +301,7 @@ func (cuo *CookieUpdateOne) sqlSave(ctx context.Context) (_node *Cookie, err err
 	if err := cuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(cookie.Table, cookie.Columns, sqlgraph.NewFieldSpec(cookie.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(cookie.Table, cookie.Columns, sqlgraph.NewFieldSpec(cookie.FieldID, field.TypeString))
 	id, ok := cuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Cookie.id" for update`)}

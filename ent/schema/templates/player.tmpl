@@ -55,4 +55,8 @@ func (p *Player) GiveXP(XP int64) (levelUp bool) {
 	return levelUp
 }
 
+func (p *Player) AvailableBalance() int64 {
+	return p.Liens - p.LiensInAuction
+}
+
 {{ end }}

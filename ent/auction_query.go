@@ -372,12 +372,12 @@ func (aq *AuctionQuery) WithBids(opts ...func(*AuctionBidQuery)) *AuctionQuery {
 // Example:
 //
 //	var v []struct {
-//		PlayerID string `json:"player_id,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Auction.Query().
-//		GroupBy(auction.FieldPlayerID).
+//		GroupBy(auction.FieldCreateTime).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (aq *AuctionQuery) GroupBy(field string, fields ...string) *AuctionGroupBy {
@@ -395,11 +395,11 @@ func (aq *AuctionQuery) GroupBy(field string, fields ...string) *AuctionGroupBy 
 // Example:
 //
 //	var v []struct {
-//		PlayerID string `json:"player_id,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty"`
 //	}
 //
 //	client.Auction.Query().
-//		Select(auction.FieldPlayerID).
+//		Select(auction.FieldCreateTime).
 //		Scan(ctx, &v)
 func (aq *AuctionQuery) Select(fields ...string) *AuctionSelect {
 	aq.ctx.Fields = append(aq.ctx.Fields, fields...)

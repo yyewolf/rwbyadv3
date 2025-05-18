@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
@@ -72,6 +73,7 @@ func main() {
 			SetID(card.ID).
 			SetName(card.Name).
 			SetCategories(card.Categories).
+			SetSCategories(strings.Join(card.Categories, ",")).
 			OnConflictColumns(cardtype.FieldID).
 			UpdateNewValues().
 			Exec(context.Background())

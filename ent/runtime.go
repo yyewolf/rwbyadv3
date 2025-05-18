@@ -29,8 +29,21 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	auctionMixin := schema.Auction{}.Mixin()
+	auctionMixinFields0 := auctionMixin[0].Fields()
+	_ = auctionMixinFields0
 	auctionFields := schema.Auction{}.Fields()
 	_ = auctionFields
+	// auctionDescCreateTime is the schema descriptor for create_time field.
+	auctionDescCreateTime := auctionMixinFields0[0].Descriptor()
+	// auction.DefaultCreateTime holds the default value on creation for the create_time field.
+	auction.DefaultCreateTime = auctionDescCreateTime.Default.(func() time.Time)
+	// auctionDescUpdateTime is the schema descriptor for update_time field.
+	auctionDescUpdateTime := auctionMixinFields0[1].Descriptor()
+	// auction.DefaultUpdateTime holds the default value on creation for the update_time field.
+	auction.DefaultUpdateTime = auctionDescUpdateTime.Default.(func() time.Time)
+	// auction.UpdateDefaultUpdateTime holds the default value on update for the update_time field.
+	auction.UpdateDefaultUpdateTime = auctionDescUpdateTime.UpdateDefault.(func() time.Time)
 	// auctionDescTimeExtensions is the schema descriptor for time_extensions field.
 	auctionDescTimeExtensions := auctionFields[3].Descriptor()
 	// auction.DefaultTimeExtensions holds the default value on creation for the time_extensions field.
@@ -174,10 +187,6 @@ func init() {
 	cookie.DefaultUpdateTime = cookieDescUpdateTime.Default.(func() time.Time)
 	// cookie.UpdateDefaultUpdateTime holds the default value on update for the update_time field.
 	cookie.UpdateDefaultUpdateTime = cookieDescUpdateTime.UpdateDefault.(func() time.Time)
-	// cookieDescID is the schema descriptor for id field.
-	cookieDescID := cookieFields[0].Descriptor()
-	// cookie.DefaultID holds the default value on creation for the id field.
-	cookie.DefaultID = cookieDescID.Default.(func() uuid.UUID)
 	dailyMixin := schema.Daily{}.Mixin()
 	dailyMixinFields0 := dailyMixin[0].Fields()
 	_ = dailyMixinFields0

@@ -15,7 +15,7 @@ import (
 func View(app interfaces.App) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		session := utils.GetSessionFromContext(c)
-		player := session.R.Player
+		player := session.Edges.Player
 		dungeonId := c.Param("dungeonId")
 
 		dungeon, err := models.FindDungeonG(context.Background(), dungeonId)

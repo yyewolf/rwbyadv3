@@ -4,6 +4,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/mixin"
 	"github.com/google/uuid"
 )
 
@@ -20,6 +21,12 @@ func (Auction) Fields() []ent.Field {
 		field.UUID("card_id", uuid.New()),
 		field.Int("time_extensions").Default(0),
 		field.Time("ends_at"),
+	}
+}
+
+func (Auction) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		mixin.Time{},
 	}
 }
 

@@ -40,7 +40,7 @@ func (cd *CookieDelete) ExecX(ctx context.Context) int {
 }
 
 func (cd *CookieDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(cookie.Table, sqlgraph.NewFieldSpec(cookie.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(cookie.Table, sqlgraph.NewFieldSpec(cookie.FieldID, field.TypeString))
 	if ps := cd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

@@ -5,7 +5,6 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/mixin"
-	"github.com/google/uuid"
 )
 
 // Cookie holds the schema definition for the Cookie entity.
@@ -16,7 +15,7 @@ type Cookie struct {
 // Fields of the Cookie.
 func (Cookie) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.New()).Default(uuid.New),
+		field.String("id"),
 		field.String("player_id"),
 		field.Time("expires_at"),
 	}

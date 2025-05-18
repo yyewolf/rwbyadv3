@@ -1,0 +1,23 @@
+{{ define "auction_utils" }}
+
+{{ $pkg := base $.Config.Package }}
+{{ template "header" $ }}
+
+func (a *Auction) GetLatestBid() (*AuctionBid, bool) {
+	if len(a.Edges.Bids) == 0 {
+		return nil, false
+	}
+
+	return a.Edges.Bids[0], true
+}
+
+func (a *Auction) GetPrice() int64 {
+	bid, ok := a.GetLatestBid()
+	if !ok {
+		return 1
+	}
+
+	return bid.Price
+}
+
+{{ end }}

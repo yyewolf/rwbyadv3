@@ -11,6 +11,8 @@ var (
 	// AuctionsColumns holds the columns for the "auctions" table.
 	AuctionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
+		{Name: "create_time", Type: field.TypeTime},
+		{Name: "update_time", Type: field.TypeTime},
 		{Name: "time_extensions", Type: field.TypeInt, Default: 0},
 		{Name: "ends_at", Type: field.TypeTime},
 		{Name: "card_id", Type: field.TypeUUID},
@@ -24,13 +26,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "auctions_cards_card",
-				Columns:    []*schema.Column{AuctionsColumns[3]},
+				Columns:    []*schema.Column{AuctionsColumns[5]},
 				RefColumns: []*schema.Column{CardsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "auctions_players_auctions",
-				Columns:    []*schema.Column{AuctionsColumns[4]},
+				Columns:    []*schema.Column{AuctionsColumns[6]},
 				RefColumns: []*schema.Column{PlayersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -158,6 +160,7 @@ var (
 		{Name: "id", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "categories", Type: field.TypeJSON},
+		{Name: "s_categories", Type: field.TypeString},
 	}
 	// CardTypesTable holds the schema information for the "card_types" table.
 	CardTypesTable = &schema.Table{
@@ -167,7 +170,7 @@ var (
 	}
 	// CookiesColumns holds the columns for the "cookies" table.
 	CookiesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "create_time", Type: field.TypeTime},
 		{Name: "update_time", Type: field.TypeTime},
 		{Name: "expires_at", Type: field.TypeTime},

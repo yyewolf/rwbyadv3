@@ -61,3 +61,7 @@ func (p *Player) GiveXP(XP int64) (levelUp bool) {
 	p.ExperiencePointsThreshold = p.GetNextLevelXP()
 	return levelUp
 }
+
+func (p *Player) AvailableBalance() int64 {
+	return p.Liens - p.LiensInAuction
+}

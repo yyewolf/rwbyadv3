@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/yyewolf/rwbyadv3/ent/cookie"
 	"github.com/yyewolf/rwbyadv3/ent/player"
 	"github.com/yyewolf/rwbyadv3/ent/predicate"
@@ -107,8 +106,8 @@ func (cq *CookieQuery) FirstX(ctx context.Context) *Cookie {
 
 // FirstID returns the first Cookie ID from the query.
 // Returns a *NotFoundError when no Cookie ID was found.
-func (cq *CookieQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (cq *CookieQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = cq.Limit(1).IDs(setContextOp(ctx, cq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -120,7 +119,7 @@ func (cq *CookieQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (cq *CookieQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (cq *CookieQuery) FirstIDX(ctx context.Context) string {
 	id, err := cq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -158,8 +157,8 @@ func (cq *CookieQuery) OnlyX(ctx context.Context) *Cookie {
 // OnlyID is like Only, but returns the only Cookie ID in the query.
 // Returns a *NotSingularError when more than one Cookie ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (cq *CookieQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (cq *CookieQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = cq.Limit(2).IDs(setContextOp(ctx, cq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -175,7 +174,7 @@ func (cq *CookieQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (cq *CookieQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (cq *CookieQuery) OnlyIDX(ctx context.Context) string {
 	id, err := cq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -203,7 +202,7 @@ func (cq *CookieQuery) AllX(ctx context.Context) []*Cookie {
 }
 
 // IDs executes the query and returns a list of Cookie IDs.
-func (cq *CookieQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (cq *CookieQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if cq.ctx.Unique == nil && cq.path != nil {
 		cq.Unique(true)
 	}
@@ -215,7 +214,7 @@ func (cq *CookieQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (cq *CookieQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (cq *CookieQuery) IDsX(ctx context.Context) []string {
 	ids, err := cq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -442,7 +441,7 @@ func (cq *CookieQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (cq *CookieQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(cookie.Table, cookie.Columns, sqlgraph.NewFieldSpec(cookie.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(cookie.Table, cookie.Columns, sqlgraph.NewFieldSpec(cookie.FieldID, field.TypeString))
 	_spec.From = cq.sql
 	if unique := cq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

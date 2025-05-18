@@ -32,6 +32,12 @@ func (au *AuctionUpdate) Where(ps ...predicate.Auction) *AuctionUpdate {
 	return au
 }
 
+// SetUpdateTime sets the "update_time" field.
+func (au *AuctionUpdate) SetUpdateTime(t time.Time) *AuctionUpdate {
+	au.mutation.SetUpdateTime(t)
+	return au
+}
+
 // SetPlayerID sets the "player_id" field.
 func (au *AuctionUpdate) SetPlayerID(s string) *AuctionUpdate {
 	au.mutation.SetPlayerID(s)
@@ -166,6 +172,7 @@ func (au *AuctionUpdate) RemoveBids(a ...*AuctionBid) *AuctionUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (au *AuctionUpdate) Save(ctx context.Context) (int, error) {
+	au.defaults()
 	return withHooks(ctx, au.sqlSave, au.mutation, au.hooks)
 }
 
@@ -191,6 +198,14 @@ func (au *AuctionUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (au *AuctionUpdate) defaults() {
+	if _, ok := au.mutation.UpdateTime(); !ok {
+		v := auction.UpdateDefaultUpdateTime()
+		au.mutation.SetUpdateTime(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (au *AuctionUpdate) check() error {
 	if au.mutation.OwnedByCleared() && len(au.mutation.OwnedByIDs()) > 0 {
@@ -213,6 +228,9 @@ func (au *AuctionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := au.mutation.UpdateTime(); ok {
+		_spec.SetField(auction.FieldUpdateTime, field.TypeTime, value)
 	}
 	if value, ok := au.mutation.TimeExtensions(); ok {
 		_spec.SetField(auction.FieldTimeExtensions, field.TypeInt, value)
@@ -344,6 +362,12 @@ type AuctionUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *AuctionMutation
+}
+
+// SetUpdateTime sets the "update_time" field.
+func (auo *AuctionUpdateOne) SetUpdateTime(t time.Time) *AuctionUpdateOne {
+	auo.mutation.SetUpdateTime(t)
+	return auo
 }
 
 // SetPlayerID sets the "player_id" field.
@@ -493,6 +517,7 @@ func (auo *AuctionUpdateOne) Select(field string, fields ...string) *AuctionUpda
 
 // Save executes the query and returns the updated Auction entity.
 func (auo *AuctionUpdateOne) Save(ctx context.Context) (*Auction, error) {
+	auo.defaults()
 	return withHooks(ctx, auo.sqlSave, auo.mutation, auo.hooks)
 }
 
@@ -515,6 +540,14 @@ func (auo *AuctionUpdateOne) Exec(ctx context.Context) error {
 func (auo *AuctionUpdateOne) ExecX(ctx context.Context) {
 	if err := auo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (auo *AuctionUpdateOne) defaults() {
+	if _, ok := auo.mutation.UpdateTime(); !ok {
+		v := auction.UpdateDefaultUpdateTime()
+		auo.mutation.SetUpdateTime(v)
 	}
 }
 
@@ -557,6 +590,9 @@ func (auo *AuctionUpdateOne) sqlSave(ctx context.Context) (_node *Auction, err e
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := auo.mutation.UpdateTime(); ok {
+		_spec.SetField(auction.FieldUpdateTime, field.TypeTime, value)
 	}
 	if value, ok := auo.mutation.TimeExtensions(); ok {
 		_spec.SetField(auction.FieldTimeExtensions, field.TypeInt, value)

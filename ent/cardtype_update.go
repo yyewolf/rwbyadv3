@@ -54,6 +54,20 @@ func (ctu *CardTypeUpdate) AppendCategories(s []string) *CardTypeUpdate {
 	return ctu
 }
 
+// SetSCategories sets the "s_categories" field.
+func (ctu *CardTypeUpdate) SetSCategories(s string) *CardTypeUpdate {
+	ctu.mutation.SetSCategories(s)
+	return ctu
+}
+
+// SetNillableSCategories sets the "s_categories" field if the given value is not nil.
+func (ctu *CardTypeUpdate) SetNillableSCategories(s *string) *CardTypeUpdate {
+	if s != nil {
+		ctu.SetSCategories(*s)
+	}
+	return ctu
+}
+
 // Mutation returns the CardTypeMutation object of the builder.
 func (ctu *CardTypeUpdate) Mutation() *CardTypeMutation {
 	return ctu.mutation
@@ -106,6 +120,9 @@ func (ctu *CardTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			sqljson.Append(u, cardtype.FieldCategories, value)
 		})
 	}
+	if value, ok := ctu.mutation.SCategories(); ok {
+		_spec.SetField(cardtype.FieldSCategories, field.TypeString, value)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, ctu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{cardtype.Label}
@@ -149,6 +166,20 @@ func (ctuo *CardTypeUpdateOne) SetCategories(s []string) *CardTypeUpdateOne {
 // AppendCategories appends s to the "categories" field.
 func (ctuo *CardTypeUpdateOne) AppendCategories(s []string) *CardTypeUpdateOne {
 	ctuo.mutation.AppendCategories(s)
+	return ctuo
+}
+
+// SetSCategories sets the "s_categories" field.
+func (ctuo *CardTypeUpdateOne) SetSCategories(s string) *CardTypeUpdateOne {
+	ctuo.mutation.SetSCategories(s)
+	return ctuo
+}
+
+// SetNillableSCategories sets the "s_categories" field if the given value is not nil.
+func (ctuo *CardTypeUpdateOne) SetNillableSCategories(s *string) *CardTypeUpdateOne {
+	if s != nil {
+		ctuo.SetSCategories(*s)
+	}
 	return ctuo
 }
 
@@ -233,6 +264,9 @@ func (ctuo *CardTypeUpdateOne) sqlSave(ctx context.Context) (_node *CardType, er
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, cardtype.FieldCategories, value)
 		})
+	}
+	if value, ok := ctuo.mutation.SCategories(); ok {
+		_spec.SetField(cardtype.FieldSCategories, field.TypeString, value)
 	}
 	_node = &CardType{config: ctuo.config}
 	_spec.Assign = _node.assignValues

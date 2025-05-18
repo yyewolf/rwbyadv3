@@ -9,7 +9,6 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 	"github.com/yyewolf/rwbyadv3/ent/cookie"
 	"github.com/yyewolf/rwbyadv3/ent/player"
 )
@@ -18,7 +17,7 @@ import (
 type Cookie struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// CreateTime holds the value of the "create_time" field.
 	CreateTime time.Time `json:"create_time,omitempty"`
 	// UpdateTime holds the value of the "update_time" field.
@@ -58,12 +57,10 @@ func (*Cookie) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case cookie.FieldPlayerID:
+		case cookie.FieldID, cookie.FieldPlayerID:
 			values[i] = new(sql.NullString)
 		case cookie.FieldCreateTime, cookie.FieldUpdateTime, cookie.FieldExpiresAt:
 			values[i] = new(sql.NullTime)
-		case cookie.FieldID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -80,10 +77,10 @@ func (c *Cookie) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case cookie.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				c.ID = *value
+			} else if value.Valid {
+				c.ID = value.String
 			}
 		case cookie.FieldCreateTime:
 			if value, ok := values[i].(*sql.NullTime); !ok {

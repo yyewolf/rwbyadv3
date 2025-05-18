@@ -68,6 +68,8 @@ type AuctionMutation struct {
 	op                 Op
 	typ                string
 	id                 *uuid.UUID
+	create_time        *time.Time
+	update_time        *time.Time
 	time_extensions    *int
 	addtime_extensions *int
 	ends_at            *time.Time
@@ -186,6 +188,78 @@ func (m *AuctionMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
+}
+
+// SetCreateTime sets the "create_time" field.
+func (m *AuctionMutation) SetCreateTime(t time.Time) {
+	m.create_time = &t
+}
+
+// CreateTime returns the value of the "create_time" field in the mutation.
+func (m *AuctionMutation) CreateTime() (r time.Time, exists bool) {
+	v := m.create_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreateTime returns the old "create_time" field's value of the Auction entity.
+// If the Auction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuctionMutation) OldCreateTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreateTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreateTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreateTime: %w", err)
+	}
+	return oldValue.CreateTime, nil
+}
+
+// ResetCreateTime resets all changes to the "create_time" field.
+func (m *AuctionMutation) ResetCreateTime() {
+	m.create_time = nil
+}
+
+// SetUpdateTime sets the "update_time" field.
+func (m *AuctionMutation) SetUpdateTime(t time.Time) {
+	m.update_time = &t
+}
+
+// UpdateTime returns the value of the "update_time" field in the mutation.
+func (m *AuctionMutation) UpdateTime() (r time.Time, exists bool) {
+	v := m.update_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdateTime returns the old "update_time" field's value of the Auction entity.
+// If the Auction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuctionMutation) OldUpdateTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdateTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdateTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdateTime: %w", err)
+	}
+	return oldValue.UpdateTime, nil
+}
+
+// ResetUpdateTime resets all changes to the "update_time" field.
+func (m *AuctionMutation) ResetUpdateTime() {
+	m.update_time = nil
 }
 
 // SetPlayerID sets the "player_id" field.
@@ -507,7 +581,13 @@ func (m *AuctionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AuctionMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 6)
+	if m.create_time != nil {
+		fields = append(fields, auction.FieldCreateTime)
+	}
+	if m.update_time != nil {
+		fields = append(fields, auction.FieldUpdateTime)
+	}
 	if m.owned_by != nil {
 		fields = append(fields, auction.FieldPlayerID)
 	}
@@ -528,6 +608,10 @@ func (m *AuctionMutation) Fields() []string {
 // schema.
 func (m *AuctionMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case auction.FieldCreateTime:
+		return m.CreateTime()
+	case auction.FieldUpdateTime:
+		return m.UpdateTime()
 	case auction.FieldPlayerID:
 		return m.PlayerID()
 	case auction.FieldCardID:
@@ -545,6 +629,10 @@ func (m *AuctionMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *AuctionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case auction.FieldCreateTime:
+		return m.OldCreateTime(ctx)
+	case auction.FieldUpdateTime:
+		return m.OldUpdateTime(ctx)
 	case auction.FieldPlayerID:
 		return m.OldPlayerID(ctx)
 	case auction.FieldCardID:
@@ -562,6 +650,20 @@ func (m *AuctionMutation) OldField(ctx context.Context, name string) (ent.Value,
 // type.
 func (m *AuctionMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case auction.FieldCreateTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreateTime(v)
+		return nil
+	case auction.FieldUpdateTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdateTime(v)
+		return nil
 	case auction.FieldPlayerID:
 		v, ok := value.(string)
 		if !ok {
@@ -654,6 +756,12 @@ func (m *AuctionMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *AuctionMutation) ResetField(name string) error {
 	switch name {
+	case auction.FieldCreateTime:
+		m.ResetCreateTime()
+		return nil
+	case auction.FieldUpdateTime:
+		m.ResetUpdateTime()
+		return nil
 	case auction.FieldPlayerID:
 		m.ResetPlayerID()
 		return nil
@@ -4721,6 +4829,7 @@ type CardTypeMutation struct {
 	name             *string
 	categories       *[]string
 	appendcategories []string
+	s_categories     *string
 	clearedFields    map[string]struct{}
 	done             bool
 	oldValue         func(context.Context) (*CardType, error)
@@ -4918,6 +5027,42 @@ func (m *CardTypeMutation) ResetCategories() {
 	m.appendcategories = nil
 }
 
+// SetSCategories sets the "s_categories" field.
+func (m *CardTypeMutation) SetSCategories(s string) {
+	m.s_categories = &s
+}
+
+// SCategories returns the value of the "s_categories" field in the mutation.
+func (m *CardTypeMutation) SCategories() (r string, exists bool) {
+	v := m.s_categories
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSCategories returns the old "s_categories" field's value of the CardType entity.
+// If the CardType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CardTypeMutation) OldSCategories(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSCategories is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSCategories requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSCategories: %w", err)
+	}
+	return oldValue.SCategories, nil
+}
+
+// ResetSCategories resets all changes to the "s_categories" field.
+func (m *CardTypeMutation) ResetSCategories() {
+	m.s_categories = nil
+}
+
 // Where appends a list predicates to the CardTypeMutation builder.
 func (m *CardTypeMutation) Where(ps ...predicate.CardType) {
 	m.predicates = append(m.predicates, ps...)
@@ -4952,12 +5097,15 @@ func (m *CardTypeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CardTypeMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.name != nil {
 		fields = append(fields, cardtype.FieldName)
 	}
 	if m.categories != nil {
 		fields = append(fields, cardtype.FieldCategories)
+	}
+	if m.s_categories != nil {
+		fields = append(fields, cardtype.FieldSCategories)
 	}
 	return fields
 }
@@ -4971,6 +5119,8 @@ func (m *CardTypeMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case cardtype.FieldCategories:
 		return m.Categories()
+	case cardtype.FieldSCategories:
+		return m.SCategories()
 	}
 	return nil, false
 }
@@ -4984,6 +5134,8 @@ func (m *CardTypeMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldName(ctx)
 	case cardtype.FieldCategories:
 		return m.OldCategories(ctx)
+	case cardtype.FieldSCategories:
+		return m.OldSCategories(ctx)
 	}
 	return nil, fmt.Errorf("unknown CardType field %s", name)
 }
@@ -5006,6 +5158,13 @@ func (m *CardTypeMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCategories(v)
+		return nil
+	case cardtype.FieldSCategories:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSCategories(v)
 		return nil
 	}
 	return fmt.Errorf("unknown CardType field %s", name)
@@ -5061,6 +5220,9 @@ func (m *CardTypeMutation) ResetField(name string) error {
 		return nil
 	case cardtype.FieldCategories:
 		m.ResetCategories()
+		return nil
+	case cardtype.FieldSCategories:
+		m.ResetSCategories()
 		return nil
 	}
 	return fmt.Errorf("unknown CardType field %s", name)
@@ -5119,7 +5281,7 @@ type CookieMutation struct {
 	config
 	op            Op
 	typ           string
-	id            *uuid.UUID
+	id            *string
 	create_time   *time.Time
 	update_time   *time.Time
 	expires_at    *time.Time
@@ -5151,7 +5313,7 @@ func newCookieMutation(c config, op Op, opts ...cookieOption) *CookieMutation {
 }
 
 // withCookieID sets the ID field of the mutation.
-func withCookieID(id uuid.UUID) cookieOption {
+func withCookieID(id string) cookieOption {
 	return func(m *CookieMutation) {
 		var (
 			err   error
@@ -5203,13 +5365,13 @@ func (m CookieMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of Cookie entities.
-func (m *CookieMutation) SetID(id uuid.UUID) {
+func (m *CookieMutation) SetID(id string) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *CookieMutation) ID() (id uuid.UUID, exists bool) {
+func (m *CookieMutation) ID() (id string, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -5220,12 +5382,12 @@ func (m *CookieMutation) ID() (id uuid.UUID, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *CookieMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+func (m *CookieMutation) IDs(ctx context.Context) ([]string, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []uuid.UUID{id}, nil
+			return []string{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -8628,6 +8790,7 @@ func (m *ListingMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
+		println(m.predicates)
 		return m.Client().Listing.Query().Where(m.predicates...).IDs(ctx)
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)

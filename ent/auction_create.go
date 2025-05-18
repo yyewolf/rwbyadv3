@@ -27,6 +27,34 @@ type AuctionCreate struct {
 	conflict []sql.ConflictOption
 }
 
+// SetCreateTime sets the "create_time" field.
+func (ac *AuctionCreate) SetCreateTime(t time.Time) *AuctionCreate {
+	ac.mutation.SetCreateTime(t)
+	return ac
+}
+
+// SetNillableCreateTime sets the "create_time" field if the given value is not nil.
+func (ac *AuctionCreate) SetNillableCreateTime(t *time.Time) *AuctionCreate {
+	if t != nil {
+		ac.SetCreateTime(*t)
+	}
+	return ac
+}
+
+// SetUpdateTime sets the "update_time" field.
+func (ac *AuctionCreate) SetUpdateTime(t time.Time) *AuctionCreate {
+	ac.mutation.SetUpdateTime(t)
+	return ac
+}
+
+// SetNillableUpdateTime sets the "update_time" field if the given value is not nil.
+func (ac *AuctionCreate) SetNillableUpdateTime(t *time.Time) *AuctionCreate {
+	if t != nil {
+		ac.SetUpdateTime(*t)
+	}
+	return ac
+}
+
 // SetPlayerID sets the "player_id" field.
 func (ac *AuctionCreate) SetPlayerID(s string) *AuctionCreate {
 	ac.mutation.SetPlayerID(s)
@@ -139,6 +167,14 @@ func (ac *AuctionCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ac *AuctionCreate) defaults() {
+	if _, ok := ac.mutation.CreateTime(); !ok {
+		v := auction.DefaultCreateTime()
+		ac.mutation.SetCreateTime(v)
+	}
+	if _, ok := ac.mutation.UpdateTime(); !ok {
+		v := auction.DefaultUpdateTime()
+		ac.mutation.SetUpdateTime(v)
+	}
 	if _, ok := ac.mutation.TimeExtensions(); !ok {
 		v := auction.DefaultTimeExtensions
 		ac.mutation.SetTimeExtensions(v)
@@ -151,6 +187,12 @@ func (ac *AuctionCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ac *AuctionCreate) check() error {
+	if _, ok := ac.mutation.CreateTime(); !ok {
+		return &ValidationError{Name: "create_time", err: errors.New(`ent: missing required field "Auction.create_time"`)}
+	}
+	if _, ok := ac.mutation.UpdateTime(); !ok {
+		return &ValidationError{Name: "update_time", err: errors.New(`ent: missing required field "Auction.update_time"`)}
+	}
 	if _, ok := ac.mutation.PlayerID(); !ok {
 		return &ValidationError{Name: "player_id", err: errors.New(`ent: missing required field "Auction.player_id"`)}
 	}
@@ -204,6 +246,14 @@ func (ac *AuctionCreate) createSpec() (*Auction, *sqlgraph.CreateSpec) {
 	if id, ok := ac.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
+	}
+	if value, ok := ac.mutation.CreateTime(); ok {
+		_spec.SetField(auction.FieldCreateTime, field.TypeTime, value)
+		_node.CreateTime = value
+	}
+	if value, ok := ac.mutation.UpdateTime(); ok {
+		_spec.SetField(auction.FieldUpdateTime, field.TypeTime, value)
+		_node.UpdateTime = value
 	}
 	if value, ok := ac.mutation.TimeExtensions(); ok {
 		_spec.SetField(auction.FieldTimeExtensions, field.TypeInt, value)
@@ -270,7 +320,7 @@ func (ac *AuctionCreate) createSpec() (*Auction, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Auction.Create().
-//		SetPlayerID(v).
+//		SetCreateTime(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -279,7 +329,7 @@ func (ac *AuctionCreate) createSpec() (*Auction, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.AuctionUpsert) {
-//			SetPlayerID(v+v).
+//			SetCreateTime(v+v).
 //		}).
 //		Exec(ctx)
 func (ac *AuctionCreate) OnConflict(opts ...sql.ConflictOption) *AuctionUpsertOne {
@@ -314,6 +364,18 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetUpdateTime sets the "update_time" field.
+func (u *AuctionUpsert) SetUpdateTime(v time.Time) *AuctionUpsert {
+	u.Set(auction.FieldUpdateTime, v)
+	return u
+}
+
+// UpdateUpdateTime sets the "update_time" field to the value that was provided on create.
+func (u *AuctionUpsert) UpdateUpdateTime() *AuctionUpsert {
+	u.SetExcluded(auction.FieldUpdateTime)
+	return u
+}
 
 // SetPlayerID sets the "player_id" field.
 func (u *AuctionUpsert) SetPlayerID(v string) *AuctionUpsert {
@@ -386,6 +448,9 @@ func (u *AuctionUpsertOne) UpdateNewValues() *AuctionUpsertOne {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(auction.FieldID)
 		}
+		if _, exists := u.create.mutation.CreateTime(); exists {
+			s.SetIgnore(auction.FieldCreateTime)
+		}
 	}))
 	return u
 }
@@ -415,6 +480,20 @@ func (u *AuctionUpsertOne) Update(set func(*AuctionUpsert)) *AuctionUpsertOne {
 		set(&AuctionUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetUpdateTime sets the "update_time" field.
+func (u *AuctionUpsertOne) SetUpdateTime(v time.Time) *AuctionUpsertOne {
+	return u.Update(func(s *AuctionUpsert) {
+		s.SetUpdateTime(v)
+	})
+}
+
+// UpdateUpdateTime sets the "update_time" field to the value that was provided on create.
+func (u *AuctionUpsertOne) UpdateUpdateTime() *AuctionUpsertOne {
+	return u.Update(func(s *AuctionUpsert) {
+		s.UpdateUpdateTime()
+	})
 }
 
 // SetPlayerID sets the "player_id" field.
@@ -616,7 +695,7 @@ func (acb *AuctionCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.AuctionUpsert) {
-//			SetPlayerID(v+v).
+//			SetCreateTime(v+v).
 //		}).
 //		Exec(ctx)
 func (acb *AuctionCreateBulk) OnConflict(opts ...sql.ConflictOption) *AuctionUpsertBulk {
@@ -663,6 +742,9 @@ func (u *AuctionUpsertBulk) UpdateNewValues() *AuctionUpsertBulk {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(auction.FieldID)
 			}
+			if _, exists := b.mutation.CreateTime(); exists {
+				s.SetIgnore(auction.FieldCreateTime)
+			}
 		}
 	}))
 	return u
@@ -693,6 +775,20 @@ func (u *AuctionUpsertBulk) Update(set func(*AuctionUpsert)) *AuctionUpsertBulk 
 		set(&AuctionUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetUpdateTime sets the "update_time" field.
+func (u *AuctionUpsertBulk) SetUpdateTime(v time.Time) *AuctionUpsertBulk {
+	return u.Update(func(s *AuctionUpsert) {
+		s.SetUpdateTime(v)
+	})
+}
+
+// UpdateUpdateTime sets the "update_time" field to the value that was provided on create.
+func (u *AuctionUpsertBulk) UpdateUpdateTime() *AuctionUpsertBulk {
+	return u.Update(func(s *AuctionUpsert) {
+		s.UpdateUpdateTime()
+	})
 }
 
 // SetPlayerID sets the "player_id" field.

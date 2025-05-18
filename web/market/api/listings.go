@@ -1,19 +1,22 @@
 package api
 
 import (
-	"context"
+	"net/url"
+
+	"entgo.io/ent/dialect/sql"
 	"github.com/astaxie/beego/utils/pagination"
 	"github.com/disgoorg/disgo/discord"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/cardtype"
+	"github.com/yyewolf/rwbyadv3/ent/listing"
+	"github.com/yyewolf/rwbyadv3/ent/player"
 	"github.com/yyewolf/rwbyadv3/internal/notifications"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 	"github.com/yyewolf/rwbyadv3/web/templates"
 	"github.com/yyewolf/rwbyadv3/web/templates/market"
-	"net/url"
 )
 
 var (
@@ -21,7 +24,8 @@ var (
 )
 
 func (h *MarketApiHandler) GetListings(c echo.Context) error {
-	amount, err := models.Listings().CountG(context.Background())
+	amount, err := h.app.Db().Listing.Query().
+		Count(c.Request().Context())
 	if err != nil {
 		return err
 	}
@@ -37,25 +41,21 @@ func (h *MarketApiHandler) GetListings(c echo.Context) error {
 		query = parsedUrl.Query().Get("q")
 	}
 
-	listings, err := models.Listings(
-		qm.Offset(paginator.Offset()),
-		qm.Limit(listingsPerPage),
-		qm.Load(
-			models.ListingRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.ListingRels.Card, models.CardRels.CardsStat),
-		),
-		qm.OrderBy(models.ListingColumns.CreatedAt+" DESC"),
-
-		// Join Player and Card for filtering
-		qm.InnerJoin(models.TableNames.Players+" p on p."+models.PlayerColumns.ID+"="+models.TableNames.Listings+"."+models.ListingColumns.PlayerID),
-		qm.InnerJoin(models.TableNames.Cards+" c on c."+models.CardColumns.ID+"="+models.TableNames.Listings+"."+models.ListingColumns.CardID),
-		qm.InnerJoin(models.TableNames.CardTypes+" t on t."+models.CardTypeColumns.CardType+"=c."+models.CardColumns.CardType),
-
-		models.ListingWhere.DeletedAt.IsNull(),
-		qm.Or("\"listings\".\"note\" ILIKE ? OR p."+models.PlayerColumns.Username+" ILIKE ? OR t."+models.CardTypeColumns.Name+" ILIKE ? OR t."+models.CardTypeColumns.Categories+" ILIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%"),
-	).AllG(context.Background())
+	listings, err := h.app.Db().Listing.Query().
+		Offset(paginator.Offset()).
+		Limit(listingsPerPage).
+		Order(listing.ByCreateTime(sql.OrderDesc())).
+		WithOwnedBy(func(pq *ent.PlayerQuery) {
+			pq.Where(player.UsernameContains(query))
+		}).
+		WithCard(func(cq *ent.CardQuery) {
+			cq.WithStats()
+			cq.WithType(func(ctq *ent.CardTypeQuery) {
+				ctq.Where(cardtype.NameContains(query))
+				ctq.Where(cardtype.SCategoriesContains(query))
+			})
+		}).
+		All(c.Request().Context())
 	if err != nil {
 		logrus.WithError(err).Error("Failed to get listings")
 		return err
@@ -65,16 +65,15 @@ func (h *MarketApiHandler) GetListings(c echo.Context) error {
 }
 
 func (h *MarketApiHandler) GetLatestListings(c echo.Context) error {
-	listings, err := models.Listings(
-		qm.Limit(10),
-		qm.Load(
-			models.ListingRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.ListingRels.Card, models.CardRels.CardsStat),
-		),
-		qm.OrderBy(models.ListingColumns.CreatedAt+" DESC"),
-	).AllG(context.Background())
+	listings, err := h.app.Db().Listing.Query().
+		Limit(10).
+		Order(listing.ByCreateTime(sql.OrderDesc())).
+		WithOwnedBy().
+		WithCard(func(cq *ent.CardQuery) {
+			cq.WithStats()
+			cq.WithType()
+		}).
+		All(c.Request().Context())
 	if err != nil {
 		return err
 	}
@@ -83,17 +82,19 @@ func (h *MarketApiHandler) GetLatestListings(c echo.Context) error {
 }
 
 func (h *MarketApiHandler) GetListingModal(c echo.Context) error {
-	listingID := c.Param("listingId")
+	listingID, err := uuid.Parse(c.Param("listingID"))
+	if err != nil {
+		return err
+	}
 
-	listing, err := models.Listings(
-		qm.Load(
-			models.ListingRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.ListingRels.Card, models.CardRels.CardsStat),
-		),
-		qm.Where(models.ListingColumns.ID+"=?", listingID),
-	).OneG(context.Background())
+	listing, err := h.app.Db().Listing.Query().
+		Where(listing.ID(listingID)).
+		WithOwnedBy().
+		WithCard(func(cq *ent.CardQuery) {
+			cq.WithStats()
+			cq.WithType()
+		}).
+		Only(c.Request().Context())
 	if err != nil {
 		return err
 	}
@@ -103,73 +104,75 @@ func (h *MarketApiHandler) GetListingModal(c echo.Context) error {
 
 func (h *MarketApiHandler) PurchaseListing(c echo.Context) error {
 	session := utils.GetSessionFromContext(c)
-	buyer := session.R.Player
+	buyer := session.Edges.Player
 
-	listingID := c.Param("listingId")
-	listing, err := models.Listings(
-		qm.Load(
-			models.ListingRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.ListingRels.Card, models.CardRels.CardsStat),
-		),
-		qm.Where(models.ListingColumns.ID+"=?", listingID),
-	).OneG(context.Background())
+	listingID, err := uuid.Parse(c.Param("listingID"))
+	if err != nil {
+		return err
+	}
+
+	listing, err := h.app.Db().Listing.Query().
+		Where(listing.ID(listingID)).
+		WithOwnedBy().
+		WithCard(func(cq *ent.CardQuery) {
+			cq.WithStats()
+			cq.WithType()
+		}).
+		Only(c.Request().Context())
 	if err != nil {
 		c.Response().Header().Add("HX-Retarget", "#message")
 		return templates.RenderView(c, market.Error("An error occured."))
 	}
-	seller := listing.R.Player
+	seller := listing.Edges.OwnedBy
 
-	if utils.Players.AvailableBalance(buyer) < listing.Price {
+	if buyer.AvailableBalance() < listing.Price {
 		// error too poor
 		c.Response().Header().Add("HX-Retarget", "#message")
 		return templates.RenderView(c, market.Error("You do not have enough liens to purchase this card."))
 	}
 
 	// Check for available slots
-	if utils.Players.AvailableSlots(buyer) == 0 {
+	if utils.Players.NewAvailableSlots(buyer) == 0 {
 		c.Response().Header().Add("HX-Retarget", "#message")
 		return templates.RenderView(c, market.Error("You do not have enough slots in your backpack to purchase this card."))
 	}
 
-	tx, err := boil.BeginTx(context.Background(), nil)
-	if err != nil {
-		c.Response().Header().Add("HX-Retarget", "#message")
-		return templates.RenderView(c, market.Error("An error occured."))
-	}
+	utils.WithTx(c.Request().Context(), h.app.Db(), func(tx *ent.Tx) error {
+		err := tx.Player.UpdateOne(seller).
+			AddLiens(listing.Price).
+			Exec(c.Request().Context())
+		if err != nil {
+			return err
+		}
 
-	// Money tranfer
-	if seller.ID != buyer.ID {
-		seller.Liens += listing.Price
-		buyer.Liens -= listing.Price
-	}
+		err = tx.Player.UpdateOne(buyer).
+			AddLiens(-1 * listing.Price).
+			Exec(c.Request().Context())
+		if err != nil {
+			return err
+		}
 
-	seller.Update(context.Background(), tx, boil.Whitelist(
-		models.PlayerColumns.Liens,
-	))
-	buyer.Update(context.Background(), tx, boil.Whitelist(
-		models.PlayerColumns.Liens,
-	))
+		listing.Edges.Card.Metadata.Location = "inventory"
 
-	// Card transfer
-	card := listing.R.Card
-	card.PlayerID = buyer.ID
-	card.Available = true
-	utils.Cards.SetLocation(card, "inventory")
+		err = tx.Card.UpdateOne(listing.Edges.Card).
+			SetPlayerID(buyer.ID).
+			SetAvailable(true).
+			SetMetadata(listing.Edges.Card.Metadata).
+			Exec(c.Request().Context())
+		if err != nil {
+			return err
+		}
 
-	card.Update(context.Background(), tx, boil.Whitelist(
-		models.CardColumns.PlayerID,
-		models.CardColumns.Available,
-		models.CardColumns.Metadata,
-	))
+		err = tx.Listing.DeleteOne(listing).
+			Exec(c.Request().Context())
+		if err != nil {
+			return err
+		}
 
-	// Remove listing
-	listing.Delete(context.Background(), tx, false)
+		return nil
+	})
 
-	tx.Commit()
-
-	cardDescription := utils.Cards.FullString(listing.R.Card)
+	cardDescription := listing.Edges.Card.FullString()
 
 	notifications.DispatchDm(h.app, buyer, discord.NewMessageCreateBuilder().
 		SetEmbeds(

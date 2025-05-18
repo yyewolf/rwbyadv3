@@ -7,18 +7,18 @@ import (
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/google/uuid"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
-	"github.com/yyewolf/rwbyadv3/models"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/workflow"
 )
 
 type SendDmParams struct {
-	Player  *models.Player
+	Player  *ent.Player
 	Message discord.MessageCreate
 }
 
-func DispatchDm(app interfaces.App, p *models.Player, m discord.MessageCreate) {
+func DispatchDm(app interfaces.App, p *ent.Player, m discord.MessageCreate) {
 	workflowOptions := client.StartWorkflowOptions{
 		ID:        fmt.Sprintf("send_dm_%s_%s", p.ID, uuid.NewString()),
 		TaskQueue: app.Config().Temporal.TaskQueue,

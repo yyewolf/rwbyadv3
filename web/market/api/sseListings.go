@@ -2,43 +2,44 @@ package api
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
+	"time"
 
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/google/uuid"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/listing"
 )
 
 func (h *MarketApiHandler) OnAddListing(params map[string]interface{}) error {
-	var listing = new(models.Listing)
-	b, _ := json.Marshal(params["listing"])
-	json.Unmarshal(b, listing)
+	time.Sleep(100 * time.Millisecond) // Wait for the listing to be inserted into the database
+	id := uuid.MustParse(params["id"].(string))
 
-	listing, err := models.Listings(
-		qm.Load(
-			models.ListingRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.ListingRels.Card, models.CardRels.CardsStat),
-		),
-		qm.Where(models.ListingColumns.ID+"=?", listing.ID),
-	).OneG(context.Background())
+	listing, err := h.app.Db().Listing.Query().
+		Where(listing.ID(id)).
+		WithOwnedBy().
+		WithCard(func(cq *ent.CardQuery) {
+			cq.WithStats()
+			cq.WithType()
+		}).
+		Only(context.TODO())
 	if err != nil {
 		return err
 	}
 
-	h.latestListings = append([]*models.Listing{listing}, h.latestListings...)
+	h.latestListings = append([]*ent.Listing{listing}, h.latestListings...)
 
 	return h.SendLatestListings()
 }
 
 func (h *MarketApiHandler) OnRemoveListing(params map[string]interface{}) error {
-	var listing models.Listing
-	b, _ := json.Marshal(params["listing"])
-	json.Unmarshal(b, &listing)
+	time.Sleep(100 * time.Millisecond) // Wait for the listing to be deleted from the database
+	id := uuid.MustParse(params["id"].(string))
 
 	var found bool
-	for _, l := range h.latestListings {
-		if l.ID == listing.ID {
+	for _, cachedListing := range h.latestListings {
+		fmt.Println("cachedListing.ID", cachedListing.ID)
+		fmt.Println("id", id)
+		if cachedListing.ID == id {
 			found = true
 			break
 		}

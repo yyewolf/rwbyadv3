@@ -67,6 +67,11 @@ func Name(v string) predicate.CardType {
 	return predicate.CardType(sql.FieldEQ(FieldName, v))
 }
 
+// SCategories applies equality check predicate on the "s_categories" field. It's identical to SCategoriesEQ.
+func SCategories(v string) predicate.CardType {
+	return predicate.CardType(sql.FieldEQ(FieldSCategories, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.CardType {
 	return predicate.CardType(sql.FieldEQ(FieldName, v))
@@ -130,6 +135,71 @@ func NameEqualFold(v string) predicate.CardType {
 // NameContainsFold applies the ContainsFold predicate on the "name" field.
 func NameContainsFold(v string) predicate.CardType {
 	return predicate.CardType(sql.FieldContainsFold(FieldName, v))
+}
+
+// SCategoriesEQ applies the EQ predicate on the "s_categories" field.
+func SCategoriesEQ(v string) predicate.CardType {
+	return predicate.CardType(sql.FieldEQ(FieldSCategories, v))
+}
+
+// SCategoriesNEQ applies the NEQ predicate on the "s_categories" field.
+func SCategoriesNEQ(v string) predicate.CardType {
+	return predicate.CardType(sql.FieldNEQ(FieldSCategories, v))
+}
+
+// SCategoriesIn applies the In predicate on the "s_categories" field.
+func SCategoriesIn(vs ...string) predicate.CardType {
+	return predicate.CardType(sql.FieldIn(FieldSCategories, vs...))
+}
+
+// SCategoriesNotIn applies the NotIn predicate on the "s_categories" field.
+func SCategoriesNotIn(vs ...string) predicate.CardType {
+	return predicate.CardType(sql.FieldNotIn(FieldSCategories, vs...))
+}
+
+// SCategoriesGT applies the GT predicate on the "s_categories" field.
+func SCategoriesGT(v string) predicate.CardType {
+	return predicate.CardType(sql.FieldGT(FieldSCategories, v))
+}
+
+// SCategoriesGTE applies the GTE predicate on the "s_categories" field.
+func SCategoriesGTE(v string) predicate.CardType {
+	return predicate.CardType(sql.FieldGTE(FieldSCategories, v))
+}
+
+// SCategoriesLT applies the LT predicate on the "s_categories" field.
+func SCategoriesLT(v string) predicate.CardType {
+	return predicate.CardType(sql.FieldLT(FieldSCategories, v))
+}
+
+// SCategoriesLTE applies the LTE predicate on the "s_categories" field.
+func SCategoriesLTE(v string) predicate.CardType {
+	return predicate.CardType(sql.FieldLTE(FieldSCategories, v))
+}
+
+// SCategoriesContains applies the Contains predicate on the "s_categories" field.
+func SCategoriesContains(v string) predicate.CardType {
+	return predicate.CardType(sql.FieldContains(FieldSCategories, v))
+}
+
+// SCategoriesHasPrefix applies the HasPrefix predicate on the "s_categories" field.
+func SCategoriesHasPrefix(v string) predicate.CardType {
+	return predicate.CardType(sql.FieldHasPrefix(FieldSCategories, v))
+}
+
+// SCategoriesHasSuffix applies the HasSuffix predicate on the "s_categories" field.
+func SCategoriesHasSuffix(v string) predicate.CardType {
+	return predicate.CardType(sql.FieldHasSuffix(FieldSCategories, v))
+}
+
+// SCategoriesEqualFold applies the EqualFold predicate on the "s_categories" field.
+func SCategoriesEqualFold(v string) predicate.CardType {
+	return predicate.CardType(sql.FieldEqualFold(FieldSCategories, v))
+}
+
+// SCategoriesContainsFold applies the ContainsFold predicate on the "s_categories" field.
+func SCategoriesContainsFold(v string) predicate.CardType {
+	return predicate.CardType(sql.FieldContainsFold(FieldSCategories, v))
 }
 
 // And groups predicates with the AND operator between them.

@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/yyewolf/rwbyadv3/ent/cookie"
 	"github.com/yyewolf/rwbyadv3/ent/player"
 )
@@ -66,16 +65,8 @@ func (cc *CookieCreate) SetExpiresAt(t time.Time) *CookieCreate {
 }
 
 // SetID sets the "id" field.
-func (cc *CookieCreate) SetID(u uuid.UUID) *CookieCreate {
-	cc.mutation.SetID(u)
-	return cc
-}
-
-// SetNillableID sets the "id" field if the given value is not nil.
-func (cc *CookieCreate) SetNillableID(u *uuid.UUID) *CookieCreate {
-	if u != nil {
-		cc.SetID(*u)
-	}
+func (cc *CookieCreate) SetID(s string) *CookieCreate {
+	cc.mutation.SetID(s)
 	return cc
 }
 
@@ -127,10 +118,6 @@ func (cc *CookieCreate) defaults() {
 		v := cookie.DefaultUpdateTime()
 		cc.mutation.SetUpdateTime(v)
 	}
-	if _, ok := cc.mutation.ID(); !ok {
-		v := cookie.DefaultID()
-		cc.mutation.SetID(v)
-	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -165,10 +152,10 @@ func (cc *CookieCreate) sqlSave(ctx context.Context) (*Cookie, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected Cookie.ID type: %T", _spec.ID.Value)
 		}
 	}
 	cc.mutation.id = &_node.ID
@@ -179,12 +166,12 @@ func (cc *CookieCreate) sqlSave(ctx context.Context) (*Cookie, error) {
 func (cc *CookieCreate) createSpec() (*Cookie, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Cookie{config: cc.config}
-		_spec = sqlgraph.NewCreateSpec(cookie.Table, sqlgraph.NewFieldSpec(cookie.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(cookie.Table, sqlgraph.NewFieldSpec(cookie.FieldID, field.TypeString))
 	)
 	_spec.OnConflict = cc.conflict
 	if id, ok := cc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := cc.mutation.CreateTime(); ok {
 		_spec.SetField(cookie.FieldCreateTime, field.TypeTime, value)
@@ -412,7 +399,7 @@ func (u *CookieUpsertOne) ExecX(ctx context.Context) {
 }
 
 // Exec executes the UPSERT query and returns the inserted/updated ID.
-func (u *CookieUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+func (u *CookieUpsertOne) ID(ctx context.Context) (id string, err error) {
 	if u.create.driver.Dialect() == dialect.MySQL {
 		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
 		// fields from the database since MySQL does not support the RETURNING clause.
@@ -426,7 +413,7 @@ func (u *CookieUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // IDX is like ID, but panics if an error occurs.
-func (u *CookieUpsertOne) IDX(ctx context.Context) uuid.UUID {
+func (u *CookieUpsertOne) IDX(ctx context.Context) string {
 	id, err := u.ID(ctx)
 	if err != nil {
 		panic(err)

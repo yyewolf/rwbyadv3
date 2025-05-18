@@ -16,6 +16,7 @@ func (CardType) Fields() []ent.Field {
 		field.String("id"),
 		field.String("name"),
 		field.Strings("categories"),
+		field.String("s_categories"),
 	}
 }
 

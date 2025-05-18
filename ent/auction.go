@@ -20,6 +20,10 @@ type Auction struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
+	// CreateTime holds the value of the "create_time" field.
+	CreateTime time.Time `json:"create_time,omitempty"`
+	// UpdateTime holds the value of the "update_time" field.
+	UpdateTime time.Time `json:"update_time,omitempty"`
 	// PlayerID holds the value of the "player_id" field.
 	PlayerID string `json:"player_id,omitempty"`
 	// CardID holds the value of the "card_id" field.
@@ -87,7 +91,7 @@ func (*Auction) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case auction.FieldPlayerID:
 			values[i] = new(sql.NullString)
-		case auction.FieldEndsAt:
+		case auction.FieldCreateTime, auction.FieldUpdateTime, auction.FieldEndsAt:
 			values[i] = new(sql.NullTime)
 		case auction.FieldID, auction.FieldCardID:
 			values[i] = new(uuid.UUID)
@@ -111,6 +115,18 @@ func (a *Auction) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				a.ID = *value
+			}
+		case auction.FieldCreateTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field create_time", values[i])
+			} else if value.Valid {
+				a.CreateTime = value.Time
+			}
+		case auction.FieldUpdateTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field update_time", values[i])
+			} else if value.Valid {
+				a.UpdateTime = value.Time
 			}
 		case auction.FieldPlayerID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -187,6 +203,12 @@ func (a *Auction) String() string {
 	var builder strings.Builder
 	builder.WriteString("Auction(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", a.ID))
+	builder.WriteString("create_time=")
+	builder.WriteString(a.CreateTime.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("update_time=")
+	builder.WriteString(a.UpdateTime.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("player_id=")
 	builder.WriteString(a.PlayerID)
 	builder.WriteString(", ")

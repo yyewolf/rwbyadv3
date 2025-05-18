@@ -9,12 +9,11 @@ import (
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/notifications"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 type botVote struct {
@@ -71,26 +70,19 @@ func HandleTopGg(app interfaces.App) func(c echo.Context) error {
 			return c.JSON(200, "ok")
 		}
 
-		player := ctx.Value(builder.PlayerKey).(*models.Player)
-
-		player.R.Daily.HasVoted = true
+		player := ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
 		// Check if we increment or reset streak
-		if time.Since(player.R.Daily.LastVoteAt) > 24*time.Hour {
-			player.R.Daily.Streak = 0
+		if time.Since(player.Edges.Daily.LastVoteAt) > 24*time.Hour {
+			player.Edges.Daily.Streak = 0
 		}
+		player.Edges.Daily.Streak++
 
-		player.R.Daily.LastVoteAt = time.Now()
-		player.R.Daily.Streak++
-
-		_, err = player.R.Daily.UpdateG(
-			context.Background(),
-			boil.Whitelist(
-				models.DailyColumns.HasVoted,
-				models.DailyColumns.LastVoteAt,
-				models.DailyColumns.Streak,
-			),
-		)
+		err = player.Edges.Daily.Update().
+			SetHasVoted(true).
+			SetLastVoteAt(time.Now()).
+			SetStreak(player.Edges.Daily.Streak).
+			Exec(ctx)
 
 		if err != nil {
 			logrus.

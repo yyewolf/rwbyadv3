@@ -15,6 +15,8 @@ const (
 	FieldName = "name"
 	// FieldCategories holds the string denoting the categories field in the database.
 	FieldCategories = "categories"
+	// FieldSCategories holds the string denoting the s_categories field in the database.
+	FieldSCategories = "s_categories"
 	// Table holds the table name of the cardtype in the database.
 	Table = "card_types"
 )
@@ -24,6 +26,7 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 	FieldCategories,
+	FieldSCategories,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -47,4 +50,9 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// BySCategories orders the results by the s_categories field.
+func BySCategories(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSCategories, opts...).ToFunc()
 }

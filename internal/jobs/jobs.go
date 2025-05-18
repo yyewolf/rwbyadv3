@@ -43,7 +43,7 @@ func (j *JobHandler) CancelJob(key interfaces.JobKey, jobID string) error {
 }
 
 func (j *JobHandler) handleJob(job *models.Job) {
-	logrus.WithField("job_key", job.Jobkey).Debug("handling job")
+	logrus.WithField("job_key", job.Jobkey).WithField("params", job.Params).Info("job started")
 	job.Errored = true
 	exists, err := models.JobExistsG(context.Background(), job.ID, job.Jobkey)
 	if err != nil {

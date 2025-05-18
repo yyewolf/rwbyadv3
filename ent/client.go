@@ -1421,7 +1421,7 @@ func (c *CookieClient) UpdateOne(co *Cookie) *CookieUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *CookieClient) UpdateOneID(id uuid.UUID) *CookieUpdateOne {
+func (c *CookieClient) UpdateOneID(id string) *CookieUpdateOne {
 	mutation := newCookieMutation(c.config, OpUpdateOne, withCookieID(id))
 	return &CookieUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -1438,7 +1438,7 @@ func (c *CookieClient) DeleteOne(co *Cookie) *CookieDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *CookieClient) DeleteOneID(id uuid.UUID) *CookieDeleteOne {
+func (c *CookieClient) DeleteOneID(id string) *CookieDeleteOne {
 	builder := c.Delete().Where(cookie.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -1455,12 +1455,12 @@ func (c *CookieClient) Query() *CookieQuery {
 }
 
 // Get returns a Cookie entity by its id.
-func (c *CookieClient) Get(ctx context.Context, id uuid.UUID) (*Cookie, error) {
+func (c *CookieClient) Get(ctx context.Context, id string) (*Cookie, error) {
 	return c.Query().Where(cookie.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *CookieClient) GetX(ctx context.Context, id uuid.UUID) *Cookie {
+func (c *CookieClient) GetX(ctx context.Context, id string) *Cookie {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)

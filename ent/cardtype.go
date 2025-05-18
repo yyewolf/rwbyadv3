@@ -20,7 +20,9 @@ type CardType struct {
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Categories holds the value of the "categories" field.
-	Categories   []string `json:"categories,omitempty"`
+	Categories []string `json:"categories,omitempty"`
+	// SCategories holds the value of the "s_categories" field.
+	SCategories  string `json:"s_categories,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -31,7 +33,7 @@ func (*CardType) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case cardtype.FieldCategories:
 			values[i] = new([]byte)
-		case cardtype.FieldID, cardtype.FieldName:
+		case cardtype.FieldID, cardtype.FieldName, cardtype.FieldSCategories:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -67,6 +69,12 @@ func (ct *CardType) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &ct.Categories); err != nil {
 					return fmt.Errorf("unmarshal field categories: %w", err)
 				}
+			}
+		case cardtype.FieldSCategories:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field s_categories", values[i])
+			} else if value.Valid {
+				ct.SCategories = value.String
 			}
 		default:
 			ct.selectValues.Set(columns[i], values[i])
@@ -109,6 +117,9 @@ func (ct *CardType) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("categories=")
 	builder.WriteString(fmt.Sprintf("%v", ct.Categories))
+	builder.WriteString(", ")
+	builder.WriteString("s_categories=")
+	builder.WriteString(ct.SCategories)
 	builder.WriteByte(')')
 	return builder.String()
 }

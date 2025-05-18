@@ -34,6 +34,12 @@ func (ctc *CardTypeCreate) SetCategories(s []string) *CardTypeCreate {
 	return ctc
 }
 
+// SetSCategories sets the "s_categories" field.
+func (ctc *CardTypeCreate) SetSCategories(s string) *CardTypeCreate {
+	ctc.mutation.SetSCategories(s)
+	return ctc
+}
+
 // SetID sets the "id" field.
 func (ctc *CardTypeCreate) SetID(s string) *CardTypeCreate {
 	ctc.mutation.SetID(s)
@@ -80,6 +86,9 @@ func (ctc *CardTypeCreate) check() error {
 	if _, ok := ctc.mutation.Categories(); !ok {
 		return &ValidationError{Name: "categories", err: errors.New(`ent: missing required field "CardType.categories"`)}
 	}
+	if _, ok := ctc.mutation.SCategories(); !ok {
+		return &ValidationError{Name: "s_categories", err: errors.New(`ent: missing required field "CardType.s_categories"`)}
+	}
 	return nil
 }
 
@@ -123,6 +132,10 @@ func (ctc *CardTypeCreate) createSpec() (*CardType, *sqlgraph.CreateSpec) {
 	if value, ok := ctc.mutation.Categories(); ok {
 		_spec.SetField(cardtype.FieldCategories, field.TypeJSON, value)
 		_node.Categories = value
+	}
+	if value, ok := ctc.mutation.SCategories(); ok {
+		_spec.SetField(cardtype.FieldSCategories, field.TypeString, value)
+		_node.SCategories = value
 	}
 	return _node, _spec
 }
@@ -200,6 +213,18 @@ func (u *CardTypeUpsert) UpdateCategories() *CardTypeUpsert {
 	return u
 }
 
+// SetSCategories sets the "s_categories" field.
+func (u *CardTypeUpsert) SetSCategories(v string) *CardTypeUpsert {
+	u.Set(cardtype.FieldSCategories, v)
+	return u
+}
+
+// UpdateSCategories sets the "s_categories" field to the value that was provided on create.
+func (u *CardTypeUpsert) UpdateSCategories() *CardTypeUpsert {
+	u.SetExcluded(cardtype.FieldSCategories)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -273,6 +298,20 @@ func (u *CardTypeUpsertOne) SetCategories(v []string) *CardTypeUpsertOne {
 func (u *CardTypeUpsertOne) UpdateCategories() *CardTypeUpsertOne {
 	return u.Update(func(s *CardTypeUpsert) {
 		s.UpdateCategories()
+	})
+}
+
+// SetSCategories sets the "s_categories" field.
+func (u *CardTypeUpsertOne) SetSCategories(v string) *CardTypeUpsertOne {
+	return u.Update(func(s *CardTypeUpsert) {
+		s.SetSCategories(v)
+	})
+}
+
+// UpdateSCategories sets the "s_categories" field to the value that was provided on create.
+func (u *CardTypeUpsertOne) UpdateSCategories() *CardTypeUpsertOne {
+	return u.Update(func(s *CardTypeUpsert) {
+		s.UpdateSCategories()
 	})
 }
 
@@ -515,6 +554,20 @@ func (u *CardTypeUpsertBulk) SetCategories(v []string) *CardTypeUpsertBulk {
 func (u *CardTypeUpsertBulk) UpdateCategories() *CardTypeUpsertBulk {
 	return u.Update(func(s *CardTypeUpsert) {
 		s.UpdateCategories()
+	})
+}
+
+// SetSCategories sets the "s_categories" field.
+func (u *CardTypeUpsertBulk) SetSCategories(v string) *CardTypeUpsertBulk {
+	return u.Update(func(s *CardTypeUpsert) {
+		s.SetSCategories(v)
+	})
+}
+
+// UpdateSCategories sets the "s_categories" field to the value that was provided on create.
+func (u *CardTypeUpsertBulk) UpdateSCategories() *CardTypeUpsertBulk {
+	return u.Update(func(s *CardTypeUpsert) {
+		s.UpdateSCategories()
 	})
 }
 
