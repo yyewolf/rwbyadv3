@@ -85,7 +85,7 @@ func EndDungeon(app interfaces.App) echo.HandlerFunc {
 					return err
 				}
 
-				err = loot.NewPickedUp(tx, player)
+				err = loot.PickedUp(tx, player)
 				if err != nil {
 					return err
 				}

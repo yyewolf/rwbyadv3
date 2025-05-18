@@ -88,7 +88,7 @@ func (cmd *dailyCommand) HandleCommand(e *handler.CommandEvent) error {
 		// Give loots and create text
 		for _, loot := range list {
 			if loot, ok := loot.(loots.Loot); ok {
-				loot.NewPickedUp(tx, player)
+				loot.PickedUp(tx, player)
 				texts = append(texts, loot.RewardText(list))
 			}
 		}

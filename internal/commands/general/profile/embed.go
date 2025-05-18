@@ -32,7 +32,7 @@ func (cmd *profileCommand) generator(p *ent.Player, u discord.User) discord.Embe
 	embed.AddField(
 		"Inventory :",
 		utils.Joinln(
-			fmt.Sprintf("Cards : **%d**/**%d** (**%d** reserved)", len(p.Edges.Cards), utils.Players.NewMaxSlots(p), p.BackpackReservedSlots),
+			fmt.Sprintf("Cards : **%d**/**%d** (**%d** reserved)", len(p.Edges.Cards), utils.Players.MaxSlots(p), p.BackpackReservedSlots),
 			fmt.Sprintf("Classic boxes : **%d**", counts[enums.LootBoxClassic]),
 			fmt.Sprintf("Rare boxes : **%d**", counts[enums.LootBoxRare]),
 			fmt.Sprintf("Limited boxes : **%d**", counts[enums.LootBoxLimited]),

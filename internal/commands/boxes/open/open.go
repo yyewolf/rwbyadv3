@@ -96,7 +96,7 @@ func (cmd *openCommand) HandleInteraction(data discord.ButtonInteractionData, e 
 	}
 
 	// Check for available slots
-	if utils.Players.NewAvailableSlots(p) == 0 {
+	if utils.Players.AvailableSlots(p) == 0 {
 		return e.CreateMessage(discord.NewMessageCreateBuilder().
 			SetContent("You don't have any available slots in your backpack :(").
 			SetEphemeral(true).

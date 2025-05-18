@@ -69,7 +69,7 @@ func (n *NotificationsRepository) NotifyCardLevelUpActivity(ctx context.Context,
 					params.Card.Level,
 					params.Card.ExperiencePoints, params.Card.ExperiencePointsThreshold,
 				).
-				SetThumbnail(utils.Cards.NewIconURI(params.Card)).
+				SetThumbnail(utils.Cards.IconURI(params.Card)).
 				SetColor(n.app.Config().App.BotColor).
 				Build(),
 		).

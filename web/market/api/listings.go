@@ -132,7 +132,7 @@ func (h *MarketApiHandler) PurchaseListing(c echo.Context) error {
 	}
 
 	// Check for available slots
-	if utils.Players.NewAvailableSlots(buyer) == 0 {
+	if utils.Players.AvailableSlots(buyer) == 0 {
 		c.Response().Header().Add("HX-Retarget", "#message")
 		return templates.RenderView(c, market.Error("You do not have enough slots in your backpack to purchase this card."))
 	}

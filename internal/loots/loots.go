@@ -1,10 +1,7 @@
 package loots
 
 import (
-	"database/sql"
-
 	"github.com/yyewolf/rwbyadv3/ent"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 type DungeonLoot interface {
@@ -20,8 +17,7 @@ type DungeonLoot interface {
 
 type Loot interface {
 	RewardText([]interface{}) string
-	PickedUp(tx *sql.Tx, p *models.Player)
-	NewPickedUp(tx *ent.Tx, p *ent.Player) error
+	PickedUp(tx *ent.Tx, p *ent.Player) error
 }
 
 var DungeonLoots = []DungeonLoot{

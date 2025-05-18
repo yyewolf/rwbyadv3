@@ -28,7 +28,7 @@ templ Listing(listing *ent.Listing) {
 					stroke-linejoin="round"
 				></rect>
 			</svg>
-			<img class="icon rounded-xl border-black border-2" src={ utils.Cards.NewIconURI(listing.Edges.Card) }/>
+			<img class="icon rounded-xl border-black border-2" src={ utils.Cards.IconURI(listing.Edges.Card) }/>
 		</div>
 		<div class="flex flex-col justify-between">
 			<div class="text-lg font-bold overflow-hidden text-ellipsis whitespace-nowrap" title={ listing.Edges.Card.Primitive().Name }>

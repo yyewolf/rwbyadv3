@@ -26,7 +26,7 @@ templ Auction(auction *ent.Auction) {
 					stroke-linejoin="round"
 				></rect>
 			</svg>
-			<img class="icon rounded-xl border-black border-2" src={ utils.Cards.NewIconURI(auction.Edges.Card) }/>
+			<img class="icon rounded-xl border-black border-2" src={ utils.Cards.IconURI(auction.Edges.Card) }/>
 		</div>
 		<div class="flex flex-col justify-between">
 			<div class="text-lg font-bold overflow-hidden text-ellipsis whitespace-nowrap" title={ auction.Edges.Card.Primitive().Name }>
