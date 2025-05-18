@@ -27,9 +27,6 @@ db_data
 # Env
 .env
 
-# SQL
-sqlboiler.toml
-
 # Templ
 *_templ.go
 
