@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 func (j *JobHandler) OnEvent(key interfaces.JobKey, f func(params map[string]interface{}) error) {
@@ -30,17 +30,7 @@ func (j *JobHandler) OnEvent(key interfaces.JobKey, f func(params map[string]int
 }
 
 func (j *JobHandler) CancelJob(key interfaces.JobKey, jobID string) error {
-	job, err := models.FindJobG(context.Background(), jobID, string(key))
-	if err != nil {
-		return err
-	}
-
-	_, err = job.DeleteG(context.Background(), false)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return j.entClient.Job.DeleteOneID(uuid.MustParse(jobID)).Exec(context.Background())
 }
 
 func (j *JobHandler) handleJob(job *ent.Job) {
