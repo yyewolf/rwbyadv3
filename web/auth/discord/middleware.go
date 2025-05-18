@@ -1,14 +1,13 @@
 package discord
 
 import (
-	"context"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/yyewolf/rwbyadv3/ent/cookie"
 )
 
 type Options struct {
@@ -53,7 +52,7 @@ func (h *DiscordAuthHandler) RequireAuth(opts ...OptionsFunc) func(next echo.Han
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			// Get the cookie from the request
-			cookie, err := c.Cookie("session")
+			currentCookie, err := c.Cookie("session")
 			if err != nil {
 				logrus.WithError(err).Error("error getting session cookie")
 
@@ -66,14 +65,14 @@ func (h *DiscordAuthHandler) RequireAuth(opts ...OptionsFunc) func(next echo.Han
 			}
 
 			// Get the session id
-			sessionID := cookie.Value
+			sessionID := currentCookie.Value
 
 			// Get the session
-			session, err := models.AuthCookies(
-				qm.Where("expires_at > NOW()"),
-				qm.Where(models.AuthCookieColumns.ID+"=?", sessionID),
-				qm.Load(models.AuthCookieRels.Player),
-			).OneG(context.Background())
+			session, err := h.app.Db().Cookie.Query().
+				Where(cookie.ExpiresAtGT(time.Now())).
+				Where(cookie.ID(sessionID)).
+				WithPlayer().
+				Only(c.Request().Context())
 			if err != nil {
 				logrus.WithError(err).Error("error finding session")
 

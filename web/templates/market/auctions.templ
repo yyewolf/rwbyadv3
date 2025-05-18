@@ -1,7 +1,7 @@
 package market
 
 import (
-	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/astaxie/beego/utils/pagination"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/web/templates/layout"
 )
 
-templ Auction(auction *models.Auction) {
+templ Auction(auction *ent.Auction) {
 	<div class="container flex flex-col justify-between rounded-xl bg-[#f7f5f9] px-5 py-8 w-[172px] h-full relative gap-4">
 		<div class="text-lg rounded-xl font-bold icon-container">
 			<svg height="100%" width="100%" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -22,15 +22,15 @@ templ Auction(auction *models.Auction) {
 					y="1.2"
 					height="98"
 					width="98"
-					stroke={ fmt.Sprintf("#%06v", strconv.FormatInt(int64(utils.Cards.RarityToColor(auction.R.Card)), 16)) }
+					stroke={ fmt.Sprintf("#%06v", strconv.FormatInt(int64(auction.Edges.Card.RarityToColor()), 16)) }
 					stroke-linejoin="round"
 				></rect>
 			</svg>
-			<img class="icon rounded-xl border-black border-2" src={ utils.Cards.IconURI(auction.R.Card) }/>
+			<img class="icon rounded-xl border-black border-2" src={ utils.Cards.IconURI(auction.Edges.Card) }/>
 		</div>
 		<div class="flex flex-col justify-between">
-			<div class="text-lg font-bold overflow-hidden text-ellipsis whitespace-nowrap" title={ utils.Cards.Primitive(auction.R.Card).Name }>
-				{ utils.Cards.Primitive(auction.R.Card).Name }
+			<div class="text-lg font-bold overflow-hidden text-ellipsis whitespace-nowrap" title={ auction.Edges.Card.Primitive().Name }>
+				{ auction.Edges.Card.Primitive().Name }
 			</div>
 			// Stats
 			<div class="flex justify-between gap-2">
@@ -47,14 +47,14 @@ templ Auction(auction *models.Auction) {
 				</div>
 				<div class="flex flex-col">
 					<div class="text-sm">
-						{ fmt.Sprintf("%.02f", auction.R.Card.IndividualValue) }%
+						{ fmt.Sprintf("%.02f", auction.Edges.Card.IndividualValue) }%
 					</div>
 					<div class="text-sm">
-						{ fmt.Sprintf("%d", auction.R.Card.Level) }
+						{ fmt.Sprintf("%d", auction.Edges.Card.Level) }
 					</div>
 					<div class="flex flex-row h-full items-center">
 						for i := 0; i < 5; i++ {
-							if i < auction.R.Card.Rarity {
+							if i < auction.Edges.Card.Rarity {
 								<span class="w-4 h-4 fill-yellow-500">
 									@icons.Star()
 								</span>
@@ -85,7 +85,7 @@ templ Auction(auction *models.Auction) {
 					hx-trigger={ fmt.Sprintf("sse:auction_%s_bid", auction.ID) }
 					hx-target="this"
 				>
-					{ fmt.Sprintf("%v", utils.Auctions.GetPrice(auction)) }Ⱡ
+					{ fmt.Sprintf("%v", auction.GetPrice()) }Ⱡ
 				</span>
 			</button>
 			@AuctionTimeleft(auction)
@@ -97,7 +97,7 @@ templ AuctionAmount(amount int64) {
 	{ fmt.Sprintf("%v", amount) }Ⱡ
 }
 
-templ AuctionTimeleft(auction *models.Auction) {
+templ AuctionTimeleft(auction *ent.Auction) {
 	<div
 		hx-get={ fmt.Sprintf("/market/api/auctions/%s/timer", auction.ID) }
 		hx-trigger={ fmt.Sprintf("sse:auction_%s_update", auction.ID) }
@@ -141,16 +141,16 @@ templ AuctionTimeleft(auction *models.Auction) {
 	</div>
 }
 
-templ AuctionModal(auction *models.Auction) {
+templ AuctionModal(auction *ent.Auction) {
 	<form hx-post={ fmt.Sprintf("/market/api/auctions/%s", auction.ID) }>
 		<div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
 			<div class="sm:flex sm:items-start">
 				<div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
 					<h3 class="text-lg leading-6 font-medium text-gray-900 flex flex-row items-center gap-2" id="modal-title">
 						<svg class="h-4 w-4" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">
-							<circle fill={ fmt.Sprintf("#%06v", strconv.FormatInt(int64(utils.Cards.RarityToColor(auction.R.Card)), 16)) } cx="5" cy="5" r="4" stroke="black" stroke-width="0.25"></circle>
+							<circle fill={ fmt.Sprintf("#%06v", strconv.FormatInt(int64(auction.Edges.Card.RarityToColor()), 16)) } cx="5" cy="5" r="4" stroke="black" stroke-width="0.25"></circle>
 						</svg>
-						{ utils.Cards.Primitive(auction.R.Card).Name } ({ fmt.Sprintf("%.02f", auction.R.Card.IndividualValue) }%)
+						{ auction.Edges.Card.Primitive().Name } ({ fmt.Sprintf("%.02f", auction.Edges.Card.IndividualValue) }%)
 					</h3>
 					<div
 						hx-ext="sse"
@@ -162,7 +162,7 @@ templ AuctionModal(auction *models.Auction) {
 							class="font-bold"
 							sse-swap={ fmt.Sprintf("auction_%s_bid", auction.ID) }
 						>
-							{ fmt.Sprintf("%v", utils.Auctions.GetPrice(auction)) }Ⱡ
+							{ fmt.Sprintf("%v", auction.GetPrice()) }Ⱡ
 						</span>
 					</div>
 					<div class="mt-2">
@@ -198,7 +198,7 @@ templ AuctionModal(auction *models.Auction) {
 	</form>
 }
 
-templ Auctions(auctions []*models.Auction, pagination *pagination.Paginator) {
+templ Auctions(auctions []*ent.Auction, pagination *pagination.Paginator) {
 	for i, auction := range auctions {
 		if i == len(auctions) - 1 && pagination.HasNext() {
 			<div
@@ -217,7 +217,7 @@ templ Auctions(auctions []*models.Auction, pagination *pagination.Paginator) {
 	}
 }
 
-templ LatestAuctions(auctions []*models.Auction) {
+templ LatestAuctions(auctions []*ent.Auction) {
 	for _, auction := range auctions {
 		<div>
 			@Auction(auction)

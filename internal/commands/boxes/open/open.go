@@ -1,17 +1,16 @@
 package open
 
 import (
-	"context"
-
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/yyewolf/rwbyadv3/ent"
+	entLootbox "github.com/yyewolf/rwbyadv3/ent/lootbox"
+	"github.com/yyewolf/rwbyadv3/ent/schema/enums"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/cards"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/lootbox"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 const (
@@ -59,7 +58,7 @@ func OpenCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 }
 
 func (cmd *openCommand) HandleCommand(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
 	components := cmd.generator(p)
 
@@ -72,22 +71,28 @@ func (cmd *openCommand) HandleCommand(e *handler.CommandEvent) error {
 func (cmd *openCommand) HandleInteraction(data discord.ButtonInteractionData, e *handler.ComponentEvent) error {
 	// Get route parameters
 	playerID := e.Vars["player_id"]
-	boxType := models.LootBoxesType(e.Vars["box_type"])
+	boxType := enums.LootBoxType(e.Vars["box_type"])
 
-	e.DeferUpdateMessage()
 	if playerID != e.User().ID.String() {
 		return nil
 	}
 
-	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-	lootBox, found := utils.Players.TakeFirstLootBoxOf(p, boxType)
-	if !found {
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("You don't have any more of these loot boxes :(").
-			SetEphemeral(true).
-			Build(),
-		)
+	currentLootbox, err := p.QueryLootboxes().
+		Where(
+			entLootbox.TypeEQ(boxType),
+		).
+		First(e.Ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return e.CreateMessage(discord.NewMessageCreateBuilder().
+				SetContent("You don't have any more of these loot boxes :(").
+				SetEphemeral(true).
+				Build(),
+			)
+		}
+		return utils.ComponentError(e, err)
 	}
 
 	// Check for available slots
@@ -99,59 +104,80 @@ func (cmd *openCommand) HandleInteraction(data discord.ButtonInteractionData, e 
 		)
 	}
 
-	tx, err := boil.BeginTx(context.Background(), nil)
-	if err != nil {
-		return utils.ComponentError(e, err)
-	}
+	e.DeferUpdateMessage()
 
-	_, err = lootBox.Delete(context.Background(), tx, false)
-	if err != nil {
-		tx.Rollback()
-		return utils.ComponentError(e, err)
-	}
+	var c *ent.Card
 
-	var c *models.Card
-
-	switch lootBox.Type {
-	case models.LootBoxesTypeClassic:
-		c = lootbox.NormalLootBox.PickCard(cards.Cards)
-	case models.LootBoxesTypeRare:
-		c = lootbox.RareLootBox.PickCard(cards.Cards)
-	case models.LootBoxesTypeLimited:
-		c = lootbox.LimitedLootBox.PickCard(cards.Cards)
-	case models.LootBoxesTypeSpecial:
-		c = lootbox.SpecialLootBox.PickCard(cards.Cards)
-	}
-
-	c.PlayerID = e.User().ID.String()
-
-	err = c.Insert(context.Background(), tx, boil.Infer())
-	if err != nil {
-		tx.Rollback()
-		return utils.ComponentError(e, err)
-	}
-
-	err = c.SetCardsStat(context.Background(), tx, true, utils.Cards.GenerateStats(c))
-	if err != nil {
-		tx.Rollback()
-		return utils.ComponentError(e, err)
-	}
-
-	// If user does not have a selected card, this is it :
-	if p.R.SelectedCard == nil {
-		err = p.SetSelectedCard(context.Background(), tx, false, c)
+	err = ent.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
+		err = tx.LootBox.DeleteOneID(currentLootbox.ID).Exec(e.Ctx)
 		if err != nil {
-			tx.Rollback()
-			return utils.ComponentError(e, err)
+			return err
 		}
-	}
 
-	err = tx.Commit()
+		switch currentLootbox.Type {
+		case enums.LootBoxClassic:
+			c = lootbox.NormalLootBox.PickCard(cards.Cards)
+		case enums.LootBoxRare:
+			c = lootbox.RareLootBox.PickCard(cards.Cards)
+		case enums.LootBoxLimited:
+			c = lootbox.LimitedLootBox.PickCard(cards.Cards)
+		case enums.LootBoxSpecial:
+			c = lootbox.SpecialLootBox.PickCard(cards.Cards)
+		}
+
+		c.PlayerID = e.User().ID.String()
+
+		count, err := p.QueryCards().Count(e.Ctx)
+		if err != nil {
+			return err
+		}
+
+		c, err = tx.Card.Create().
+			SetLevel(c.Level).
+			SetPlayerID(p.ID).
+			SetCardType(c.CardType).
+			SetIndividualValue(c.IndividualValue).
+			SetRarity(c.Rarity).
+			SetPosition(float64(count)).
+			SetExperiencePointsThreshold(c.ExperiencePointsThreshold).
+			Save(e.Ctx)
+		if err != nil {
+			return err
+		}
+
+		stats := c.GenerateStats()
+
+		cardStats, err := tx.CardStats.Create().
+			SetCardID(c.ID).
+			SetArmor(stats.Armor).
+			SetDamage(stats.Damage).
+			SetHealing(stats.Healing).
+			SetHealth(stats.Health).
+			SetSpeed(stats.Speed).
+			Save(e.Ctx)
+		if err != nil {
+			return err
+		}
+
+		c.Edges.Stats = cardStats
+
+		// If user does not have a selected card, this is it :
+		if p.Edges.SelectedCard == nil {
+			_, err = tx.Player.UpdateOne(p).
+				SetSelectedCardID(c.ID).
+				Save(e.Ctx)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 	if err != nil {
 		return utils.ComponentError(e, err)
 	}
 
-	f, embed, _ := utils.Cards.Message(c)
+	f, embed, _ := c.Message()
 	embed.Footer = cmd.app.Footer()
 
 	_, err = e.CreateFollowupMessage(discord.NewMessageCreateBuilder().
@@ -160,7 +186,6 @@ func (cmd *openCommand) HandleInteraction(data discord.ButtonInteractionData, e 
 		Build(),
 	)
 
-	utils.Players.DeleteBoxFromPlayer(p, lootBox)
 	components := cmd.generator(p)
 	e.UpdateInteractionResponse(
 		discord.NewMessageUpdateBuilder().

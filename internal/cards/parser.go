@@ -1,14 +1,10 @@
 package cards
 
 import (
-	"context"
-	"fmt"
 	"os"
 	"reflect"
 
 	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/yyewolf/rwbyadv3/models"
 	"gopkg.in/yaml.v3"
 )
 
@@ -113,22 +109,6 @@ func ParseCards(location string) {
 		}
 
 		cardMap[card.ID] = card
-
-		cardType := models.CardType{
-			CardType:   card.ID,
-			Name:       card.Name,
-			Categories: fmt.Sprintf("%v", card.Categories),
-		}
-
-		// Insert or update the cards in database
-		exists, _ := models.CardTypes(
-			models.CardTypeWhere.CardType.EQ(card.ID),
-		).ExistsG(context.Background())
-		if !exists {
-			cardType.InsertG(context.Background(), boil.Infer())
-		} else {
-			cardType.UpdateG(context.Background(), boil.Infer())
-		}
 	}
 
 	Cards = cardMap

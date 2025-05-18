@@ -1,23 +1,23 @@
 package main
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"log/slog"
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
-	"github.com/amacneil/dbmate/v2/pkg/dbmate"
-	_ "github.com/amacneil/dbmate/v2/pkg/driver/postgres"
 	_ "github.com/lib/pq"
 	sloglogrus "github.com/samber/slog-logrus/v2"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 
 	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/cardtype"
 	"github.com/yyewolf/rwbyadv3/internal/app"
 	"github.com/yyewolf/rwbyadv3/internal/cards"
 	"github.com/yyewolf/rwbyadv3/internal/env"
@@ -26,35 +26,33 @@ import (
 
 func main() {
 	env.Load()
-	c := env.Get()
+	appConfig := env.Get()
 
-	u, _ := url.Parse(fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", c.Database.User, c.Database.Pass, c.Database.Host, c.Database.Port, c.Database.Database))
-	migrate := dbmate.New(u)
-	migrate.SchemaFile = c.Database.SchemaFile
-	migrate.MigrationsDir = []string{c.Database.MigrationsFolder}
-	migrate.Log = logrus.New().Writer()
+	databaseURL, _ := url.Parse(fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", appConfig.Database.User, appConfig.Database.Pass, appConfig.Database.Host, appConfig.Database.Port, appConfig.Database.Database))
 
-	err := migrate.CreateAndMigrate()
+	entClient, err := ent.Open("postgres", databaseURL.String())
 	if err != nil {
 		logrus.
 			WithError(err).
-			Fatal("cannot run migration")
+			Fatal("cannot open ent client")
 	}
 
-	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable", c.Database.User, c.Database.Pass, c.Database.Database, c.Database.Host, c.Database.Port))
-	if err != nil {
-		logrus.
-			WithError(err).
-			Fatal("cannot connect to database")
+	cards.ParseCards(appConfig.App.CardsLocation)
+
+	for _, card := range cards.Cards {
+		entClient.CardType.Create().
+			SetID(card.ID).
+			SetName(card.Name).
+			SetCategories(card.Categories).
+			SetSCategories(strings.Join(card.Categories, ",")).
+			OnConflictColumns(cardtype.FieldID).
+			UpdateNewValues().
+			Exec(context.Background())
 	}
-
-	boil.SetDB(db)
-
-	cards.ParseCards(c.App.CardsLocation)
 
 	// Create the temporal client
 	temporal, err := client.Dial(client.Options{
-		HostPort: fmt.Sprintf("%s:%s", c.Temporal.Host, c.Temporal.Port),
+		HostPort: fmt.Sprintf("%s:%s", appConfig.Temporal.Host, appConfig.Temporal.Port),
 		Logger:   slog.New(sloglogrus.Option{Logger: logrus.StandardLogger()}.NewLogrusHandler()),
 	})
 	if err != nil {
@@ -63,12 +61,13 @@ func main() {
 			Fatal("cannot connect to temporal")
 	}
 
-	w := worker.New(temporal, c.Temporal.TaskQueue, worker.Options{})
+	temporalWorker := worker.New(temporal, appConfig.Temporal.TaskQueue, worker.Options{})
 
 	app := app.New(
-		app.WithConfig(c),
+		app.WithConfig(appConfig),
 		app.WithWeb(),
-		app.WithTemporal(temporal, w),
+		app.WithTemporal(temporal, temporalWorker),
+		app.WithDatabase(entClient),
 	)
 
 	hooks.RegisterHooks(app)
@@ -81,6 +80,6 @@ func main() {
 	logrus.Info("Bot is now running. Press CTRL+C to exit.")
 	<-done // Will block here until user hits ctrl+c
 
-	db.Close()
+	entClient.Close()
 	app.Shutdown()
 }

@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
@@ -13,15 +14,16 @@ import (
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/card"
+	"github.com/yyewolf/rwbyadv3/ent/player"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 type ContextKey string
 
 var (
-	PlayerKey    ContextKey = "player"
+	NewPlayerKey ContextKey = "new_player"
 	ErrorKey     ContextKey = "error"
 	ContextIdKey ContextKey = "context_id"
 )
@@ -38,6 +40,7 @@ type ContextBuilder struct {
 	withPlayer             bool
 	withPlayerGithubStars  bool
 	withPlayerCards        bool
+	withPlayerAuctions     bool
 	withPlayerLootBoxes    bool
 	withPlayerSelectedCard bool
 	withPlayerLimits       bool
@@ -48,56 +51,56 @@ type ContextBuilder struct {
 type ContextOption func(a *ContextBuilder)
 
 func FillPlayerContext(cb *ContextBuilder, userID snowflake.ID, ctx context.Context) (context.Context, error) {
-	var mods []qm.QueryMod
+	var query = cb.app.Db().Player.Query().Where(player.ID(userID.String()))
 
 	if cb.withPlayerGithubStars {
-		mods = append(mods, qm.Load(models.PlayerRels.GithubStar))
+		query.WithGithubStar()
 	}
 
 	if cb.withPlayerCards {
-		mods = append(mods,
-			qm.Load(
-				models.PlayerRels.PlayerCards,
-				qm.OrderBy(models.PlayerCardColumns.Position),
-			),
-			qm.Load(
-				qm.Rels(models.PlayerRels.PlayerCards, models.PlayerCardRels.Card, models.CardRels.CardsStat),
-			),
-		)
+		query.WithCards(func(q *ent.CardQuery) {
+			q.Order(card.ByPosition())
+			q.WithStats()
+			q.WithType()
+		})
+	}
+
+	if cb.withPlayerAuctions {
+		query.WithAuctions(func(q *ent.AuctionQuery) {
+			q.WithCard(func(q *ent.CardQuery) {
+				q.WithType()
+				q.WithStats()
+			})
+		})
 	}
 
 	if cb.withPlayerLootBoxes {
-		mods = append(mods, qm.Load(models.PlayerRels.LootBoxes))
+		query.WithLootboxes()
 	}
 
 	if cb.withPlayerSelectedCard {
-		mods = append(mods, qm.Load(models.PlayerRels.SelectedCard))
+		query.WithSelectedCard()
 	}
 
 	if cb.withPlayerLimits {
-		mods = append(mods, qm.Load(models.PlayerRels.PlayerLimit))
+		query.WithLimits()
 	}
 
 	if cb.withPlayerDungeons {
-		mods = append(mods, qm.Load(models.PlayerRels.Dungeons))
+		query.WithDungeons()
 	}
 
 	if cb.withPlayerDaily {
-		mods = append(mods, qm.Load(models.PlayerRels.Daily))
+		query.WithDaily()
 	}
 
-	mods = append(mods,
-		qm.Select("*"),
-		qm.Where(models.PlayerColumns.ID+"=?", userID),
-	)
-
-	p, err := models.Players(mods...).OneG(ctx)
+	np, err := query.First(ctx)
 	if err != nil {
 		logrus.WithError(err).Error("error when fetching player")
 		return ctx, errors.New("auth error")
 	}
 
-	ctx = context.WithValue(ctx, PlayerKey, p)
+	ctx = context.WithValue(ctx, NewPlayerKey, np)
 	return ctx, nil
 }
 
@@ -151,10 +154,14 @@ func WithContext[K Event](app interfaces.App, handler func(e *K) error, opts ...
 			return errors.New("invalid handler passed")
 		}
 
-		logrus.
-			WithField("func", funcName).
-			WithField("user_id", (*e).User().ID).
-			Info("command")
+		startTime := time.Now()
+		defer func() {
+			logrus.
+				WithField("func", funcName).
+				WithField("user_id", (*e).User().ID).
+				WithField("duration", time.Since(startTime)).
+				Info("command")
+		}()
 
 		switch v := ctxVal.Interface().(type) {
 		default:
@@ -196,10 +203,14 @@ func WithContextD[D any, K Event](app interfaces.App, handler func(d D, e *K) er
 			return errors.New("invalid handler passed")
 		}
 
-		logrus.
-			WithField("func", funcName).
-			WithField("user_id", (*e).User().ID).
-			Info("command")
+		startTime := time.Now()
+		defer func() {
+			logrus.
+				WithField("func", funcName).
+				WithField("user_id", (*e).User().ID).
+				WithField("duration", time.Since(startTime)).
+				Info("command")
+		}()
 
 		switch v := ctxVal.Interface().(type) {
 		default:
@@ -231,6 +242,12 @@ func WithPlayer() func(a *ContextBuilder) {
 func WithPlayerGithubStars() func(a *ContextBuilder) {
 	return func(a *ContextBuilder) {
 		a.withPlayerGithubStars = true
+	}
+}
+
+func WithPlayerAuctions() func(a *ContextBuilder) {
+	return func(a *ContextBuilder) {
+		a.withPlayerAuctions = true
 	}
 }
 

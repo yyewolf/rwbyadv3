@@ -2,13 +2,16 @@ package api
 
 import (
 	"context"
+	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/labstack/echo/v4"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/auction"
+	"github.com/yyewolf/rwbyadv3/ent/listing"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/jobs"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 	"github.com/yyewolf/rwbyadv3/web/auth"
 	"github.com/yyewolf/rwbyadv3/web/auth/discord"
 )
@@ -17,8 +20,8 @@ type MarketApiHandler struct {
 	app interfaces.App
 
 	listeners      utils.Listeners
-	latestListings []*models.Listing
-	latestAuctions []*models.Auction
+	latestListings []*ent.Listing
+	latestAuctions []*ent.Auction
 }
 
 func RegisterAPIRoutes(app interfaces.App, g *echo.Group) {
@@ -58,36 +61,30 @@ func RegisterAPIRoutes(app interfaces.App, g *echo.Group) {
 }
 
 func (h *MarketApiHandler) ReloadListings() {
-	listings, _ := models.Listings(
-		qm.Limit(10),
-		qm.Load(
-			models.ListingRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.ListingRels.Card, models.CardRels.CardsStat),
-		),
-		qm.OrderBy(models.ListingColumns.CreatedAt+" DESC"),
-	).AllG(context.Background())
+	listings, _ := h.app.Db().Listing.Query().
+		Limit(10).
+		Order(listing.ByCreateTime(sql.OrderDesc())).
+		WithOwnedBy().
+		WithCard(func(cq *ent.CardQuery) {
+			cq.WithStats()
+			cq.WithType()
+		}).
+		All(context.TODO())
 
 	h.latestListings = listings
 }
 
 func (h *MarketApiHandler) ReloadAuctions() {
-	auctions, _ := models.Auctions(
-		qm.Where(models.AuctionColumns.EndsAt+" > NOW()"),
-		qm.Load(
-			models.AuctionRels.AuctionsBids,
-			qm.OrderBy(models.AuctionsBidColumns.Price+" DESC"),
-		),
-		qm.Limit(10),
-		qm.Load(
-			models.AuctionRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.AuctionRels.Card, models.CardRels.CardsStat),
-		),
-		qm.OrderBy(models.AuctionColumns.CreatedAt+" DESC"),
-	).AllG(context.Background())
+	auctions, _ := h.app.Db().Auction.Query().
+		Limit(10).
+		Order(auction.ByCreateTime(sql.OrderDesc())).
+		WithOwnedBy().
+		WithCard(func(cq *ent.CardQuery) {
+			cq.WithStats()
+			cq.WithType()
+		}).
+		Where(auction.EndsAtEQ(time.Now())).
+		All(context.TODO())
 
 	h.latestAuctions = auctions
 }

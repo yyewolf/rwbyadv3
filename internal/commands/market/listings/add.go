@@ -1,71 +1,75 @@
 package listings
 
 import (
-	"context"
-
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
-	"github.com/google/uuid"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/card"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 func (cmd *listingsCommand) AddListing(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
 	want := e.SlashCommandInteractionData().Int("card")
-	card, found := utils.Players.GetAvailableCard(p, want-1)
-	if !found {
+	if want < 1 {
 		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("Sorry, you do not have a card with this number...").
+			SetContent("Please select a card number greater than 0...").
 			SetEphemeral(true).
 			Build(),
 		)
 	}
 
+	card, err := p.QueryCards().
+		Where(card.Available(true)).
+		Order(card.ByPosition()).
+		Offset(want - 1).
+		First(e.Ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return e.CreateMessage(discord.NewMessageCreateBuilder().
+				SetContent("Sorry, you do not have a card with this number...").
+				SetEphemeral(true).
+				Build(),
+			)
+		}
+		return utils.CommandError(e, err)
+	}
+
 	price := int64(e.SlashCommandInteractionData().Int("price"))
 
-	listing := models.Listing{
-		ID:       uuid.NewString(),
-		PlayerID: p.ID,
-		CardID:   card.ID,
-		Price:    price,
-	}
-
-	tx, err := boil.BeginTx(context.Background(), nil)
-	if err != nil {
-		return utils.CommandError(e, err)
-	}
-
-	err = listing.Insert(context.Background(), tx, boil.Infer())
-	if err != nil {
-		tx.Rollback()
-		return utils.CommandError(e, err)
-	}
-
-	card.Available = false
-	utils.Cards.SetLocation(card, "listings")
-
-	// Remove selected card if it was selected
-	if p.SelectedCardID.String == card.ID {
-		p.SelectedCardID = null.NewString("", false)
-		_, err = p.Update(context.Background(), tx, boil.Whitelist(models.PlayerColumns.SelectedCardID))
+	err = ent.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
+		_, err := tx.Listing.Create().
+			SetPlayerID(p.ID).
+			SetCardID(card.ID).
+			SetPrice(price).
+			Save(e.Ctx)
 		if err != nil {
-			tx.Rollback()
-			return utils.CommandError(e, err)
+			return err
 		}
-	}
 
-	_, err = card.Update(context.Background(), tx, boil.Infer())
-	if err != nil {
-		tx.Rollback()
-		return utils.CommandError(e, err)
-	}
+		if p.SelectedCardID == card.ID {
+			p, err = tx.Player.UpdateOne(p).
+				ClearSelectedCard().
+				Save(e.Ctx)
+			if err != nil {
+				return err
+			}
+		}
 
-	err = tx.Commit()
+		card.Metadata.Location = "listings"
+
+		_, err = tx.Card.UpdateOne(card).
+			SetMetadata(card.Metadata).
+			SetAvailable(false).
+			Save(e.Ctx)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
 		return utils.CommandError(e, err)
 	}

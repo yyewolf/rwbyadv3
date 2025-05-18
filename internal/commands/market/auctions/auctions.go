@@ -13,7 +13,6 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/temporal"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/internal/utils/confirmation"
-	"github.com/yyewolf/rwbyadv3/models"
 	"go.temporal.io/sdk/client"
 )
 
@@ -60,13 +59,12 @@ func AuctionsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command
 				app,
 				cmd.AddAuctionB,
 				builder.WithPlayer(),
-				builder.WithPlayerCards(),
 			))
+
 			h.Command("/auctions/list", builder.WithContext(
 				app,
 				cmd.GetAuctions,
 				builder.WithPlayer(),
-				builder.WithPlayerCards(),
 			))
 
 			h.ButtonComponent("/"+componentId, builder.WithContextD(
@@ -137,7 +135,7 @@ func AuctionsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command
 }
 
 func (cmd *auctionsCommand) ReconcileAuctions() {
-	auctions, _ := models.Auctions().AllG(context.Background())
+	auctions, _ := cmd.app.Db().Auction.Query().All(context.Background())
 
 	for i, auction := range auctions {
 		// Trigger workflow
@@ -152,7 +150,7 @@ func (cmd *auctionsCommand) ReconcileAuctions() {
 		}
 
 		_, err := cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.AuctionEndWorkflow, &temporal.AuctionEndParams{
-			AuctionID: auction.ID,
+			AuctionID: auction.ID.String(),
 			EndsAt:    auction.EndsAt,
 		})
 		if err != nil {

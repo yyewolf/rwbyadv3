@@ -5,57 +5,66 @@ import (
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/listing"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 func (cmd *listingsCommand) RemoveListing(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
 	want := e.SlashCommandInteractionData().Int("card")
-	card, found := utils.Players.GetMarketListing(p, want-1)
-	if !found {
+	if want < 1 {
 		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("Sorry, you do not have a card with this number...").
+			SetContent("Please select a listing number greater than 0...").
 			SetEphemeral(true).
 			Build(),
 		)
 	}
 
-	tx, err := boil.BeginTx(context.Background(), nil)
+	listing, err := p.QueryListings().
+		Order(listing.ByCreateTime()).
+		Offset(want - 1).
+		WithCard().
+		First(context.Background())
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return e.CreateMessage(discord.NewMessageCreateBuilder().
+				SetContent("Sorry, you do not have a listing with this number...").
+				SetEphemeral(true).
+				Build(),
+			)
+		}
 		return utils.CommandError(e, err)
 	}
 
-	listing, err := models.Listings(
-		qm.Where(models.ListingColumns.CardID+"=?", card.ID),
-		qm.Where(models.ListingColumns.PlayerID+"=?", p.ID),
-	).One(context.Background(), tx)
+	err = ent.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
+		listing.Edges.Card.Metadata.Location = "inventory"
+
+		err = tx.Card.UpdateOne(listing.Edges.Card).
+			SetAvailable(true).
+			SetMetadata(listing.Edges.Card.Metadata).
+			Exec(e.Ctx)
+		if err != nil {
+			return err
+		}
+
+		err = tx.Listing.DeleteOne(listing).Exec(e.Ctx)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
-		tx.Rollback()
 		return utils.CommandError(e, err)
 	}
-
-	card.Available = true
-	utils.Cards.SetLocation(card, "inventory")
-
-	_, err = card.Update(context.Background(), tx, boil.Infer())
-	if err != nil {
-		tx.Rollback()
-		return utils.CommandError(e, err)
-	}
-
-	listing.Delete(context.Background(), tx, false)
-
-	tx.Commit()
 
 	return e.Respond(
 		discord.InteractionResponseTypeCreateMessage,
 		discord.NewMessageCreateBuilder().
-			SetContentf("All good !").
+			SetContentf("You have successfully removed the listing for **%s**.", listing.Edges.Card.FullString()).
 			SetEphemeral(true),
 	)
 }

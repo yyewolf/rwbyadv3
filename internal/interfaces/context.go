@@ -3,11 +3,11 @@ package interfaces
 import (
 	"context"
 
-	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/yyewolf/rwbyadv3/ent"
 )
 
 type Context interface {
-	GetPlayer() *models.Player
+	GetPlayer() *ent.Player
 }
 
 type ContextGenerator interface {

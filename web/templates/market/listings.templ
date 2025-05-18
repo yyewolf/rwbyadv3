@@ -5,14 +5,14 @@ import (
 	"strconv"
 	
 	"github.com/astaxie/beego/utils/pagination"
-	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 	"github.com/yyewolf/rwbyadv3/web/templates/icons"
 	"github.com/yyewolf/rwbyadv3/web/templates/layout"
 	"github.com/xeonx/timeago"
 )
 
-templ Listing(listing *models.Listing) {
+templ Listing(listing *ent.Listing) {
 	<div class="container flex flex-col justify-between rounded-xl bg-[#f7f5f9] px-5 py-8 w-[172px] h-full relative gap-4">
 		<div class="text-lg rounded-xl font-bold icon-container">
 			<svg height="100%" width="100%" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -24,15 +24,15 @@ templ Listing(listing *models.Listing) {
 					y="1.2"
 					height="98"
 					width="98"
-					stroke={ fmt.Sprintf("#%06v", strconv.FormatInt(int64(utils.Cards.RarityToColor(listing.R.Card)), 16)) }
+					stroke={ fmt.Sprintf("#%06v", strconv.FormatInt(int64(listing.Edges.Card.RarityToColor()), 16)) }
 					stroke-linejoin="round"
 				></rect>
 			</svg>
-			<img class="icon rounded-xl border-black border-2" src={ utils.Cards.IconURI(listing.R.Card) }/>
+			<img class="icon rounded-xl border-black border-2" src={ utils.Cards.IconURI(listing.Edges.Card) }/>
 		</div>
 		<div class="flex flex-col justify-between">
-			<div class="text-lg font-bold overflow-hidden text-ellipsis whitespace-nowrap" title={ utils.Cards.Primitive(listing.R.Card).Name }>
-				{ utils.Cards.Primitive(listing.R.Card).Name }
+			<div class="text-lg font-bold overflow-hidden text-ellipsis whitespace-nowrap" title={ listing.Edges.Card.Primitive().Name }>
+				{ listing.Edges.Card.Primitive().Name }
 			</div>
 			// Stats
 			<div class="flex justify-between gap-2">
@@ -49,14 +49,14 @@ templ Listing(listing *models.Listing) {
 				</div>
 				<div class="flex flex-col">
 					<div class="text-sm">
-						{ fmt.Sprintf("%.02f", listing.R.Card.IndividualValue) }%
+						{ fmt.Sprintf("%.02f", listing.Edges.Card.IndividualValue) }%
 					</div>
 					<div class="text-sm">
-						{ fmt.Sprintf("%d", listing.R.Card.Level) }
+						{ fmt.Sprintf("%d", listing.Edges.Card.Level) }
 					</div>
 					<div class="flex flex-row h-full items-center">
 						for i := 0; i < 5; i++ {
-							if i < listing.R.Card.Rarity {
+							if i < listing.Edges.Card.Rarity {
 								<span class="w-4 h-4 fill-yellow-500">
 									@icons.Star()
 								</span>
@@ -83,20 +83,20 @@ templ Listing(listing *models.Listing) {
 			</button>
 		</div>
 		<span class="absolute bottom-2 right-2 text-sm text-gray-500">
-			{ timeago.English.Format(listing.CreatedAt) }
+			{ timeago.English.Format(listing.CreateTime) }
 		</span>
 	</div>
 }
 
-templ ListingModal(listing *models.Listing) {
+templ ListingModal(listing *ent.Listing) {
 	<div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
 		<div class="sm:flex sm:items-start">
 			<div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
 				<h3 class="text-lg leading-6 font-medium text-gray-900 flex flex-row items-center gap-2" id="modal-title">
 					<svg class="h-4 w-4" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">
-						<circle fill={ fmt.Sprintf("#%06v", strconv.FormatInt(int64(utils.Cards.RarityToColor(listing.R.Card)), 16)) } cx="5" cy="5" r="4" stroke="black" stroke-width="0.25"></circle>
+						<circle fill={ fmt.Sprintf("#%06v", strconv.FormatInt(int64(listing.Edges.Card.RarityToColor()), 16)) } cx="5" cy="5" r="4" stroke="black" stroke-width="0.25"></circle>
 					</svg>
-					{ utils.Cards.Primitive(listing.R.Card).Name } ({ fmt.Sprintf("%.02f", listing.R.Card.IndividualValue) }%)
+					{ listing.Edges.Card.Primitive().Name } ({ fmt.Sprintf("%.02f", listing.Edges.Card.IndividualValue) }%)
 				</h3>
 				<div class="mt-2">
 					Would you like to purchase this card ?
@@ -123,7 +123,7 @@ templ ListingModal(listing *models.Listing) {
 	</div>
 }
 
-templ Listings(listings []*models.Listing, pagination *pagination.Paginator) {
+templ Listings(listings []*ent.Listing, pagination *pagination.Paginator) {
 	for i, listing := range listings {
 		if i == len(listings) - 1 && pagination.HasNext() {
 			<div
@@ -142,7 +142,7 @@ templ Listings(listings []*models.Listing, pagination *pagination.Paginator) {
 	}
 }
 
-templ LatestListings(listings []*models.Listing) {
+templ LatestListings(listings []*ent.Listing) {
 	for _, listing := range listings {
 		<div>
 			@Listing(listing)

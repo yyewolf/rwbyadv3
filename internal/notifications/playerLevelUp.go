@@ -8,22 +8,21 @@ import (
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/snowflake/v2"
-	"github.com/google/uuid"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/schema/enums"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/stats"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/workflow"
 )
 
 type PlayerLevelUpParams struct {
-	Player      *models.Player
-	LevelBefore int
+	Player      *ent.Player
+	LevelBefore int64
 }
 
-func DispatchPlayerLevelUp(app interfaces.App, p *models.Player, levelBefore int) {
+func DispatchPlayerLevelUp(app interfaces.App, p *ent.Player, levelBefore int64) {
 	workflowOptions := client.StartWorkflowOptions{
 		ID:        fmt.Sprintf("player_level_up_%s_%d", p.ID, p.Level),
 		TaskQueue: app.Config().Temporal.TaskQueue,
@@ -37,7 +36,7 @@ func DispatchPlayerLevelUp(app interfaces.App, p *models.Player, levelBefore int
 type PlayerLevelUpRewards struct {
 	Boxes     int
 	RareBoxes int
-	Liens     int
+	Liens     int64
 	GoldStars int
 	Backpacks int
 }
@@ -49,7 +48,7 @@ func (n *NotificationsRepository) NotifyPlayerLevelUpWorkflow(ctx workflow.Conte
 	var rewards PlayerLevelUpRewards
 
 	levelEarned := params.Player.Level - params.LevelBefore
-	for i := 0; i < levelEarned; i++ {
+	for i := int64(0); i < levelEarned; i++ {
 		// 12.5% chance of getting lootboxes
 		if stats.HasChance(12.5) {
 			amount := rand.Intn(int(math.Sqrt(float64(params.Player.Level)))) + 1
@@ -63,7 +62,7 @@ func (n *NotificationsRepository) NotifyPlayerLevelUpWorkflow(ctx workflow.Conte
 		}
 
 		// Get liens every level
-		rewards.Liens += rand.Intn(153+(params.Player.Level-i+1)*6) + 54
+		rewards.Liens += rand.Int63n(153+(params.Player.Level-i+1)*6) + 54
 
 		// Every 10 levels
 		if (params.Player.Level-i+1)%10 == 0 {
@@ -79,45 +78,40 @@ func (n *NotificationsRepository) NotifyPlayerLevelUpWorkflow(ctx workflow.Conte
 		}
 	}
 
-	tx, err := boil.BeginTx(context.Background(), nil)
-	if err != nil {
-		return err
-	}
+	var newCtx = context.Background()
 
-	for range rewards.Boxes {
-		params.Player.AddLootBoxes(context.Background(), tx, true, &models.LootBox{
-			ID:       uuid.NewString(),
-			PlayerID: params.Player.ID,
-			Type:     models.LootBoxesTypeClassic,
-		})
-	}
-	for range rewards.RareBoxes {
-		params.Player.AddLootBoxes(context.Background(), tx, true, &models.LootBox{
-			ID:       uuid.NewString(),
-			PlayerID: params.Player.ID,
-			Type:     models.LootBoxesTypeRare,
-		})
-	}
+	err := ent.WithTx(newCtx, n.app.Db(), func(tx *ent.Tx) error {
+		for range rewards.Boxes {
+			_, err := tx.LootBox.Create().
+				SetPlayerID(params.Player.ID).
+				SetType(enums.LootBoxClassic).
+				Save(newCtx)
+			if err != nil {
+				return err
+			}
+		}
+		for range rewards.RareBoxes {
+			_, err := tx.LootBox.Create().
+				SetPlayerID(params.Player.ID).
+				SetType(enums.LootBoxRare).
+				Save(newCtx)
+			if err != nil {
+				return err
+			}
+		}
 
-	err = params.Player.Reload(context.Background(), tx)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	params.Player.Liens += int64(rewards.Liens)
-	params.Player.BackpackLevel += rewards.Backpacks
-	// TODO : Add gold stars
+		// TODO : Add gold stars
+		_, err := tx.Player.UpdateOne(params.Player).
+			AddLiens(rewards.Liens).
+			AddBackpackLevel(int64(rewards.Backpacks)).
+			Save(newCtx)
 
-	_, err = params.Player.Update(context.Background(), tx, boil.Whitelist(
-		models.PlayerColumns.Liens,
-		models.PlayerColumns.BackpackLevel,
-	))
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+		if err != nil {
+			return err
+		}
 
-	err = tx.Commit()
+		return nil
+	})
 	if err != nil {
 		return err
 	}
@@ -147,7 +141,7 @@ func (n *NotificationsRepository) NotifyPlayerLevelUpWorkflow(ctx workflow.Conte
 					),
 					params.Player.ID,
 					params.Player.Level,
-					params.Player.XP, params.Player.NextLevelXP,
+					params.Player.ExperiencePoints, params.Player.ExperiencePointsThreshold,
 					rewards.Boxes,
 					rewards.RareBoxes,
 					rewards.Liens,

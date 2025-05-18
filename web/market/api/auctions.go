@@ -1,20 +1,23 @@
 package api
 
 import (
-	"context"
 	"math"
 	"net/url"
 	"strconv"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/astaxie/beego/utils/pagination"
 	"github.com/disgoorg/disgo/discord"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/auction"
+	"github.com/yyewolf/rwbyadv3/ent/auctionbid"
+	"github.com/yyewolf/rwbyadv3/ent/cardtype"
+	"github.com/yyewolf/rwbyadv3/ent/player"
 	"github.com/yyewolf/rwbyadv3/internal/notifications"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 	"github.com/yyewolf/rwbyadv3/web/templates"
 	"github.com/yyewolf/rwbyadv3/web/templates/market"
 )
@@ -24,9 +27,9 @@ var (
 )
 
 func (h *MarketApiHandler) GetAuctions(c echo.Context) error {
-	amount, err := models.Auctions(
-		qm.Where(models.AuctionColumns.EndsAt + " > NOW()"),
-	).CountG(context.Background())
+	amount, err := h.app.Db().Auction.Query().
+		Where(auction.EndsAtEQ(time.Now())).
+		Count(c.Request().Context())
 	if err != nil {
 		return err
 	}
@@ -42,26 +45,22 @@ func (h *MarketApiHandler) GetAuctions(c echo.Context) error {
 		query = parsedUrl.Query().Get("q")
 	}
 
-	auctions, err := models.Auctions(
-		qm.Offset(paginator.Offset()),
-		qm.Limit(auctionsPerPage),
-		qm.Load(
-			models.AuctionRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.AuctionRels.Card, models.CardRels.CardsStat),
-		),
-		qm.OrderBy(models.AuctionColumns.CreatedAt+" DESC"),
-
-		// Join Player and Card for filtering
-		qm.InnerJoin(models.TableNames.Players+" p on p."+models.PlayerColumns.ID+"="+models.TableNames.Auctions+"."+models.AuctionColumns.PlayerID),
-		qm.InnerJoin(models.TableNames.Cards+" c on c."+models.CardColumns.ID+"="+models.TableNames.Auctions+"."+models.AuctionColumns.CardID),
-		qm.InnerJoin(models.TableNames.CardTypes+" t on t."+models.CardTypeColumns.CardType+"=c."+models.CardColumns.CardType),
-
-		models.AuctionWhere.DeletedAt.IsNull(),
-		models.AuctionWhere.EndsAt.GT(time.Now()),
-		qm.Or("p."+models.PlayerColumns.Username+" ILIKE ? OR t."+models.CardTypeColumns.Name+" ILIKE ? OR t."+models.CardTypeColumns.Categories+" ILIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%"),
-	).AllG(context.Background())
+	auctions, err := h.app.Db().Auction.Query().
+		Offset(paginator.Offset()).
+		Limit(auctionsPerPage).
+		Order(auction.ByCreateTime(sql.OrderDesc())).
+		WithOwnedBy(func(pq *ent.PlayerQuery) {
+			pq.Where(player.UsernameContains(query))
+		}).
+		WithCard(func(cq *ent.CardQuery) {
+			cq.WithStats()
+			cq.WithType(func(ctq *ent.CardTypeQuery) {
+				ctq.Where(cardtype.NameContains(query))
+				ctq.Where(cardtype.SCategoriesContains(query))
+			})
+		}).
+		Where(auction.EndsAtEQ(time.Now())).
+		All(c.Request().Context())
 	if err != nil {
 		return err
 	}
@@ -70,21 +69,23 @@ func (h *MarketApiHandler) GetAuctions(c echo.Context) error {
 }
 
 func (h *MarketApiHandler) GetAuction(c echo.Context) error {
-	auctionID := c.Param("auctionId")
-	auction, err := models.Auctions(
-		qm.Where(models.AuctionColumns.EndsAt+" > NOW()"),
-		qm.Where(models.AuctionColumns.ID+"=?", auctionID),
-		qm.Load(
-			models.AuctionRels.AuctionsBids,
-			qm.OrderBy(models.AuctionsBidColumns.Price+" DESC"),
-		),
-		qm.Load(
-			models.AuctionRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.AuctionRels.Card, models.CardRels.CardsStat),
-		),
-	).OneG(context.Background())
+	auctionID, err := uuid.Parse(c.Param("auctionId"))
+	if err != nil {
+		return err
+	}
+
+	auction, err := h.app.Db().Auction.Query().
+		Where(auction.ID(auctionID)).
+		Where(auction.EndsAtEQ(time.Now())).
+		WithOwnedBy().
+		WithCard(func(cq *ent.CardQuery) {
+			cq.WithStats()
+			cq.WithType()
+		}).
+		WithBids(func(abq *ent.AuctionBidQuery) {
+			abq.Order(auctionbid.ByPrice(sql.OrderDesc()))
+		}).
+		Only(c.Request().Context())
 	if err != nil {
 		return err
 	}
@@ -93,44 +94,48 @@ func (h *MarketApiHandler) GetAuction(c echo.Context) error {
 }
 
 func (h *MarketApiHandler) GetAuctionPrice(c echo.Context) error {
-	auctionID := c.Param("auctionId")
-	auction, err := models.Auctions(
-		qm.Where(models.AuctionColumns.EndsAt+" > NOW()"),
-		qm.Where(models.AuctionColumns.ID+"=?", auctionID),
-		qm.Load(
-			models.AuctionRels.AuctionsBids,
-			qm.OrderBy(models.AuctionsBidColumns.Price+" DESC"),
-		),
-		qm.Load(
-			models.AuctionRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.AuctionRels.Card, models.CardRels.CardsStat),
-		),
-	).OneG(context.Background())
+	auctionID, err := uuid.Parse(c.Param("auctionId"))
 	if err != nil {
 		return err
 	}
 
-	return templates.RenderView(c, market.AuctionAmount(utils.Auctions.GetPrice(auction)))
+	auction, err := h.app.Db().Auction.Query().
+		Where(auction.ID(auctionID)).
+		Where(auction.EndsAtEQ(time.Now())).
+		WithOwnedBy().
+		WithCard(func(cq *ent.CardQuery) {
+			cq.WithStats()
+			cq.WithType()
+		}).
+		WithBids(func(abq *ent.AuctionBidQuery) {
+			abq.Order(auctionbid.ByPrice(sql.OrderDesc()))
+		}).
+		Only(c.Request().Context())
+	if err != nil {
+		return err
+	}
+
+	return templates.RenderView(c, market.AuctionAmount(auction.GetPrice()))
 }
 
 func (h *MarketApiHandler) GetAuctionTimeleft(c echo.Context) error {
-	auctionID := c.Param("auctionId")
-	auction, err := models.Auctions(
-		qm.Where(models.AuctionColumns.EndsAt+" > NOW()"),
-		qm.Where(models.AuctionColumns.ID+"=?", auctionID),
-		qm.Load(
-			models.AuctionRels.AuctionsBids,
-			qm.OrderBy(models.AuctionsBidColumns.Price+" DESC"),
-		),
-		qm.Load(
-			models.AuctionRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.AuctionRels.Card, models.CardRels.CardsStat),
-		),
-	).OneG(context.Background())
+	auctionID, err := uuid.Parse(c.Param("auctionId"))
+	if err != nil {
+		return err
+	}
+
+	auction, err := h.app.Db().Auction.Query().
+		Where(auction.ID(auctionID)).
+		Where(auction.EndsAtEQ(time.Now())).
+		WithOwnedBy().
+		WithCard(func(cq *ent.CardQuery) {
+			cq.WithStats()
+			cq.WithType()
+		}).
+		WithBids(func(abq *ent.AuctionBidQuery) {
+			abq.Order(auctionbid.ByPrice(sql.OrderDesc()))
+		}).
+		Only(c.Request().Context())
 	if err != nil {
 		return err
 	}
@@ -139,21 +144,16 @@ func (h *MarketApiHandler) GetAuctionTimeleft(c echo.Context) error {
 }
 
 func (h *MarketApiHandler) GetLatestAuctions(c echo.Context) error {
-	auctions, err := models.Auctions(
-		qm.Where(models.AuctionColumns.EndsAt+" > NOW()"),
-		qm.Limit(10),
-		qm.Load(
-			models.AuctionRels.AuctionsBids,
-			qm.OrderBy(models.AuctionsBidColumns.Price+" DESC"),
-		),
-		qm.Load(
-			models.AuctionRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.AuctionRels.Card, models.CardRels.CardsStat),
-		),
-		qm.OrderBy(models.AuctionColumns.CreatedAt+" DESC"),
-	).AllG(context.Background())
+	auctions, err := h.app.Db().Auction.Query().
+		Limit(10).
+		Order(auction.ByCreateTime(sql.OrderDesc())).
+		WithOwnedBy().
+		WithCard(func(cq *ent.CardQuery) {
+			cq.WithStats()
+			cq.WithType()
+		}).
+		Where(auction.EndsAtEQ(time.Now())).
+		All(c.Request().Context())
 	if err != nil {
 		return err
 	}
@@ -162,22 +162,23 @@ func (h *MarketApiHandler) GetLatestAuctions(c echo.Context) error {
 }
 
 func (h *MarketApiHandler) GetAuctionModal(c echo.Context) error {
-	auctionID := c.Param("auctionId")
+	auctionID, err := uuid.Parse(c.Param("auctionId"))
+	if err != nil {
+		return err
+	}
 
-	auction, err := models.Auctions(
-		qm.Where(models.AuctionColumns.EndsAt+" > NOW()"),
-		qm.Load(
-			models.AuctionRels.AuctionsBids,
-			qm.OrderBy(models.AuctionsBidColumns.Price+" DESC"),
-		),
-		qm.Load(
-			models.AuctionRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.AuctionRels.Card, models.CardRels.CardsStat),
-		),
-		qm.Where(models.AuctionColumns.ID+"=?", auctionID),
-	).OneG(context.Background())
+	auction, err := h.app.Db().Auction.Query().
+		Where(auction.ID(auctionID)).
+		Where(auction.EndsAtEQ(time.Now())).
+		WithOwnedBy().
+		WithCard(func(cq *ent.CardQuery) {
+			cq.WithStats()
+			cq.WithType()
+		}).
+		WithBids(func(abq *ent.AuctionBidQuery) {
+			abq.Order(auctionbid.ByPrice(sql.OrderDesc()))
+		}).
+		Only(c.Request().Context())
 	if err != nil {
 		return err
 	}
@@ -187,26 +188,28 @@ func (h *MarketApiHandler) GetAuctionModal(c echo.Context) error {
 
 func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 	session := utils.GetSessionFromContext(c)
-	bidder := session.R.Player
+	bidder := session.Edges.Player
 
-	auctionID := c.Param("auctionId")
-	auction, err := models.Auctions(
-		qm.Where(models.AuctionColumns.EndsAt+" > NOW()"),
-		qm.Load(
-			models.AuctionRels.AuctionsBids,
-			qm.OrderBy(models.AuctionsBidColumns.Price+" DESC"),
-		),
-		qm.Load(
-			models.AuctionRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.AuctionRels.Card, models.CardRels.CardsStat),
-		),
-		qm.Where(models.AuctionColumns.ID+"=?", auctionID),
-	).OneG(context.Background())
+	auctionID, err := uuid.Parse(c.Param("auctionId"))
 	if err != nil {
-		c.Response().Header().Add("HX-Retarget", "#message")
-		return templates.RenderView(c, market.Error("An error occured."))
+		return err
+	}
+
+	auction, err := h.app.Db().Auction.Query().
+		Where(auction.ID(auctionID)).
+		Where(auction.EndsAtEQ(time.Now())).
+		WithOwnedBy().
+		WithCard(func(cq *ent.CardQuery) {
+			cq.WithStats()
+			cq.WithType()
+		}).
+		WithBids(func(abq *ent.AuctionBidQuery) {
+			abq.Order(auctionbid.ByPrice(sql.OrderDesc()))
+			abq.WithPlayer()
+		}).
+		Only(c.Request().Context())
+	if err != nil {
+		return err
 	}
 
 	formBidAmount := c.FormValue("bid")
@@ -216,13 +219,13 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 		return templates.RenderView(c, market.Error("You need to enter a number."))
 	}
 
-	if utils.Players.AvailableBalance(bidder) < bidAmount {
+	if bidder.AvailableBalance() < bidAmount {
 		// error too poor
 		c.Response().Header().Add("HX-Retarget", "#message")
 		return templates.RenderView(c, market.Error("You do not have enough liens to bid this amount."))
 	}
 
-	auctionPrice := utils.Auctions.GetPrice(auction)
+	auctionPrice := auction.GetPrice()
 
 	if bidAmount < auctionPrice+49 {
 		// error too poor
@@ -230,93 +233,77 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 		return templates.RenderView(c, market.Error("You need to bid a bit more..."))
 	}
 
-	tx, err := boil.BeginTx(context.Background(), nil)
-	if err != nil {
-		c.Response().Header().Add("HX-Retarget", "#message")
-		return templates.RenderView(c, market.Error("An error occured."))
-	}
-
-	bid := utils.Auctions.CreatePlayerBid(auction, bidder)
-
-	bid.Price = bidAmount
-	bidder.LiensBidded += bidAmount
-	bidder.Liens -= bidAmount
-
-	// Give back money to latest bidder
-	latestBid, found := utils.Auctions.GetLatestBid(auction)
-	if found {
-		previousBidder, err := models.FindPlayer(context.Background(), tx, latestBid.PlayerID)
-		if err != nil {
-			tx.Rollback()
-			c.Response().Header().Add("HX-Retarget", "#message")
-			return templates.RenderView(c, market.Error("An error occured."))
-		}
-
-		previousBidder.Liens += latestBid.Price
-		previousBidder.LiensBidded -= latestBid.Price
-		previousBidder.SlotsReserved--
-
-		_, err = previousBidder.Update(context.Background(), tx, boil.Whitelist(
-			models.PlayerColumns.Liens,
-			models.PlayerColumns.LiensBidded,
-			models.PlayerColumns.SlotsReserved,
-		))
-		if err != nil {
-			tx.Rollback()
-			c.Response().Header().Add("HX-Retarget", "#message")
-			return templates.RenderView(c, market.Error("An error occured."))
-		}
-	}
-
 	// Check for available slots
-	if utils.Players.AvailableSlots(bidder) == 0 && (latestBid == nil || latestBid.PlayerID != bidder.ID) {
+	if utils.Players.AvailableSlots(bidder) == 0 {
 		c.Response().Header().Add("HX-Retarget", "#message")
 		return templates.RenderView(c, market.Error("You do not have enough slots in your backpack to purchase this card."))
 	}
 
-	bidder.SlotsReserved++
+	var latestBid *ent.AuctionBid
+	if len(auction.Edges.Bids) > 0 {
+		latestBid = auction.Edges.Bids[0]
+	}
 
-	err = bid.Insert(context.Background(), tx, boil.Infer())
-	if err != nil {
-		tx.Rollback()
+	// Check if the player is already in the auction
+	if latestBid == nil || latestBid.PlayerID == bidder.ID {
 		c.Response().Header().Add("HX-Retarget", "#message")
-		return templates.RenderView(c, market.Error("An error occured."))
+		return templates.RenderView(c, market.Error("You are already in the auction."))
 	}
 
-	_, err = bidder.Update(context.Background(), tx, boil.Whitelist(
-		models.PlayerColumns.Liens,
-		models.PlayerColumns.LiensBidded,
-		models.PlayerColumns.SlotsReserved,
-	))
-	if err != nil {
-		tx.Rollback()
-		c.Response().Header().Add("HX-Retarget", "#message")
-		return templates.RenderView(c, market.Error("An error occured."))
-	}
+	ent.WithTx(c.Request().Context(), h.app.Db(), func(tx *ent.Tx) error {
+		// Check if there's already a bid in place
+		if latestBid != nil {
+			err = tx.Player.UpdateOne(latestBid.Edges.Player).
+				AddLiens(latestBid.Price).
+				AddLiensInAuction(-1 * latestBid.Price).
+				AddBackpackReservedSlots(-1).
+				Exec(c.Request().Context())
+			if err != nil {
+				return err
+			}
+		}
 
-	delay := 600.0
-	if auction.TimeExtensions < 7 {
-		delay = delay / (math.Pow(2, float64(auction.TimeExtensions)))
-	} else {
-		delay = 5
-	}
+		err = tx.AuctionBid.Create().
+			SetPlayer(bidder).
+			SetAuction(auction).
+			SetPrice(bidAmount).
+			Exec(c.Request().Context())
+		if err != nil {
+			return err
+		}
 
-	// Handle time extensions
-	if time.Now().After(auction.EndsAt.Add(-time.Duration(delay) * time.Second)) {
-		// Calculate new end time
-		auction.TimeExtensions++
-		auction.EndsAt = auction.EndsAt.Add(time.Duration(delay) * time.Second)
+		err = tx.Player.UpdateOne(bidder).
+			AddLiensInAuction(bidAmount).
+			AddLiens(-1 * bidAmount).
+			AddBackpackReservedSlots(1).
+			Exec(c.Request().Context())
+		if err != nil {
+			return err
+		}
 
-		auction.Update(context.Background(), tx, boil.Whitelist(models.AuctionColumns.EndsAt, models.AuctionColumns.TimeExtensions))
-	}
+		delay := 600.0
+		if auction.TimeExtensions < 7 {
+			delay = delay / (math.Pow(2, float64(auction.TimeExtensions)))
+		} else {
+			delay = 5
+		}
 
-	err = tx.Commit()
-	if err != nil {
-		c.Response().Header().Add("HX-Retarget", "#message")
-		return templates.RenderView(c, market.Error("An error occured."))
-	}
+		// Handle time extensions
+		if time.Now().After(auction.EndsAt.Add(-time.Duration(delay) * time.Second)) {
+			// Calculate new end time
+			err = tx.Auction.UpdateOne(auction).
+				AddTimeExtensions(1).
+				SetEndsAt(auction.EndsAt).
+				Exec(c.Request().Context())
+			if err != nil {
+				return err
+			}
+		}
 
-	cardDescription := utils.Cards.FullString(auction.R.Card)
+		return nil
+	})
+
+	cardDescription := auction.Edges.Card.FullString()
 
 	notifications.DispatchDm(h.app, bidder, discord.NewMessageCreateBuilder().
 		SetEmbeds(
@@ -331,20 +318,17 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 	)
 
 	if latestBid != nil && latestBid.PlayerID != bidder.ID {
-		latestbidder, err := latestBid.Player().OneG(context.Background())
-		if err == nil {
-			notifications.DispatchDm(h.app, latestbidder, discord.NewMessageCreateBuilder().
-				SetEmbeds(
-					discord.NewEmbedBuilder().
-						SetTitle("Auction Outbid").
-						SetColor(h.app.Config().App.BotColor).
-						SetDescriptionf("You have been outbid on `%s` by **%d** Liens.", cardDescription, bidAmount).
-						SetEmbedFooter(h.app.Footer()).
-						Build(),
-				).
-				Build(),
-			)
-		}
+		notifications.DispatchDm(h.app, latestBid.Edges.Player, discord.NewMessageCreateBuilder().
+			SetEmbeds(
+				discord.NewEmbedBuilder().
+					SetTitle("Auction Outbid").
+					SetColor(h.app.Config().App.BotColor).
+					SetDescriptionf("You have been outbid on `%s` by **%d** Liens.", cardDescription, bidAmount).
+					SetEmbedFooter(h.app.Footer()).
+					Build(),
+			).
+			Build(),
+		)
 	}
 
 	c.Response().Header().Add("HX-Retarget", "#message")

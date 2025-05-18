@@ -1,16 +1,13 @@
 package preprod
 
 import (
-	"context"
-
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
-	"github.com/google/uuid"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/schema/enums"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 const (
@@ -126,31 +123,39 @@ func PreprodCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command 
 }
 
 func (cmd *preprodCommand) DoLootBox(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-	for _, t := range models.AllLootBoxesType() {
-		p.AddLootBoxesG(context.Background(), true, &models.LootBox{
-			ID:       uuid.NewString(),
-			PlayerID: p.ID,
-			Type:     t,
-		})
+	for _, t := range enums.LootBoxTypes() {
+		cmd.app.Db().LootBox.Create().
+			SetPlayerID(p.ID).
+			SetType(t).
+			Save(e.Ctx)
+	}
+
+	count, err := p.QueryLootboxes().Count(e.Ctx)
+	if err != nil {
+		return utils.CommandError(e, err)
 	}
 
 	return e.CreateMessage(
 		discord.NewMessageCreateBuilder().
-			SetContentf("You now have %d loot boxes", len(p.R.LootBoxes)).
+			SetContentf("You now have %d loot boxes", count).
 			Build(),
 	)
 }
 
 func (cmd *preprodCommand) GivePlayerXP(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
 	amount := e.SlashCommandInteractionData().Int("amount")
 
-	levelUp := utils.Players.GiveXP(p, int64(amount))
+	levelUp := p.GiveXP(int64(amount))
 
-	p.UpdateG(context.Background(), boil.Infer())
+	p.Update().
+		SetExperiencePoints(p.ExperiencePoints).
+		SetExperiencePointsThreshold(p.ExperiencePointsThreshold).
+		SetLevel(p.Level).
+		Save(e.Ctx)
 
 	return e.CreateMessage(
 		discord.NewMessageCreateBuilder().
@@ -160,15 +165,19 @@ func (cmd *preprodCommand) GivePlayerXP(e *handler.CommandEvent) error {
 }
 
 func (cmd *preprodCommand) SetPlayerLevel(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
 	level := e.SlashCommandInteractionData().Int("level")
 
-	p.Level = level
-	p.XP = 0
-	p.NextLevelXP = utils.Players.GetNextLevelXP(p)
+	p.Level = int64(level)
+	p.ExperiencePoints = 0
+	p.ExperiencePointsThreshold = p.GetNextLevelXP()
 
-	p.UpdateG(context.Background(), boil.Infer())
+	p.Update().
+		SetExperiencePoints(p.ExperiencePoints).
+		SetExperiencePointsThreshold(p.ExperiencePointsThreshold).
+		SetLevel(p.Level).
+		Save(e.Ctx)
 
 	return e.CreateMessage(
 		discord.NewMessageCreateBuilder().
@@ -178,15 +187,11 @@ func (cmd *preprodCommand) SetPlayerLevel(e *handler.CommandEvent) error {
 }
 
 func (cmd *preprodCommand) SetLiens(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-	liens := e.SlashCommandInteractionData().Int("liens")
-
-	p.Liens = int64(liens)
-	p.XP = 0
-	p.NextLevelXP = utils.Players.GetNextLevelXP(p)
-
-	p.UpdateG(context.Background(), boil.Infer())
+	p.Update().
+		SetLiens(int64(e.SlashCommandInteractionData().Int("liens"))).
+		Save(e.Ctx)
 
 	return e.CreateMessage(
 		discord.NewMessageCreateBuilder().
@@ -196,13 +201,11 @@ func (cmd *preprodCommand) SetLiens(e *handler.CommandEvent) error {
 }
 
 func (cmd *preprodCommand) SetBackpack(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
 	backpacks := e.SlashCommandInteractionData().Int("backpacks")
 
-	p.BackpackLevel = backpacks
-
-	p.UpdateG(context.Background(), boil.Infer())
+	p.Update().SetBackpackLevel(int64(backpacks)).Save(e.Ctx)
 
 	return e.CreateMessage(
 		discord.NewMessageCreateBuilder().

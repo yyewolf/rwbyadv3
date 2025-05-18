@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/snowflake/v2"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/google/uuid"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/auction"
+	"github.com/yyewolf/rwbyadv3/ent/auctionbid"
 	"github.com/yyewolf/rwbyadv3/internal/temporal"
-	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/workflow"
 )
@@ -26,19 +27,11 @@ func (cmd *auctionsCommand) AuctionEndWorkflow(ctx workflow.Context, params *tem
 		}, err
 	}
 
-	auction, err := models.Auctions(
-		qm.Where(models.AuctionColumns.ID+"=?", params.AuctionID),
-		qm.Load(
-			models.AuctionRels.AuctionsBids,
-			qm.OrderBy(models.AuctionsBidColumns.Price+" DESC"),
-		),
-		qm.Load(
-			models.AuctionRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.AuctionRels.Card, models.CardRels.CardsStat),
-		),
-	).OneG(context.Background())
+	newCtx := context.Background()
+
+	auction, err := cmd.app.Db().Auction.Query().
+		Where(auction.ID(uuid.MustParse(params.AuctionID))).
+		Only(newCtx)
 	if err != nil {
 		return &temporal.AuctionEndStatus{
 			Status: "error querying auction",
@@ -87,34 +80,34 @@ func (cmd *auctionsCommand) AuctionEndWorkflow(ctx workflow.Context, params *tem
 }
 
 func (cmd *auctionsCommand) AuctionEndActivity(ctx context.Context, auctionID string) (*temporal.AuctionEndStatus, error) {
-	auction, err := models.Auctions(
-		qm.Where(models.AuctionColumns.ID+"=?", auctionID),
-		qm.Load(
-			models.AuctionRels.AuctionsBids,
-			qm.OrderBy(models.AuctionsBidColumns.Price+" DESC"),
-		),
-		qm.Load(
-			models.AuctionRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.AuctionRels.Card, models.CardRels.CardsStat),
-		),
-	).OneG(context.Background())
+	newCtx := context.Background()
+	auction, err := cmd.app.Db().Auction.Query().
+		Where(auction.ID(uuid.MustParse(auctionID))).
+		WithOwnedBy().
+		WithBids(func(abq *ent.AuctionBidQuery) {
+			abq.WithPlayer()
+			abq.Order(auctionbid.ByPrice(sql.OrderDesc()))
+		}).
+		WithCard(func(cq *ent.CardQuery) {
+			cq.WithStats()
+		}).
+		Only(newCtx)
 	if err != nil {
 		return &temporal.AuctionEndStatus{
 			Ok: false,
 		}, err
 	}
 
-	// Check if the auction has any bids
-	latestBid, found := utils.Auctions.GetLatestBid(auction)
-	if !found {
+	if len(auction.Edges.Bids) == 0 {
 		// If no bids, give back to seller
 		err = cmd.auctionEndNoBid(auction)
 		return &temporal.AuctionEndStatus{
 			Ok: false,
 		}, err
 	}
+
+	// Check if the auction has any bids
+	latestBid := auction.Edges.Bids[0]
 
 	// If there are bids, give to the highest bidder and give the money back to the other bidders
 	err = cmd.auctionEndBidder(auction, latestBid)
@@ -129,46 +122,35 @@ func (cmd *auctionsCommand) AuctionEndActivity(ctx context.Context, auctionID st
 	}, nil
 }
 
-func (cmd *auctionsCommand) auctionEndNoBid(auction *models.Auction) error {
-	// Give back to seller
-	tx, err := boil.BeginTx(context.Background(), nil)
-	if err != nil {
-		return err
-	}
+func (cmd *auctionsCommand) auctionEndNoBid(auction *ent.Auction) error {
+	err := ent.WithTx(context.Background(), cmd.app.Db(), func(tx *ent.Tx) error {
+		// Card transfer
+		card := auction.Edges.Card
+		card.PlayerID = auction.PlayerID
+		card.Available = true
+		card.Metadata.Location = "inventory"
 
-	// Card transfer
-	card := auction.R.Card
-	card.PlayerID = auction.PlayerID
-	card.Available = true
-	utils.Cards.SetLocation(card, "inventory")
+		card, err := tx.Card.UpdateOne(card).
+			SetPlayerID(card.PlayerID).
+			SetAvailable(card.Available).
+			SetMetadata(card.Metadata).
+			Save(context.Background())
+		if err != nil {
+			return err
+		}
 
-	_, err = card.Update(context.Background(), tx, boil.Whitelist(
-		models.CardColumns.PlayerID,
-		models.CardColumns.Available,
-		models.CardColumns.Metadata,
-	))
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+		_, err = tx.AuctionBid.Delete().Where(auctionbid.AuctionID(auction.ID)).Exec(context.Background())
+		if err != nil {
+			return err
+		}
 
-	// Remove auction
-	_, err = auction.Delete(context.Background(), tx, false)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+		err = tx.Auction.DeleteOne(auction).Exec(context.Background())
+		if err != nil {
+			return err
+		}
 
-	// Remove all auction bidder's
-	_, err = models.AuctionsBids(
-		qm.Where(models.AuctionsBidColumns.AuctionID+"=?", auction.ID),
-	).DeleteAll(context.Background(), tx, false)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	err = tx.Commit()
+		return nil
+	})
 	if err != nil {
 		return err
 	}
@@ -182,79 +164,52 @@ func (cmd *auctionsCommand) auctionEndNoBid(auction *models.Auction) error {
 	return err
 }
 
-func (cmd *auctionsCommand) auctionEndBidder(auction *models.Auction, latestBid *models.AuctionsBid) error {
-	// Give to bidder
-	tx, err := boil.BeginTx(context.Background(), nil)
-	if err != nil {
-		return err
-	}
+func (cmd *auctionsCommand) auctionEndBidder(auction *ent.Auction, latestBid *ent.AuctionBid) error {
+	err := ent.WithTx(context.Background(), cmd.app.Db(), func(tx *ent.Tx) error {
+		seller := auction.Edges.OwnedBy
+		bidder := latestBid.Edges.Player
 
-	seller := auction.R.Player
-	bidder, err := models.FindPlayer(context.Background(), tx, latestBid.PlayerID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+		// Money transfer
+		bidder, err := tx.Player.UpdateOne(bidder).
+			AddLiensInAuction(-1 * latestBid.Price).
+			AddBackpackReservedSlots(-1).
+			Save(context.Background())
+		if err != nil {
+			return err
+		}
 
-	// Money tranfer
-	bidder.LiensBidded -= latestBid.Price
-	bidder.SlotsReserved--
+		seller, err = tx.Player.UpdateOne(seller).
+			AddLiensInAuction(latestBid.Price).
+			Save(context.Background())
+		if err != nil {
+			return err
+		}
 
-	_, err = bidder.Update(context.Background(), tx, boil.Whitelist(
-		models.PlayerColumns.LiensBidded,
-		models.PlayerColumns.SlotsReserved,
-	))
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+		// Card transfer
+		card := auction.Edges.Card
+		card.Metadata.Location = "inventory"
 
-	if seller.ID == bidder.ID {
-		seller = bidder
-	}
-	seller.Liens += latestBid.Price
+		card, err = tx.Card.UpdateOne(card).
+			SetPlayerID(latestBid.PlayerID).
+			SetAvailable(true).
+			SetMetadata(card.Metadata).
+			Save(context.Background())
+		if err != nil {
+			return err
+		}
 
-	_, err = seller.Update(context.Background(), tx, boil.Whitelist(
-		models.PlayerColumns.Liens,
-	))
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+		_, err = tx.AuctionBid.Delete().Where(auctionbid.AuctionID(auction.ID)).Exec(context.Background())
+		if err != nil {
+			return err
+		}
 
-	// Card transfer
-	card := auction.R.Card
-	card.PlayerID = latestBid.PlayerID
-	card.Available = true
-	utils.Cards.SetLocation(card, "inventory")
+		err = tx.Auction.DeleteOne(auction).Exec(context.Background())
+		if err != nil {
+			return err
+		}
 
-	_, err = card.Update(context.Background(), tx, boil.Whitelist(
-		models.CardColumns.PlayerID,
-		models.CardColumns.Available,
-		models.CardColumns.Metadata,
-	))
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// Remove auction
-	_, err = auction.Delete(context.Background(), tx, false)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// Remove all auction bidder's
-	_, err = models.AuctionsBids(
-		qm.Where(models.AuctionsBidColumns.AuctionID+"=?", auction.ID),
-	).DeleteAll(context.Background(), tx, false)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	err = tx.Commit()
+		return nil
+	})
 	if err != nil {
 		return err
 	}
