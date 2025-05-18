@@ -50,14 +50,14 @@ type ContextBuilder struct {
 
 type ContextOption func(a *ContextBuilder)
 
-func FillPlayerContext(cb *ContextBuilder, userID snowflake.ID, ctx context.Context) (context.Context, error) {
-	var query = cb.app.Db().Player.Query().Where(player.ID(userID.String()))
+func FillPlayerContext(builder *ContextBuilder, userID snowflake.ID, ctx context.Context) (context.Context, error) {
+	var query = builder.app.Db().Player.Query().Where(player.ID(userID.String()))
 
-	if cb.withPlayerGithubStars {
+	if builder.withPlayerGithubStars {
 		query.WithGithubStar()
 	}
 
-	if cb.withPlayerCards {
+	if builder.withPlayerCards {
 		query.WithCards(func(q *ent.CardQuery) {
 			q.Order(card.ByPosition())
 			q.WithStats()
@@ -65,7 +65,7 @@ func FillPlayerContext(cb *ContextBuilder, userID snowflake.ID, ctx context.Cont
 		})
 	}
 
-	if cb.withPlayerAuctions {
+	if builder.withPlayerAuctions {
 		query.WithAuctions(func(q *ent.AuctionQuery) {
 			q.WithCard(func(q *ent.CardQuery) {
 				q.WithType()
@@ -74,23 +74,23 @@ func FillPlayerContext(cb *ContextBuilder, userID snowflake.ID, ctx context.Cont
 		})
 	}
 
-	if cb.withPlayerLootBoxes {
+	if builder.withPlayerLootBoxes {
 		query.WithLootboxes()
 	}
 
-	if cb.withPlayerSelectedCard {
+	if builder.withPlayerSelectedCard {
 		query.WithSelectedCard()
 	}
 
-	if cb.withPlayerLimits {
+	if builder.withPlayerLimits {
 		query.WithLimits()
 	}
 
-	if cb.withPlayerDungeons {
+	if builder.withPlayerDungeons {
 		query.WithDungeons()
 	}
 
-	if cb.withPlayerDaily {
+	if builder.withPlayerDaily {
 		query.WithDaily()
 	}
 
@@ -104,14 +104,14 @@ func FillPlayerContext(cb *ContextBuilder, userID snowflake.ID, ctx context.Cont
 	return ctx, nil
 }
 
-func FillContextReply[K Event](cb *ContextBuilder, event K, ctx context.Context) (context.Context, error) {
+func FillContextReply[K Event](builder *ContextBuilder, event K, ctx context.Context) (context.Context, error) {
 	var err error
-	if cb.withPlayer {
-		ctx, err = FillPlayerContext(cb, event.User().ID, ctx)
+	if builder.withPlayer {
+		ctx, err = FillPlayerContext(builder, event.User().ID, ctx)
 		if err != nil {
 			event.CreateMessage(
 				discord.NewMessageCreateBuilder().
-					SetContentf("You cannot use this command yet... Try using %s first !", cb.app.CommandMention("begin")).
+					SetContentf("You cannot use this command yet... Try using %s first !", builder.app.CommandMention("begin")).
 					SetEphemeral(true).
 					Build(),
 			)
@@ -135,7 +135,7 @@ func getFuncClear(i interface{}) string {
 	return prefix + "/" + suffix
 }
 
-func WithContext[K Event](app interfaces.App, handler func(e *K) error, opts ...ContextOption) func(e *K) error {
+func WithContext[K Event](app interfaces.App, handler func(logger *logrus.Entry, event *K) error, opts ...ContextOption) func(event *K) error {
 	// Context builder
 	var cb ContextBuilder
 	cb.app = app
@@ -146,45 +146,45 @@ func WithContext[K Event](app interfaces.App, handler func(e *K) error, opts ...
 
 	funcName := getFuncClear(handler)
 
-	return func(e *K) error {
+	return func(event *K) error {
 		// Firstly, we extract the context
 		// Try not to use to much reflection
-		ctxVal := reflect.ValueOf(e).Elem().FieldByName("Ctx")
+		ctxVal := reflect.ValueOf(event).Elem().FieldByName("Ctx")
 		if !ctxVal.IsValid() {
 			return errors.New("invalid handler passed")
 		}
 
+		logger := logrus.
+			WithField("func", funcName).
+			WithField("user_id", (*event).User().ID)
+
 		startTime := time.Now()
 		defer func() {
-			logrus.
-				WithField("func", funcName).
-				WithField("user_id", (*e).User().ID).
+			logger.
 				WithField("duration", time.Since(startTime)).
-				Info("command")
+				Info("user ran command")
 		}()
 
 		switch v := ctxVal.Interface().(type) {
 		default:
 			return errors.New("invalid handler passed")
 		case context.Context:
-			v, err := FillContextReply(&cb, *e, v)
+			v, err := FillContextReply(&cb, *event, v)
 			if err != nil {
-				logrus.
-					WithField("func", funcName).
-					WithField("user_id", (*e).User().ID).
+				logger.
 					WithError(err).
-					Error("command")
+					Error("got error when filling context")
 				return nil
 			}
 
 			ctxVal.Set(reflect.ValueOf(v))
 		}
 
-		return handler(e)
+		return handler(logger, event)
 	}
 }
 
-func WithContextD[D any, K Event](app interfaces.App, handler func(d D, e *K) error, opts ...ContextOption) func(d D, e *K) error {
+func WithContextD[D any, K Event](app interfaces.App, handler func(logger *logrus.Entry, data D, event *K) error, opts ...ContextOption) func(data D, event *K) error {
 	// Context builder
 	var cb ContextBuilder
 	cb.app = app
@@ -195,19 +195,21 @@ func WithContextD[D any, K Event](app interfaces.App, handler func(d D, e *K) er
 
 	funcName := getFuncClear(handler)
 
-	return func(d D, e *K) error {
+	return func(data D, event *K) error {
 		// Firstly, we extract the context
 		// Try not to use to much reflection
-		ctxVal := reflect.ValueOf(e).Elem().FieldByName("Ctx")
+		ctxVal := reflect.ValueOf(event).Elem().FieldByName("Ctx")
 		if !ctxVal.IsValid() {
 			return errors.New("invalid handler passed")
 		}
 
+		logger := logrus.
+			WithField("func", funcName).
+			WithField("user_id", (*event).User().ID)
+
 		startTime := time.Now()
 		defer func() {
-			logrus.
-				WithField("func", funcName).
-				WithField("user_id", (*e).User().ID).
+			logger.
 				WithField("duration", time.Since(startTime)).
 				Info("command")
 		}()
@@ -216,20 +218,18 @@ func WithContextD[D any, K Event](app interfaces.App, handler func(d D, e *K) er
 		default:
 			return errors.New("invalid handler passed")
 		case context.Context:
-			v, err := FillContextReply(&cb, *e, v)
+			v, err := FillContextReply(&cb, *event, v)
 			if err != nil {
-				logrus.
-					WithField("func", funcName).
-					WithField("user_id", (*e).User().ID).
+				logger.
 					WithError(err).
-					Error("command")
+					Error("got error when filling context")
 				return nil
 			}
 
 			ctxVal.Set(reflect.ValueOf(v))
 		}
 
-		return handler(d, e)
+		return handler(logger, data, event)
 	}
 }
 

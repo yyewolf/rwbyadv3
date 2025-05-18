@@ -18,6 +18,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/samber/slog-logrus/v2 v2.5.2
+	github.com/schoentoon/logrus-loki v0.0.0-20220814020030-a5527cd7f206
 	github.com/sirupsen/logrus v1.9.3
 	github.com/xeonx/timeago v1.0.0-rc5
 	go.temporal.io/sdk v1.34.0
@@ -41,6 +42,8 @@ require (
 	github.com/go-openapi/inflect v0.19.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/mock v1.7.0-rc.1 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
+	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect

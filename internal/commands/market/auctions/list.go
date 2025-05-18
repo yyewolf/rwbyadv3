@@ -8,6 +8,7 @@ import (
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
+	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/ent/auction"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
@@ -78,20 +79,20 @@ func (cmd *auctionsCommand) generator(username string, p *ent.Player, page int) 
 	), nil
 }
 
-func (cmd *auctionsCommand) GetAuctions(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+func (cmd *auctionsCommand) GetAuctions(logger *logrus.Entry, event *handler.CommandEvent) error {
+	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-	username := e.User().Username
-	if e.User().GlobalName != nil {
-		username = *e.User().GlobalName
+	username := event.User().Username
+	if event.User().GlobalName != nil {
+		username = *event.User().GlobalName
 	}
 
-	embed, components, err := cmd.generator(username, p, 0)
+	embed, components, err := cmd.generator(username, currentPlayer, 0)
 	if err != nil {
-		return utils.CommandError(e, err)
+		return utils.CommandError(logger, event, err)
 	}
 
-	return e.Respond(
+	return event.Respond(
 		discord.InteractionResponseTypeCreateMessage,
 		discord.NewMessageCreateBuilder().
 			AddEmbeds(embed).
@@ -99,14 +100,14 @@ func (cmd *auctionsCommand) GetAuctions(e *handler.CommandEvent) error {
 	)
 }
 
-func (cmd *auctionsCommand) HandleGetAuctionsInteraction(data discord.ButtonInteractionData, e *handler.ComponentEvent) error {
+func (cmd *auctionsCommand) HandleGetAuctionsInteraction(logger *logrus.Entry, data discord.ButtonInteractionData, event *handler.ComponentEvent) error {
 	// Get route parameters
-	playerID := e.Vars["player_id"]
-	action := e.Vars["action"]
-	page, _ := strconv.Atoi(e.Vars["page"])
+	playerID := event.Vars["player_id"]
+	action := event.Vars["action"]
+	page, _ := strconv.Atoi(event.Vars["page"])
 
-	e.DeferUpdateMessage()
-	if playerID != e.User().ID.String() {
+	event.DeferUpdateMessage()
+	if playerID != event.User().ID.String() {
 		return nil
 	}
 
@@ -118,19 +119,19 @@ func (cmd *auctionsCommand) HandleGetAuctionsInteraction(data discord.ButtonInte
 	default:
 	}
 
-	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-	username := e.User().Username
-	if e.User().GlobalName != nil {
-		username = *e.User().GlobalName
+	username := event.User().Username
+	if event.User().GlobalName != nil {
+		username = *event.User().GlobalName
 	}
 
-	embed, components, err := cmd.generator(username, p, page)
+	embed, components, err := cmd.generator(username, currentPlayer, page)
 	if err != nil {
-		return utils.ComponentError(e, err)
+		return utils.ComponentError(logger, event, err)
 	}
 
-	_, err = e.UpdateInteractionResponse(
+	_, err = event.UpdateInteractionResponse(
 		discord.NewMessageUpdateBuilder().
 			AddEmbeds(embed).
 			AddContainerComponents(components).

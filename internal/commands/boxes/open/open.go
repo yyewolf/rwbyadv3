@@ -3,6 +3,7 @@ package open
 import (
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
+	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/ent"
 	entLootbox "github.com/yyewolf/rwbyadv3/ent/lootbox"
 	"github.com/yyewolf/rwbyadv3/ent/schema/enums"
@@ -25,7 +26,7 @@ type openCommand struct {
 	app interfaces.App
 }
 
-func OpenCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
+func OpenCommand(menus *builder.MenuStore, app interfaces.App) *builder.Command {
 	var cmd openCommand
 
 	cmd.app = app
@@ -57,115 +58,115 @@ func OpenCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 	)
 }
 
-func (cmd *openCommand) HandleCommand(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+func (cmd *openCommand) HandleCommand(logger *logrus.Entry, event *handler.CommandEvent) error {
+	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-	components := cmd.generator(p)
+	components := cmd.generator(currentPlayer)
 
-	return e.CreateMessage(discord.NewMessageCreateBuilder().
+	return event.CreateMessage(discord.NewMessageCreateBuilder().
 		SetContainerComponents(components).
 		Build(),
 	)
 }
 
-func (cmd *openCommand) HandleInteraction(data discord.ButtonInteractionData, e *handler.ComponentEvent) error {
+func (cmd *openCommand) HandleInteraction(logger *logrus.Entry, data discord.ButtonInteractionData, event *handler.ComponentEvent) error {
 	// Get route parameters
-	playerID := e.Vars["player_id"]
-	boxType := enums.LootBoxType(e.Vars["box_type"])
+	playerID := event.Vars["player_id"]
+	boxType := enums.LootBoxType(event.Vars["box_type"])
 
-	if playerID != e.User().ID.String() {
+	if playerID != event.User().ID.String() {
 		return nil
 	}
 
-	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-	currentLootbox, err := p.QueryLootboxes().
+	currentLootbox, err := currentPlayer.QueryLootboxes().
 		Where(
 			entLootbox.TypeEQ(boxType),
 		).
-		First(e.Ctx)
+		First(event.Ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
-			return e.CreateMessage(discord.NewMessageCreateBuilder().
+			return event.CreateMessage(discord.NewMessageCreateBuilder().
 				SetContent("You don't have any more of these loot boxes :(").
 				SetEphemeral(true).
 				Build(),
 			)
 		}
-		return utils.ComponentError(e, err)
+		return utils.ComponentError(logger, event, err)
 	}
 
 	// Check for available slots
-	if utils.Players.AvailableSlots(p) == 0 {
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
+	if utils.Players.AvailableSlots(currentPlayer) == 0 {
+		return event.CreateMessage(discord.NewMessageCreateBuilder().
 			SetContent("You don't have any available slots in your backpack :(").
 			SetEphemeral(true).
 			Build(),
 		)
 	}
 
-	e.DeferUpdateMessage()
+	event.DeferUpdateMessage()
 
-	var c *ent.Card
+	var newCard *ent.Card
 
-	err = ent.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
-		err = tx.LootBox.DeleteOneID(currentLootbox.ID).Exec(e.Ctx)
+	err = ent.WithTx(event.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
+		err = tx.LootBox.DeleteOneID(currentLootbox.ID).Exec(event.Ctx)
 		if err != nil {
 			return err
 		}
 
 		switch currentLootbox.Type {
 		case enums.LootBoxClassic:
-			c = lootbox.NormalLootBox.PickCard(cards.Cards)
+			newCard = lootbox.NormalLootBox.PickCard(cards.Cards)
 		case enums.LootBoxRare:
-			c = lootbox.RareLootBox.PickCard(cards.Cards)
+			newCard = lootbox.RareLootBox.PickCard(cards.Cards)
 		case enums.LootBoxLimited:
-			c = lootbox.LimitedLootBox.PickCard(cards.Cards)
+			newCard = lootbox.LimitedLootBox.PickCard(cards.Cards)
 		case enums.LootBoxSpecial:
-			c = lootbox.SpecialLootBox.PickCard(cards.Cards)
+			newCard = lootbox.SpecialLootBox.PickCard(cards.Cards)
 		}
 
-		c.PlayerID = e.User().ID.String()
+		newCard.PlayerID = event.User().ID.String()
 
-		count, err := p.QueryCards().Count(e.Ctx)
+		count, err := currentPlayer.QueryCards().Count(event.Ctx)
 		if err != nil {
 			return err
 		}
 
-		c, err = tx.Card.Create().
-			SetLevel(c.Level).
-			SetPlayerID(p.ID).
-			SetCardType(c.CardType).
-			SetIndividualValue(c.IndividualValue).
-			SetRarity(c.Rarity).
+		newCard, err = tx.Card.Create().
+			SetLevel(newCard.Level).
+			SetPlayerID(currentPlayer.ID).
+			SetCardType(newCard.CardType).
+			SetIndividualValue(newCard.IndividualValue).
+			SetRarity(newCard.Rarity).
 			SetPosition(float64(count)).
-			SetExperiencePointsThreshold(c.ExperiencePointsThreshold).
-			Save(e.Ctx)
+			SetExperiencePointsThreshold(newCard.ExperiencePointsThreshold).
+			Save(event.Ctx)
 		if err != nil {
 			return err
 		}
 
-		stats := c.GenerateStats()
+		stats := newCard.GenerateStats()
 
 		cardStats, err := tx.CardStats.Create().
-			SetCardID(c.ID).
+			SetCardID(newCard.ID).
 			SetArmor(stats.Armor).
 			SetDamage(stats.Damage).
 			SetHealing(stats.Healing).
 			SetHealth(stats.Health).
 			SetSpeed(stats.Speed).
-			Save(e.Ctx)
+			Save(event.Ctx)
 		if err != nil {
 			return err
 		}
 
-		c.Edges.Stats = cardStats
+		newCard.Edges.Stats = cardStats
 
 		// If user does not have a selected card, this is it :
-		if p.Edges.SelectedCard == nil {
-			_, err = tx.Player.UpdateOne(p).
-				SetSelectedCardID(c.ID).
-				Save(e.Ctx)
+		if currentPlayer.Edges.SelectedCard == nil {
+			_, err = tx.Player.UpdateOne(currentPlayer).
+				SetSelectedCardID(newCard.ID).
+				Save(event.Ctx)
 			if err != nil {
 				return err
 			}
@@ -174,20 +175,20 @@ func (cmd *openCommand) HandleInteraction(data discord.ButtonInteractionData, e 
 		return nil
 	})
 	if err != nil {
-		return utils.ComponentError(e, err)
+		return utils.ComponentError(logger, event, err)
 	}
 
-	f, embed, _ := c.Message()
+	embedFile, embed, _ := newCard.Message()
 	embed.Footer = cmd.app.Footer()
 
-	_, err = e.CreateFollowupMessage(discord.NewMessageCreateBuilder().
-		SetFiles(f).
+	_, err = event.CreateFollowupMessage(discord.NewMessageCreateBuilder().
+		SetFiles(embedFile).
 		SetEmbeds(embed).
 		Build(),
 	)
 
-	components := cmd.generator(p)
-	e.UpdateInteractionResponse(
+	components := cmd.generator(currentPlayer)
+	event.UpdateInteractionResponse(
 		discord.NewMessageUpdateBuilder().
 			AddContainerComponents(components).
 			Build(),

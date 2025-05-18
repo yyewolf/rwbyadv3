@@ -84,6 +84,12 @@ type Config struct {
 		BackpackSize  int    `env:"BACKPACK_SIZE" envDefault:"20"`
 		BaseURI       string `env:"BASE_URI" envDefault:""`
 	} `envPrefix:"APP_"`
+
+	// Logger
+	Loki struct {
+		Enabled bool   `env:"ENABLED" envDefault:"false"`
+		URI     string `env:"URI" envDefault:""`
+	} `envPrefix:"LOKI_"`
 }
 
 func Get() *Config {

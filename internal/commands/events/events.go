@@ -26,19 +26,19 @@ func getRate(userId string) *rate.Sometimes {
 	return val.(*rate.Sometimes)
 }
 
-func OnMessage(app interfaces.App) func(e *events.MessageCreate) {
-	return func(e *events.MessageCreate) {
-		if e.Message.Author.ID == app.Client().ApplicationID() {
+func OnMessage(app interfaces.App) func(event *events.MessageCreate) {
+	return func(event *events.MessageCreate) {
+		if event.Message.Author.ID == app.Client().ApplicationID() {
 			return
 		}
 
-		r := getRate(e.Message.Author.ID.String())
+		rateLimiter := getRate(event.Message.Author.ID.String())
 
-		r.Do(func() {
+		rateLimiter.Do(func() {
 			ctx, err := builder.GetContext(
 				context.Background(),
 				app,
-				e.Message.Author.ID,
+				event.Message.Author.ID,
 				builder.WithPlayer(),
 				builder.WithPlayerSelectedCard(),
 			)
@@ -46,45 +46,45 @@ func OnMessage(app interfaces.App) func(e *events.MessageCreate) {
 				return
 			}
 
-			p := ctx.Value(builder.NewPlayerKey).(*ent.Player)
+			currentPlayer := ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-			if p.Edges.SelectedCard == nil {
+			if currentPlayer.Edges.SelectedCard == nil {
 				// Don't do XP cause no cards are selected
 				return
 			}
 
-			XP := p.Edges.SelectedCard.GetXPReward(3, false)
-			cardLevelUp := p.Edges.SelectedCard.GiveXP(XP)
+			experience := currentPlayer.Edges.SelectedCard.GetXPReward(3, false)
+			cardLevelUp := currentPlayer.Edges.SelectedCard.GiveXP(experience)
 			if cardLevelUp {
-				notifications.DispatchCardLevelUp(app, p, p.Edges.SelectedCard)
+				notifications.DispatchCardLevelUp(app, currentPlayer, currentPlayer.Edges.SelectedCard)
 			}
 
-			p.Edges.SelectedCard.Update().
-				SetExperiencePoints(p.Edges.SelectedCard.ExperiencePoints).
-				SetExperiencePointsThreshold(p.Edges.SelectedCard.ExperiencePointsThreshold).
-				SetLevel(p.Edges.SelectedCard.Level).
+			currentPlayer.Edges.SelectedCard.Update().
+				SetExperiencePoints(currentPlayer.Edges.SelectedCard.ExperiencePoints).
+				SetExperiencePointsThreshold(currentPlayer.Edges.SelectedCard.ExperiencePointsThreshold).
+				SetLevel(currentPlayer.Edges.SelectedCard.Level).
 				Save(ctx)
 
-			levelBefore := p.Level
-			playerLevelUp := p.GiveXP(1)
+			levelBefore := currentPlayer.Level
+			playerLevelUp := currentPlayer.GiveXP(1)
 			if playerLevelUp {
-				notifications.DispatchPlayerLevelUp(app, p, levelBefore)
+				notifications.DispatchPlayerLevelUp(app, currentPlayer, levelBefore)
 			}
 
-			p.Update().
-				SetExperiencePoints(p.ExperiencePoints).
-				SetExperiencePointsThreshold(p.ExperiencePointsThreshold).
-				SetLevel(p.Level).
+			currentPlayer.Update().
+				SetExperiencePoints(currentPlayer.ExperiencePoints).
+				SetExperiencePointsThreshold(currentPlayer.ExperiencePointsThreshold).
+				SetLevel(currentPlayer.Level).
 				Save(ctx)
 
 			// add debug log
 			logrus.WithFields(logrus.Fields{
-				"author":    e.Message.Author.ID,
-				"xp":        XP,
-				"level":     p.Level,
-				"card":      p.Edges.SelectedCard.ID,
-				"cardxp":    p.Edges.SelectedCard.ExperiencePoints,
-				"cardlevel": p.Edges.SelectedCard.Level,
+				"author":    event.Message.Author.ID,
+				"xp":        experience,
+				"level":     currentPlayer.Level,
+				"card":      currentPlayer.Edges.SelectedCard.ID,
+				"cardxp":    currentPlayer.Edges.SelectedCard.ExperiencePoints,
+				"cardlevel": currentPlayer.Edges.SelectedCard.Level,
 			}).Debug("semi-passive xp gain")
 		})
 	}

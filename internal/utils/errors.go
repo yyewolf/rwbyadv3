@@ -9,8 +9,8 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 )
 
-func CommandError(e *handler.CommandEvent, err error) error {
-	logrus.
+func CommandError(logger *logrus.Entry, e *handler.CommandEvent, err error) error {
+	logger.
 		WithField(string(builder.ContextIdKey), e.Ctx.Value(builder.ContextIdKey)).
 		WithError(err).
 		WithField("stack", string(debug.Stack())).
@@ -24,8 +24,8 @@ func CommandError(e *handler.CommandEvent, err error) error {
 	)
 }
 
-func ComponentError(e *handler.ComponentEvent, err error) error {
-	logrus.
+func ComponentError(logger *logrus.Entry, e *handler.ComponentEvent, err error) error {
+	logger.
 		WithField(string(builder.ContextIdKey), e.Ctx.Value(builder.ContextIdKey)).
 		WithError(err).
 		WithField("stack", string(debug.Stack())).

@@ -5,18 +5,19 @@ import (
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
+	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/ent/listing"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 )
 
-func (cmd *listingsCommand) RemoveListing(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+func (cmd *listingsCommand) RemoveListing(logger *logrus.Entry, event *handler.CommandEvent) error {
+	p := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-	want := e.SlashCommandInteractionData().Int("card")
+	want := event.SlashCommandInteractionData().Int("card")
 	if want < 1 {
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
+		return event.CreateMessage(discord.NewMessageCreateBuilder().
 			SetContent("Please select a listing number greater than 0...").
 			SetEphemeral(true).
 			Build(),
@@ -30,27 +31,27 @@ func (cmd *listingsCommand) RemoveListing(e *handler.CommandEvent) error {
 		First(context.Background())
 	if err != nil {
 		if ent.IsNotFound(err) {
-			return e.CreateMessage(discord.NewMessageCreateBuilder().
+			return event.CreateMessage(discord.NewMessageCreateBuilder().
 				SetContent("Sorry, you do not have a listing with this number...").
 				SetEphemeral(true).
 				Build(),
 			)
 		}
-		return utils.CommandError(e, err)
+		return utils.CommandError(logger, event, err)
 	}
 
-	err = ent.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
+	err = ent.WithTx(event.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
 		listing.Edges.Card.Metadata.Location = "inventory"
 
 		err = tx.Card.UpdateOne(listing.Edges.Card).
 			SetAvailable(true).
 			SetMetadata(listing.Edges.Card.Metadata).
-			Exec(e.Ctx)
+			Exec(event.Ctx)
 		if err != nil {
 			return err
 		}
 
-		err = tx.Listing.DeleteOne(listing).Exec(e.Ctx)
+		err = tx.Listing.DeleteOne(listing).Exec(event.Ctx)
 		if err != nil {
 			return err
 		}
@@ -58,10 +59,10 @@ func (cmd *listingsCommand) RemoveListing(e *handler.CommandEvent) error {
 		return nil
 	})
 	if err != nil {
-		return utils.CommandError(e, err)
+		return utils.CommandError(logger, event, err)
 	}
 
-	return e.Respond(
+	return event.Respond(
 		discord.InteractionResponseTypeCreateMessage,
 		discord.NewMessageCreateBuilder().
 			SetContentf("You have successfully removed the listing for **%s**.", listing.Edges.Card.FullString()).

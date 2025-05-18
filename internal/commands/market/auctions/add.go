@@ -8,6 +8,7 @@ import (
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
+	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/ent/card"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
@@ -16,38 +17,38 @@ import (
 	"go.temporal.io/sdk/client"
 )
 
-func (cmd *auctionsCommand) AddAuctionB(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+func (cmd *auctionsCommand) AddAuctionB(logger *logrus.Entry, event *handler.CommandEvent) error {
+	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-	want := e.SlashCommandInteractionData().Int("card")
+	want := event.SlashCommandInteractionData().Int("card")
 	if want < 1 {
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
+		return event.CreateMessage(discord.NewMessageCreateBuilder().
 			SetContent("Please select a card number greater than 0...").
 			SetEphemeral(true).
 			Build(),
 		)
 	}
 
-	card, err := p.QueryCards().
+	card, err := currentPlayer.QueryCards().
 		Where(card.Available(true)).
 		Order(card.ByPosition()).
 		Offset(want - 1).
-		First(e.Ctx)
+		First(event.Ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
-			return e.CreateMessage(discord.NewMessageCreateBuilder().
+			return event.CreateMessage(discord.NewMessageCreateBuilder().
 				SetContent("Sorry, you do not have a card with this number...").
 				SetEphemeral(true).
 				Build(),
 			)
 		}
-		return utils.CommandError(e, err)
+		return utils.CommandError(logger, event, err)
 	}
 
-	duration := int64(e.SlashCommandInteractionData().Int("duration"))
+	duration := int64(event.SlashCommandInteractionData().Int("duration"))
 
 	return cmd.addConfirmation.AskForConfirmation(
-		e,
+		event,
 		utils.Joinln(
 			fmt.Sprintf("Card: `%s`", card.FullString()),
 			"Are you sure that you want to put this card into auction ? This is **irreversible**.",
@@ -56,55 +57,55 @@ func (cmd *auctionsCommand) AddAuctionB(e *handler.CommandEvent) error {
 	)
 }
 
-func (cmd *auctionsCommand) AddAuction(data discord.ButtonInteractionData, e *handler.ComponentEvent) error {
-	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+func (cmd *auctionsCommand) AddAuction(logger *logrus.Entry, data discord.ButtonInteractionData, event *handler.ComponentEvent) error {
+	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-	want, _ := strconv.Atoi(e.Vars["want"])
+	want, _ := strconv.Atoi(event.Vars["want"])
 	if want < 1 {
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
+		return event.CreateMessage(discord.NewMessageCreateBuilder().
 			SetContent("Please select a card number greater than 0...").
 			SetEphemeral(true).
 			Build(),
 		)
 	}
 
-	card, err := p.QueryCards().
+	card, err := currentPlayer.QueryCards().
 		Where(card.Available(true)).
 		Order(card.ByPosition()).
 		Offset(want - 1).
-		First(e.Ctx)
+		First(event.Ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
-			return e.CreateMessage(discord.NewMessageCreateBuilder().
+			return event.CreateMessage(discord.NewMessageCreateBuilder().
 				SetContent("Sorry, you do not have a card with this number...").
 				SetEphemeral(true).
 				Build(),
 			)
 		}
-		return utils.ComponentError(e, err)
+		return utils.ComponentError(logger, event, err)
 	}
 
-	duration, _ := strconv.ParseInt(e.Vars["duration"], 10, 64)
+	duration, _ := strconv.ParseInt(event.Vars["duration"], 10, 64)
 
-	err = ent.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
+	err = ent.WithTx(event.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
 		endsAt := time.Now().Add(time.Duration(duration) * time.Hour)
 		if duration == 0 {
 			endsAt = time.Now().Add(time.Minute)
 		}
 
 		auction, err := tx.Auction.Create().
-			SetPlayerID(p.ID).
+			SetPlayerID(currentPlayer.ID).
 			SetCardID(card.ID).
 			SetEndsAt(endsAt).
-			Save(e.Ctx)
+			Save(event.Ctx)
 		if err != nil {
 			return err
 		}
 
-		if p.SelectedCardID == card.ID {
-			p, err = tx.Player.UpdateOne(p).
+		if currentPlayer.SelectedCardID == card.ID {
+			currentPlayer, err = tx.Player.UpdateOne(currentPlayer).
 				ClearSelectedCard().
-				Save(e.Ctx)
+				Save(event.Ctx)
 			if err != nil {
 				return err
 			}
@@ -115,7 +116,7 @@ func (cmd *auctionsCommand) AddAuction(data discord.ButtonInteractionData, e *ha
 		_, err = tx.Card.UpdateOne(card).
 			SetMetadata(card.Metadata).
 			SetAvailable(false).
-			Save(e.Ctx)
+			Save(event.Ctx)
 		if err != nil {
 			return err
 		}
@@ -137,10 +138,10 @@ func (cmd *auctionsCommand) AddAuction(data discord.ButtonInteractionData, e *ha
 		return nil
 	})
 	if err != nil {
-		return utils.ComponentError(e, err)
+		return utils.ComponentError(logger, event, err)
 	}
 
-	return e.Respond(
+	return event.Respond(
 		discord.InteractionResponseTypeCreateMessage,
 		discord.NewMessageCreateBuilder().
 			SetEmbeds(

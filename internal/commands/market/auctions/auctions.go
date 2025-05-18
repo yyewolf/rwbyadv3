@@ -36,7 +36,7 @@ type auctionsCommand struct {
 	addConfirmation *confirmation.Handler
 }
 
-func AuctionsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
+func AuctionsCommand(menus *builder.MenuStore, app interfaces.App) *builder.Command {
 	var cmd auctionsCommand
 
 	cmd.app = app

@@ -9,30 +9,30 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 )
 
-func (cmd *profileCommand) generator(p *ent.Player, u discord.User) discord.Embed {
+func (cmd *profileCommand) generator(currentPlayer *ent.Player, discordUser discord.User) discord.Embed {
 	embed := discord.NewEmbedBuilder()
 
-	embed.SetTitlef("These is your profile %s.", u.EffectiveName())
+	embed.SetTitlef("These is your profile %s.", discordUser.EffectiveName())
 	embed.SetColor(cmd.app.Config().App.BotColor)
 
 	embed.AddField(
 		"Player :",
 		utils.Joinln(
-			fmt.Sprintf("Level : **%d**", p.Level),
-			fmt.Sprintf("XP : **%d**/**%d**", p.ExperiencePoints, p.ExperiencePointsThreshold),
-			fmt.Sprintf("Slots : **%d**", p.BackpackLevel),
-			fmt.Sprintf("Boxes : **%d**/**%d**", len(p.Edges.Lootboxes), p.BackpackLevel),
-			fmt.Sprintf("Liens : **%d** (**%d** locked)", p.Liens, p.LiensInAuction),
+			fmt.Sprintf("Level : **%d**", currentPlayer.Level),
+			fmt.Sprintf("XP : **%d**/**%d**", currentPlayer.ExperiencePoints, currentPlayer.ExperiencePointsThreshold),
+			fmt.Sprintf("Slots : **%d**", currentPlayer.BackpackLevel),
+			fmt.Sprintf("Boxes : **%d**/**%d**", len(currentPlayer.Edges.Lootboxes), currentPlayer.BackpackLevel),
+			fmt.Sprintf("Liens : **%d** (**%d** locked)", currentPlayer.Liens, currentPlayer.LiensInAuction),
 		),
 		true,
 	)
 
-	counts := p.LootBoxesCount()
+	counts := currentPlayer.LootBoxesCount()
 
 	embed.AddField(
 		"Inventory :",
 		utils.Joinln(
-			fmt.Sprintf("Cards : **%d**/**%d** (**%d** reserved)", len(p.Edges.Cards), utils.Players.MaxSlots(p), p.BackpackReservedSlots),
+			fmt.Sprintf("Cards : **%d**/**%d** (**%d** reserved)", len(currentPlayer.Edges.Cards), utils.Players.MaxSlots(currentPlayer), currentPlayer.BackpackReservedSlots),
 			fmt.Sprintf("Classic boxes : **%d**", counts[enums.LootBoxClassic]),
 			fmt.Sprintf("Rare boxes : **%d**", counts[enums.LootBoxRare]),
 			fmt.Sprintf("Limited boxes : **%d**", counts[enums.LootBoxLimited]),
@@ -42,7 +42,7 @@ func (cmd *profileCommand) generator(p *ent.Player, u discord.User) discord.Embe
 	)
 
 	// Activities
-	dungeonActivity := p.GetDungeonState()
+	dungeonActivity := currentPlayer.GetDungeonState()
 
 	embed.AddField(
 		"Activities :",

@@ -6,14 +6,14 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 )
 
-func NewMenu(ms *builder.MenuStore, app interfaces.App) *builder.Menu {
-	return ms.NewMenu(
+func NewMenu(menus *builder.MenuStore, app interfaces.App) *builder.Menu {
+	return menus.NewMenu(
 		builder.WithMenuName("Preprod"),
 		builder.WithEmoji(discord.Emoji{
 			Name: "👨‍🔧",
 		}),
 		builder.WithCommands(
-			PreprodCommand(ms, app),
+			PreprodCommand(menus, app),
 		),
 	)
 }
