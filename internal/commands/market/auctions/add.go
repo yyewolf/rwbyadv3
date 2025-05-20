@@ -17,7 +17,7 @@ import (
 	"go.temporal.io/sdk/client"
 )
 
-func (cmd *auctionsCommand) AddAuctionB(logger *logrus.Entry, event *handler.CommandEvent) error {
+func (cmd *auctionsCommand) AddAuction(logger *logrus.Entry, event *handler.CommandEvent) error {
 	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
 	want := event.SlashCommandInteractionData().Int("card")
@@ -57,7 +57,7 @@ func (cmd *auctionsCommand) AddAuctionB(logger *logrus.Entry, event *handler.Com
 	)
 }
 
-func (cmd *auctionsCommand) AddAuction(logger *logrus.Entry, data discord.ButtonInteractionData, event *handler.ComponentEvent) error {
+func (cmd *auctionsCommand) AddAuctionAfterValidation(logger *logrus.Entry, data discord.ButtonInteractionData, event *handler.ComponentEvent) error {
 	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
 	want, _ := strconv.Atoi(event.Vars["want"])

@@ -85,11 +85,11 @@ func (cmd *reportCommand) HandleResponse(reportType string) handler.ModalHandler
 		reportDescription := form.Text("description")
 
 		issue, err := cmd.app.Github().NewGithubIssue(repo.NewIssueParams{
-			Title:       fmt.Sprintf("New %s: %s", reportType, reportTitle),
+			Title:       fmt.Sprintf("New %s: %s - %s", reportType, reportTitle, event.User().ID),
 			Description: reportDescription,
 		})
 		if err != nil {
-			logrus.WithError(err).Error("Failed to create issue")
+			logrus.WithField("user_id", event.User().ID).WithError(err).Error("Failed to create issue")
 			return event.CreateMessage(
 				discord.NewMessageCreateBuilder().
 					SetContent("Failed to create the bug report.").
@@ -97,6 +97,7 @@ func (cmd *reportCommand) HandleResponse(reportType string) handler.ModalHandler
 					Build(),
 			)
 		}
+
 		return event.CreateMessage(
 			discord.NewMessageCreateBuilder().
 				SetEmbeds(

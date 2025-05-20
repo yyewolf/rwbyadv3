@@ -69,6 +69,11 @@ func bidMutator(app interfaces.App) func(next ent.Mutator) ent.Mutator {
 				return nil, fmt.Errorf("bid mutation expected, got %T", m)
 			}
 
+			_, err := bidMutation.IDs(ctx)
+			if err == nil {
+				return next.Mutate(ctx, m)
+			}
+
 			id, ok := bidMutation.ID()
 			if !ok {
 				return nil, fmt.Errorf("bid ID expected")

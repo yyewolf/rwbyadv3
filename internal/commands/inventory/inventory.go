@@ -58,14 +58,14 @@ func InventoryCommand(menus *builder.MenuStore, app interfaces.App) *builder.Com
 }
 
 func (cmd *inventoryCommand) HandleCommand(logger *logrus.Entry, event *handler.CommandEvent) error {
-	p := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
 	username := event.User().Username
 	if event.User().GlobalName != nil {
 		username = *event.User().GlobalName
 	}
 
-	embed, components, err := cmd.generator(username, p, 0)
+	embed, components, err := cmd.generator(username, currentPlayer, 0)
 	if err != nil {
 		return utils.CommandError(logger, event, err)
 	}

@@ -46,7 +46,7 @@ func AuctionsCommand(menus *builder.MenuStore, app interfaces.App) *builder.Comm
 
 	cmd.addConfirmation = confirmation.NewHandler(app, addConfirmationId, builder.WithContextD(
 		app,
-		cmd.AddAuction,
+		cmd.AddAuctionAfterValidation,
 		builder.WithPlayer(),
 		builder.WithPlayerCards(),
 	))
@@ -57,7 +57,7 @@ func AuctionsCommand(menus *builder.MenuStore, app interfaces.App) *builder.Comm
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
 			h.Command("/auctions/add", builder.WithContext(
 				app,
-				cmd.AddAuctionB,
+				cmd.AddAuction,
 				builder.WithPlayer(),
 			))
 

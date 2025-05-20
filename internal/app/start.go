@@ -18,6 +18,7 @@ func (a *App) Start() {
 
 		select {
 		case a.errorChannel <- err:
+			logrus.WithField("error", err).Error("An error stopped execution")
 		default:
 		}
 	}()
@@ -70,6 +71,7 @@ func (a *App) StartLater() {
 
 			select {
 			case a.errorChannel <- err:
+				logrus.WithField("error", err).Error("An error stopped execution")
 			default:
 			}
 		}()

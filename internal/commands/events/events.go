@@ -79,7 +79,7 @@ func OnMessage(app interfaces.App) func(event *events.MessageCreate) {
 
 			// add debug log
 			logrus.WithFields(logrus.Fields{
-				"author":    event.Message.Author.ID,
+				"user_id":   event.Message.Author.ID,
 				"xp":        experience,
 				"level":     currentPlayer.Level,
 				"card":      currentPlayer.Edges.SelectedCard.ID,

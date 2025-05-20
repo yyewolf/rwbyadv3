@@ -9,6 +9,7 @@ import (
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/ent/auction"
 	"github.com/yyewolf/rwbyadv3/ent/auctionbid"
@@ -93,33 +94,41 @@ func (cmd *auctionsCommand) AuctionEndActivity(ctx context.Context, auctionID st
 		}).
 		Only(newCtx)
 	if err != nil {
-		return &temporal.AuctionEndStatus{
-			Ok: false,
-		}, err
+		if ent.IsNotFound(err) {
+			return &temporal.AuctionEndStatus{Ok: true}, nil
+		}
+		return &temporal.AuctionEndStatus{Ok: false}, err
 	}
+
+	logger := logrus.
+		WithField("worklow", "end_auction").
+		WithField("user_id", auction.PlayerID).
+		WithField("auction_id", auction.ID)
 
 	if len(auction.Edges.Bids) == 0 {
 		// If no bids, give back to seller
+		logger.Info("no bids, giving back to seller")
 		err = cmd.auctionEndNoBid(auction)
-		return &temporal.AuctionEndStatus{
-			Ok: false,
-		}, err
+		if err != nil {
+			logger.WithError(err).Error("failed to end auction")
+			return &temporal.AuctionEndStatus{Ok: false}, err
+		}
+
+		return &temporal.AuctionEndStatus{Ok: true}, nil
 	}
 
 	// Check if the auction has any bids
 	latestBid := auction.Edges.Bids[0]
 
 	// If there are bids, give to the highest bidder and give the money back to the other bidders
+	logger.Info("bids found, giving to the highest bidder")
 	err = cmd.auctionEndBidder(auction, latestBid)
 	if err != nil {
-		return &temporal.AuctionEndStatus{
-			Ok: false,
-		}, err
+		logger.WithError(err).Error("failed to end auction")
+		return &temporal.AuctionEndStatus{Ok: false}, err
 	}
 
-	return &temporal.AuctionEndStatus{
-		Ok: true,
-	}, nil
+	return &temporal.AuctionEndStatus{Ok: true}, nil
 }
 
 func (cmd *auctionsCommand) auctionEndNoBid(auction *ent.Auction) error {
@@ -135,11 +144,6 @@ func (cmd *auctionsCommand) auctionEndNoBid(auction *ent.Auction) error {
 			SetAvailable(card.Available).
 			SetMetadata(card.Metadata).
 			Save(context.Background())
-		if err != nil {
-			return err
-		}
-
-		_, err = tx.AuctionBid.Delete().Where(auctionbid.AuctionID(auction.ID)).Exec(context.Background())
 		if err != nil {
 			return err
 		}
@@ -179,7 +183,7 @@ func (cmd *auctionsCommand) auctionEndBidder(auction *ent.Auction, latestBid *en
 		}
 
 		seller, err = tx.Player.UpdateOne(seller).
-			AddLiensInAuction(latestBid.Price).
+			AddLiens(latestBid.Price).
 			Save(context.Background())
 		if err != nil {
 			return err
@@ -198,7 +202,10 @@ func (cmd *auctionsCommand) auctionEndBidder(auction *ent.Auction, latestBid *en
 			return err
 		}
 
-		_, err = tx.AuctionBid.Delete().Where(auctionbid.AuctionID(auction.ID)).Exec(context.Background())
+		_, err = tx.AuctionBid.
+			Delete().
+			Where(auctionbid.AuctionID(auction.ID)).
+			Exec(context.Background())
 		if err != nil {
 			return err
 		}
