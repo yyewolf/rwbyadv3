@@ -6,21 +6,22 @@ import (
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/values"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 type JobHandler struct {
-	config *env.Config
-	conn   *amqp.Connection
-	ch     *amqp.Channel
-	close  chan bool
-	closed bool
+	config    *env.Config
+	entClient *ent.Client
+	conn      *amqp.Connection
+	ch        *amqp.Channel
+	close     chan bool
+	closed    bool
 
 	jobTypes        map[interfaces.JobKey]func(params map[string]interface{}) error
-	reScheduleQueue []*models.Job
+	reScheduleQueue []*ent.Job
 }
 
 func New(options ...Option) interfaces.JobHandler {

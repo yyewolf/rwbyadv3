@@ -2,36 +2,48 @@ package dungeons
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"slices"
 
 	"github.com/disgoorg/disgo/discord"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/sirupsen/logrus"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/dungeons"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/loots"
 	"github.com/yyewolf/rwbyadv3/internal/notifications"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 func GetDungeon(app interfaces.App) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		session := utils.GetSessionFromContext(c)
-		player := session.R.Player
+		player := session.Edges.Player
 
-		dungeon, err := models.FindDungeonG(context.Background(), c.Param("dungeonId"))
+		dungeonId, err := uuid.Parse(c.Param("dungeonId"))
 		if err != nil {
+			logrus.WithField("user_id", player.ID).WithField("dungeon_id", dungeonId).Error(err)
+			return c.JSON(500, err)
+		}
+
+		dungeon, err := app.Db().Dungeon.Get(context.Background(), dungeonId)
+		if err != nil {
+			logrus.WithField("user_id", player.ID).WithField("dungeon_id", dungeonId).Error(err)
 			return c.JSON(500, err)
 		}
 
 		if dungeon.PlayerID != player.ID {
+			logrus.WithField("user_id", player.ID).WithField("dungeon_id", dungeon.ID).Error("Dungeon is not owned by player")
 			return c.JSON(500, err)
 		}
 
 		r := rand.New(rand.NewSource(dungeon.Seed))
 		d := dungeons.NewDungeon(r)
+
+		logrus.WithField("user_id", player.ID).WithField("dungeon_id", dungeon.ID).Info("Get Dungeon")
 
 		return c.JSON(200, d)
 	}
@@ -51,44 +63,55 @@ func EndDungeon(app interfaces.App) echo.HandlerFunc {
 		}
 
 		session := utils.GetSessionFromContext(c)
-		player := session.R.Player
+		player := session.Edges.Player
 
-		dungeon, err := models.FindDungeonG(context.Background(), c.Param("dungeonId"))
+		dungeonId, err := uuid.Parse(c.Param("dungeonId"))
 		if err != nil {
+			logrus.WithField("user_id", player.ID).WithField("dungeon_id", dungeonId).Error(err)
+			return c.JSON(500, err)
+		}
+
+		dungeon, err := app.Db().Dungeon.Get(context.Background(), dungeonId)
+		if err != nil {
+			logrus.WithField("user_id", player.ID).WithField("dungeon_id", dungeonId).Error(err)
 			return c.JSON(500, err)
 		}
 
 		if dungeon.PlayerID != player.ID {
+			logrus.WithField("user_id", player.ID).WithField("dungeon_id", dungeon.ID).Error("Dungeon is not owned by player")
 			return c.JSON(500, err)
 		}
 
 		r := rand.New(rand.NewSource(dungeon.Seed))
 		d := dungeons.NewDungeon(r)
 
-		tx, err := boil.BeginTx(context.Background(), nil)
-		if err != nil {
-			return c.JSON(500, err)
-		}
-
 		var pickedUpLoots []interface{}
+		err = ent.WithTx(c.Request().Context(), app.Db(), func(tx *ent.Tx) error {
+			for _, loot := range d.Loots {
+				if !slices.Contains(req.Loots, loot.GetID()) {
+					continue
+				}
+				if loot.GetType() == "exit" && loot.GetID() != req.Loots[len(req.Loots)-1] {
+					return fmt.Errorf("exit loot must be the last loot")
+				}
 
-		for _, loot := range d.Loots {
-			if !slices.Contains(req.Loots, loot.GetID()) {
-				continue
+				err = loot.PickedUp(tx, player)
+				if err != nil {
+					return err
+				}
+
+				pickedUpLoots = append(pickedUpLoots, loot)
 			}
-			if loot.GetType() == "exit" && loot.GetID() != req.Loots[len(req.Loots)-1] {
-				tx.Rollback()
-				return c.JSON(500, err)
+
+			err = tx.Dungeon.DeleteOne(dungeon).Exec(c.Request().Context())
+			if err != nil {
+				return err
 			}
-			loot.PickedUp(tx, player)
-			pickedUpLoots = append(pickedUpLoots, loot)
-		}
 
-		player.Update(context.Background(), tx, boil.Infer())
-		dungeon.Delete(context.Background(), tx, false)
-
-		err = tx.Commit()
+			return nil
+		})
 		if err != nil {
+			logrus.WithField("user_id", player.ID).WithField("dungeon_id", dungeon.ID).Error(err)
 			return c.JSON(500, err)
 		}
 
@@ -119,6 +142,8 @@ func EndDungeon(app interfaces.App) echo.HandlerFunc {
 			).
 			Build(),
 		)
+
+		logrus.WithField("user_id", player.ID).WithField("dungeon_id", dungeon.ID).WithField("loot", pickedUpLoots).Info("End Dungeon Correctly")
 
 		return c.JSON(200, d)
 	}

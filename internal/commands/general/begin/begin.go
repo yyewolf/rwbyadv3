@@ -1,17 +1,15 @@
 package begin
 
 import (
-	"context"
 	"strconv"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
 	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 const (
@@ -27,7 +25,7 @@ type beginCommand struct {
 	app interfaces.App
 }
 
-func BeginCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
+func BeginCommand(menus *builder.MenuStore, app interfaces.App) *builder.Command {
 	var cmd beginCommand
 
 	cmd.app = app
@@ -45,7 +43,6 @@ func BeginCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 				app,
 				cmd.HandleInteraction,
 				builder.WithPlayer(),
-				builder.WithPlayerCards(),
 			))
 			return nil
 		}),
@@ -56,32 +53,12 @@ func BeginCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 	)
 }
 
-func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
-	tx, err := boil.BeginTx(e.Ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	p := models.Player{
-		ID: e.User().ID.String(),
-	}
-	err = p.SetGithubStar(context.Background(), tx, true, &models.GithubStar{
-		PlayerID: e.User().ID.String(),
-	})
-	if err != nil {
-		return utils.CommandError(e, err)
-	}
-	err = p.SetPlayerLimit(context.Background(), tx, true, &models.PlayerLimit{
-		PlayerID:     e.User().ID.String(),
-		DungeonsLeft: 3,
-	})
-	if err != nil {
-		return utils.CommandError(e, err)
-	}
-	err = p.Insert(context.Background(), tx, boil.Infer())
-	if err != nil {
-		logrus.WithError(err).WithField("user_id", e.ID().String()).Error("error creating user in db")
-		return e.Respond(
+func (cmd *beginCommand) HandleCommand(logger *logrus.Entry, event *handler.CommandEvent) error {
+	_, err := cmd.app.Db().Player.Get(event.Ctx, event.User().ID.String())
+	if err != nil && !ent.IsNotFound(err) {
+		return utils.CommandError(logger, event, err)
+	} else if err == nil {
+		return event.Respond(
 			discord.InteractionResponseTypeCreateMessage,
 			discord.NewMessageCreateBuilder().
 				SetContentf("You already have an account!").
@@ -89,14 +66,45 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 		)
 	}
 
-	err = tx.Commit()
+	var player *ent.Player
+
+	err = ent.WithTx(event.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
+		tempPlayer := ent.Player{
+			Level: 1,
+		}
+
+		player, err = tx.Player.Create().
+			SetID(event.User().ID.String()).
+			SetExperiencePointsThreshold(tempPlayer.GetNextLevelXP()).
+			Save(event.Ctx)
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.GithubStar.Create().
+			SetPlayerID(event.User().ID.String()).
+			Save(event.Ctx)
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.PlayerLimit.Create().
+			SetPlayerID(event.User().ID.String()).
+			SetDungeonsLeft(3).
+			Save(event.Ctx)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
-		return utils.CommandError(e, err)
+		return utils.CommandError(logger, event, err)
 	}
 
-	embed, components := cmd.generator(&p, 0)
+	embed, components := cmd.generator(player, 0)
 
-	return e.Respond(
+	return event.Respond(
 		discord.InteractionResponseTypeCreateMessage,
 		discord.NewMessageCreateBuilder().
 			AddEmbeds(embed).
@@ -104,14 +112,14 @@ func (cmd *beginCommand) HandleCommand(e *handler.CommandEvent) error {
 	)
 }
 
-func (cmd *beginCommand) HandleInteraction(data discord.ButtonInteractionData, e *handler.ComponentEvent) error {
+func (cmd *beginCommand) HandleInteraction(logger *logrus.Entry, data discord.ButtonInteractionData, event *handler.ComponentEvent) error {
 	// Get route parameters
-	playerID := e.Vars["player_id"]
-	action := e.Vars["action"]
-	page, _ := strconv.Atoi(e.Vars["page"])
+	playerID := event.Vars["player_id"]
+	action := event.Vars["action"]
+	page, _ := strconv.Atoi(event.Vars["page"])
 
-	e.DeferUpdateMessage()
-	if playerID != e.User().ID.String() {
+	event.DeferUpdateMessage()
+	if playerID != event.User().ID.String() {
 		return nil
 	}
 
@@ -123,11 +131,11 @@ func (cmd *beginCommand) HandleInteraction(data discord.ButtonInteractionData, e
 	default:
 	}
 
-	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-	embed, components := cmd.generator(p, page)
+	embed, components := cmd.generator(currentPlayer, page)
 
-	_, err := e.UpdateInteractionResponse(
+	_, err := event.UpdateInteractionResponse(
 		discord.NewMessageUpdateBuilder().
 			AddEmbeds(embed).
 			AddContainerComponents(components).

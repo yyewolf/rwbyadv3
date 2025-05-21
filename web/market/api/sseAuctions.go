@@ -3,52 +3,48 @@ package api
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/auction"
+	"github.com/yyewolf/rwbyadv3/ent/auctionbid"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 	"github.com/yyewolf/rwbyadv3/web/templates/market"
 )
 
 func (h *MarketApiHandler) OnAddAuction(params map[string]interface{}) error {
 	time.Sleep(100 * time.Millisecond) // Wait for the auction to be inserted into the database
-	var auction = new(models.Auction)
-	b, _ := json.Marshal(params["auction"])
-	json.Unmarshal(b, auction)
+	id := uuid.MustParse(params["id"].(string))
 
-	auction, err := models.Auctions(
-		qm.Load(
-			models.AuctionRels.AuctionsBids,
-			qm.OrderBy(models.AuctionsBidColumns.Price+" DESC"),
-		),
-		qm.Load(
-			models.AuctionRels.Player,
-		),
-		qm.Load(
-			qm.Rels(models.AuctionRels.Card, models.CardRels.CardsStat),
-		),
-		qm.Where(models.AuctionColumns.ID+"=?", auction.ID),
-	).OneG(context.Background())
+	auction, err := h.app.Db().Auction.Query().
+		Where(auction.ID(id)).
+		WithOwnedBy().
+		WithCard(func(cq *ent.CardQuery) {
+			cq.WithStats()
+			cq.WithType()
+		}).
+		WithBids(func(abq *ent.AuctionBidQuery) {
+			abq.Order(auctionbid.ByPrice(sql.OrderDesc()))
+		}).
+		Only(context.TODO())
 	if err != nil {
 		return err
 	}
 
-	h.latestAuctions = append([]*models.Auction{auction}, h.latestAuctions...)
+	h.latestAuctions = append([]*ent.Auction{auction}, h.latestAuctions...)
 
 	return h.SendLatestAuctions()
 }
 
 func (h *MarketApiHandler) OnRemoveAuction(params map[string]interface{}) error {
-	var auction models.Auction
-	b, _ := json.Marshal(params["auction"])
-	json.Unmarshal(b, &auction)
+	id := uuid.MustParse(params["id"].(string))
 
 	var found bool
-	for _, l := range h.latestAuctions {
-		if l.ID == auction.ID {
+	for _, cachedAuction := range h.latestAuctions {
+		if cachedAuction.ID == id {
 			found = true
 			break
 		}
@@ -63,9 +59,13 @@ func (h *MarketApiHandler) OnRemoveAuction(params map[string]interface{}) error 
 }
 
 func (h *MarketApiHandler) OnNewBid(params map[string]interface{}) error {
-	var bid models.AuctionsBid
-	b, _ := json.Marshal(params["bid"])
-	json.Unmarshal(b, &bid)
+	time.Sleep(100 * time.Millisecond) // Wait for the auction to be inserted into the database
+	id := uuid.MustParse(params["id"].(string))
+
+	bid, err := h.app.Db().AuctionBid.Get(context.TODO(), id)
+	if err != nil {
+		return err
+	}
 
 	var eventData bytes.Buffer
 	market.AuctionAmount(bid.Price).Render(context.Background(), &eventData)
@@ -76,8 +76,8 @@ func (h *MarketApiHandler) OnNewBid(params map[string]interface{}) error {
 	})
 
 	var found bool
-	for _, l := range h.latestAuctions {
-		if l.ID == bid.AuctionID {
+	for _, cachedAuction := range h.latestAuctions {
+		if cachedAuction.ID == bid.AuctionID {
 			found = true
 			break
 		}
@@ -92,18 +92,11 @@ func (h *MarketApiHandler) OnNewBid(params map[string]interface{}) error {
 }
 
 func (h *MarketApiHandler) OnUpdateAuction(params map[string]interface{}) error {
-	var auction = new(models.Auction)
-	b, _ := json.Marshal(params["auction"])
-	json.Unmarshal(b, auction)
-
-	h.listeners.Broadcast(&utils.Event{
-		Event: []byte(fmt.Sprintf("auction_%s_update", auction.ID)),
-		Data:  []byte("cc"),
-	})
+	id := uuid.MustParse(params["id"].(string))
 
 	var found bool
-	for _, l := range h.latestAuctions {
-		if l.ID == auction.ID {
+	for _, cachedAuction := range h.latestAuctions {
+		if cachedAuction.ID == id {
 			found = true
 			break
 		}

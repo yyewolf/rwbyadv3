@@ -1,11 +1,10 @@
 package loots
 
 import (
-	"database/sql"
 	"math/rand"
 
 	"github.com/google/uuid"
-	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/pkg/loottables/item"
 )
 
@@ -38,8 +37,9 @@ func (m Exit) Place(point [2]int) DungeonLoot {
 	return m
 }
 
-func (m Exit) PickedUp(tx *sql.Tx, p *models.Player) {
+func (m Exit) PickedUp(tx *ent.Tx, p *ent.Player) error {
 	// Do nothing
+	return nil
 }
 
 func (m Exit) RewardText(l []interface{}) string {

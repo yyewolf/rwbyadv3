@@ -8,15 +8,15 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 )
 
-func NewMenu(ms *builder.MenuStore, app interfaces.App) *builder.Menu {
-	return ms.NewMenu(
+func NewMenu(menus *builder.MenuStore, app interfaces.App) *builder.Menu {
+	return menus.NewMenu(
 		builder.WithMenuName("Rewards"),
 		builder.WithEmoji(discord.Emoji{
 			Name: "🎁",
 		}),
 		builder.WithCommands(
-			stars.StarCommand(ms, app),
-			daily.DailyCommand(ms, app),
+			stars.StarCommand(menus, app),
+			daily.DailyCommand(menus, app),
 		),
 	)
 }

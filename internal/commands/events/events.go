@@ -5,13 +5,12 @@ import (
 	"time"
 
 	"github.com/disgoorg/disgo/events"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/sirupsen/logrus"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/notifications"
 	"github.com/yyewolf/rwbyadv3/internal/rates"
-	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 	"golang.org/x/time/rate"
 )
 
@@ -27,19 +26,19 @@ func getRate(userId string) *rate.Sometimes {
 	return val.(*rate.Sometimes)
 }
 
-func OnMessage(app interfaces.App) func(e *events.MessageCreate) {
-	return func(e *events.MessageCreate) {
-		if e.Message.Author.ID == app.Client().ApplicationID() {
+func OnMessage(app interfaces.App) func(event *events.MessageCreate) {
+	return func(event *events.MessageCreate) {
+		if event.Message.Author.ID == app.Client().ApplicationID() {
 			return
 		}
 
-		r := getRate(e.Message.Author.ID.String())
+		rateLimiter := getRate(event.Message.Author.ID.String())
 
-		r.Do(func() {
+		rateLimiter.Do(func() {
 			ctx, err := builder.GetContext(
 				context.Background(),
 				app,
-				e.Message.Author.ID,
+				event.Message.Author.ID,
 				builder.WithPlayer(),
 				builder.WithPlayerSelectedCard(),
 			)
@@ -47,27 +46,46 @@ func OnMessage(app interfaces.App) func(e *events.MessageCreate) {
 				return
 			}
 
-			p := ctx.Value(builder.PlayerKey).(*models.Player)
+			currentPlayer := ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-			if p.R.SelectedCard == nil {
+			if currentPlayer.Edges.SelectedCard == nil {
 				// Don't do XP cause no cards are selected
 				return
 			}
 
-			XP := utils.Cards.GetXPReward(p.R.SelectedCard, 3, false)
-			cardLevelUp := utils.Cards.GiveXP(p.R.SelectedCard, XP)
+			experience := currentPlayer.Edges.SelectedCard.GetXPReward(3, false)
+			cardLevelUp := currentPlayer.Edges.SelectedCard.GiveXP(experience)
 			if cardLevelUp {
-				notifications.DispatchCardLevelUp(app, p, p.R.SelectedCard)
+				notifications.DispatchCardLevelUp(app, currentPlayer, currentPlayer.Edges.SelectedCard)
 			}
 
-			levelBefore := p.Level
-			playerLevelUp := utils.Players.GiveXP(p, 1)
+			currentPlayer.Edges.SelectedCard.Update().
+				SetExperiencePoints(currentPlayer.Edges.SelectedCard.ExperiencePoints).
+				SetExperiencePointsThreshold(currentPlayer.Edges.SelectedCard.ExperiencePointsThreshold).
+				SetLevel(currentPlayer.Edges.SelectedCard.Level).
+				Save(ctx)
+
+			levelBefore := currentPlayer.Level
+			playerLevelUp := currentPlayer.GiveXP(1)
 			if playerLevelUp {
-				notifications.DispatchPlayerLevelUp(app, p, levelBefore)
+				notifications.DispatchPlayerLevelUp(app, currentPlayer, levelBefore)
 			}
 
-			p.R.SelectedCard.UpdateG(ctx, boil.Infer())
-			p.UpdateG(ctx, boil.Infer())
+			currentPlayer.Update().
+				SetExperiencePoints(currentPlayer.ExperiencePoints).
+				SetExperiencePointsThreshold(currentPlayer.ExperiencePointsThreshold).
+				SetLevel(currentPlayer.Level).
+				Save(ctx)
+
+			// add debug log
+			logrus.WithFields(logrus.Fields{
+				"user_id":   event.Message.Author.ID,
+				"xp":        experience,
+				"level":     currentPlayer.Level,
+				"card":      currentPlayer.Edges.SelectedCard.ID,
+				"cardxp":    currentPlayer.Edges.SelectedCard.ExperiencePoints,
+				"cardlevel": currentPlayer.Edges.SelectedCard.Level,
+			}).Debug("semi-passive xp gain")
 		})
 	}
 }

@@ -1,0 +1,149 @@
+{{ define "card_utils" }}
+
+{{ $pkg := base $.Config.Package }}
+{{ template "header" $ }}
+
+import (
+	"fmt"
+	"math"
+	"math/rand"
+	"strings"
+
+	"github.com/disgoorg/disgo/discord"
+	"github.com/sirupsen/logrus"
+	"github.com/yyewolf/rwbyadv3/internal/cards"
+)
+
+func (c *Card) FullString() string {
+	def := c.Primitive()
+	return fmt.Sprintf("%s level %d (%d/%dXP) %s (%.2f%%)", c.RarityString(), c.Level, c.ExperiencePoints, c.ExperiencePointsThreshold, def.Name, c.IndividualValue)
+}
+
+func (c *Card) RarityString() (x string) {
+	switch c.Rarity {
+	case 0: // Common
+		x = "□ Common"
+	case 1: // Uncommon
+		x = "◇ Uncommon"
+	case 2: // Rare
+		x = "♡ Rare"
+	case 3: // Very Rare
+		x = "♤ Very Rare"
+	case 4: // Legendary
+		x = "♧ Legendary"
+	case 5: // Collector
+		x = "☆ Collector"
+	}
+
+	for i := 0; i < c.Buffs; i++ {
+		x += "+"
+	}
+	return x
+}
+
+func (c *Card) RarityToColor() int {
+	EmbedColor := 0
+	switch c.Rarity {
+	case 0: // Common
+		EmbedColor = 0x808080
+	case 1: // Uncommon
+		EmbedColor = 0x7CFC00
+	case 2: // Rare
+		EmbedColor = 0x87CEEB
+	case 3: // Very Rare
+		EmbedColor = 0xBA55D3
+	case 4: // Legendary
+		EmbedColor = 0xFFD700
+	case 5: // Collector
+		EmbedColor = 0xFF0000
+	}
+	return EmbedColor
+}
+
+func (c *Card) Message() (*discord.File, discord.Embed, *discord.ContainerComponent) {
+	img, err := cards.GetEmbeddableImage(c.CardType, "battle", "png")
+	if err != nil {
+		logrus.Panic("no image found, safeguard failed :o")
+	}
+
+	f := discord.NewFile("ch.png", "", img)
+
+	def := c.Primitive()
+
+	inline := true
+
+	embed := discord.NewEmbedBuilder().
+		SetTitlef("Level %d %s (%d/%d XP)", c.Level, def.Name, c.ExperiencePoints, c.ExperiencePointsThreshold).
+		SetColor(c.RarityToColor()).
+		AddFields(
+			discord.EmbedField{
+				Name:   "**General :**",
+				Inline: &inline,
+				Value: fmt.Sprintf("Category : **%v**\n", strings.Join(def.Categories, ", ")) +
+					fmt.Sprintf("Rarity : %s\n", c.RarityString()) +
+					fmt.Sprintf("Value : %.2f%%\n", c.IndividualValue),
+			},
+			discord.EmbedField{
+				Name:   "**Stats :**",
+				Inline: &inline,
+				Value: fmt.Sprintf("Health : %d\n", c.Edges.Stats.Health) +
+					fmt.Sprintf("Armor : %v\n", c.Edges.Stats.Armor) +
+					fmt.Sprintf("Damage : %v\n", c.Edges.Stats.Damage),
+			},
+		).
+		SetThumbnail("attachment://ch.png").
+		Build()
+
+	return f, embed, nil
+}
+
+func (c *Card) Primitive() *cards.Card {
+	return cards.Cards[c.CardType]
+}
+
+func (c *Card) GenerateStats() *CardStats {
+	def := c.Primitive()
+
+	return &CardStats{
+		CardID:  c.ID,
+		Damage:  int64(float64(def.BaseStats.Damage) + float64(9*c.Level)*float64(c.IndividualValue/100.0)*math.Pow(2, float64(c.Rarity)/4.6)*math.Pow(3, float64(c.Buffs)/7.0)),
+		Healing: int64(float64(def.BaseStats.Healing) + float64(11*c.Level)*float64(c.IndividualValue/100.0)*math.Pow(2, float64(c.Rarity)/9.0)*math.Pow(3, float64(c.Buffs)/10.0)),
+		Armor:   int64(float64(def.BaseStats.Armor) + float64(8*c.Level)*float64(c.IndividualValue/100.0)*math.Pow(2, float64(c.Rarity)/11.8)*math.Pow(3, float64(c.Buffs)/14.0)),
+		Health:  int64(float64(def.BaseStats.Health) + float64(18*c.Level)*float64(c.IndividualValue/100.0)*math.Pow(2, float64(c.Rarity)/4.6)*math.Pow(3, float64(c.Buffs)/7.0)),
+		Speed:   int64(def.BaseStats.Speed),
+	}
+}
+
+func (c *Card) GetNextLevelXP() int64 {
+	return int64(50*c.Level*c.Level + 100)
+}
+
+func (c *Card) GetXPReward(multiplier int, boost bool) int64 {
+	if c.Level >= 500 {
+		return 0
+	}
+	rint := multiplier * int(c.Level)
+	add := int64(float64((rand.Intn(26+rint))+15) * (math.Pow(float64(c.Level), 0.72) + 1))
+	if boost {
+		rint = int(math.Floor(((3.0 / 2.0) * float64(multiplier)) * float64(c.Level)))
+		add = int64(float64((rand.Intn(33+rint))+25) * (math.Pow(float64(c.Level), 0.84) + 1))
+	}
+	return add
+}
+
+func (c *Card) GiveXP(XP int64) (levelUp bool) {
+	for c.ExperiencePoints+XP > c.ExperiencePointsThreshold {
+		levelUp = true
+		//if level up
+		XP -= c.ExperiencePointsThreshold - c.ExperiencePoints
+		c.Level++
+		c.ExperiencePoints = 0
+		c.ExperiencePointsThreshold = c.GetNextLevelXP()
+		c.GenerateStats()
+	}
+	c.ExperiencePoints += XP
+	c.ExperiencePointsThreshold = c.GetNextLevelXP()
+	return levelUp
+}
+
+{{ end }}

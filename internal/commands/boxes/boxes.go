@@ -7,14 +7,14 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 )
 
-func NewMenu(ms *builder.MenuStore, app interfaces.App) *builder.Menu {
-	return ms.NewMenu(
+func NewMenu(menus *builder.MenuStore, app interfaces.App) *builder.Menu {
+	return menus.NewMenu(
 		builder.WithMenuName("Boxes"),
 		builder.WithEmoji(discord.Emoji{
 			Name: "📦",
 		}),
 		builder.WithCommands(
-			open.OpenCommand(ms, app),
+			open.OpenCommand(menus, app),
 		),
 	)
 }

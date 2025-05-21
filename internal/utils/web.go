@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/labstack/echo/v4"
-	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/yyewolf/rwbyadv3/ent"
 )
 
 func GetRedirectForW(w string) (redirectUri string, err error) {
@@ -18,6 +18,6 @@ func GetRedirectForW(w string) (redirectUri string, err error) {
 	return redirectUri, nil
 }
 
-func GetSessionFromContext(c echo.Context) *models.AuthCookie {
-	return c.Get("session").(*models.AuthCookie)
+func GetSessionFromContext(c echo.Context) *ent.Cookie {
+	return c.Get("session").(*ent.Cookie)
 }

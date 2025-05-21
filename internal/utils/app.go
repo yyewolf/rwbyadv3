@@ -4,68 +4,61 @@ import (
 	"github.com/google/uuid"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/jobs"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 type app struct{}
 
 var App app
 
-func (app) DispatchNewListing(app interfaces.App, listing *models.Listing) {
+func (app) DispatchNewListing(app interfaces.App, id uuid.UUID) {
 	app.EventHandler().SendEvent(
 		jobs.EventNewListing,
-		uuid.NewString(),
 		map[string]interface{}{
-			"listing": listing,
+			"id": id,
 		},
 	)
 }
 
-func (app) DispatchRemoveListing(app interfaces.App, listing *models.Listing) {
+func (app) DispatchRemoveListing(app interfaces.App, id uuid.UUID) {
 	app.EventHandler().SendEvent(
 		jobs.EventRemoveListing,
-		uuid.NewString(),
 		map[string]interface{}{
-			"listing": listing,
+			"id": id,
 		},
 	)
 }
 
-func (app) DispatchNewAuction(app interfaces.App, auction *models.Auction) {
+func (app) DispatchNewAuction(app interfaces.App, id uuid.UUID) {
 	app.EventHandler().SendEvent(
 		jobs.EventNewAuction,
-		uuid.NewString(),
 		map[string]interface{}{
-			"auction": auction,
+			"id": id,
 		},
 	)
 }
-func (app) DispatchUpdateAuction(app interfaces.App, auction *models.Auction) {
+func (app) DispatchUpdateAuction(app interfaces.App, id uuid.UUID) {
 	app.EventHandler().SendEvent(
 		jobs.EventUpdateAuction,
-		uuid.NewString(),
 		map[string]interface{}{
-			"auction": auction,
+			"id": id,
 		},
 	)
 }
 
-func (app) DispatchRemoveAuction(app interfaces.App, auction *models.Auction) {
+func (app) DispatchRemoveAuction(app interfaces.App, id uuid.UUID) {
 	app.EventHandler().SendEvent(
 		jobs.EventRemoveAuction,
-		uuid.NewString(),
 		map[string]interface{}{
-			"auction": auction,
+			"id": id,
 		},
 	)
 }
 
-func (app) DispatchNewBid(app interfaces.App, bid *models.AuctionsBid) {
+func (app) DispatchNewBid(app interfaces.App, id uuid.UUID) {
 	app.EventHandler().SendEvent(
 		jobs.EventBidAuction,
-		uuid.NewString(),
 		map[string]interface{}{
-			"bid": bid,
+			"id": id,
 		},
 	)
 }

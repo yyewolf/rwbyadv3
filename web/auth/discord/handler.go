@@ -13,11 +13,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/schema/enums"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 	"github.com/yyewolf/rwbyadv3/web/templates"
 	"github.com/yyewolf/rwbyadv3/web/templates/errors"
 	"github.com/yyewolf/rwbyadv3/web/templates/success"
@@ -103,29 +103,39 @@ func (h *DiscordAuthHandler) BeginAuth() echo.HandlerFunc {
 
 		// w corresponds to the component calling, this tells us to create a state and redirect to the component
 		if s == "" {
-			state := &models.AuthDiscordState{
-				State:     uuid.NewString(),
-				ExpiresAt: time.Now().Add(24 * time.Hour),
-				Type:      models.AuthDiscordStatesTypeLogin,
-			}
-			s = state.State
+			redirectUri := "/"
 			switch w {
 			case RedirectMain:
-				state.RedirectURI = "/"
+				redirectUri = "/"
 			case RedirectMarket:
-				state.RedirectURI = "/market"
+				redirectUri = "/market"
 			case RedirectDungeons:
-				state.RedirectURI = "/dungeons/" + params.Get("dungeonId")
+				redirectUri = "/dungeons/" + params.Get("dungeonId")
+			case RedirectTrades:
+				redirectUri = "/trades/" + params.Get("tradeId")
 			default:
 				return ErrorPage(c, http.StatusForbidden)
 			}
-			err := state.InsertG(context.Background(), boil.Infer())
+
+			state, err := h.app.Db().AuthState.Create().
+				SetExpiresAt(time.Now().Add(24 * time.Hour)).
+				SetType(enums.DiscordLogin).
+				SetRedirectURI(redirectUri).
+				Save(c.Request().Context())
 			if err != nil {
 				logrus.WithError(err).Error("error inserting state")
 				return ErrorPage(c, http.StatusInternalServerError)
 			}
+
+			s = state.ID.String()
 		} else {
-			_, err := models.FindAuthDiscordStateG(context.Background(), s)
+			stateId, err := uuid.Parse(s)
+			if err != nil {
+				logrus.WithError(err).Debug("error parsing state")
+				return ErrorPage(c, http.StatusForbidden)
+			}
+
+			_, err = h.app.Db().AuthState.Get(c.Request().Context(), stateId)
 			if err != nil {
 				logrus.WithField("state", s).Debug("state not found in DB")
 				return ErrorPage(c, http.StatusForbidden)
@@ -135,7 +145,7 @@ func (h *DiscordAuthHandler) BeginAuth() echo.HandlerFunc {
 		// Check if user is already logged in
 		sessionID, err := c.Cookie("session")
 		if err == nil {
-			session, err := models.FindAuthCookieG(context.Background(), sessionID.Value)
+			session, err := h.app.Db().Cookie.Get(c.Request().Context(), sessionID.Value)
 			if err == nil && session.ExpiresAt.After(time.Now()) {
 				redirectUri, err := utils.GetRedirectForW(w)
 				if err != nil {
@@ -165,13 +175,14 @@ func (h *DiscordAuthHandler) Callback() echo.HandlerFunc {
 		}
 
 		s := ReverseState(oauthState.Value)
-		state, err := models.FindAuthDiscordStateG(context.Background(), s)
+
+		state, err := h.app.Db().AuthState.Get(c.Request().Context(), uuid.MustParse(s))
 		if err != nil {
 			logrus.WithField("state", s).Debug("state not found in DB")
 			return ErrorPage(c, http.StatusForbidden)
 		}
 
-		state.DeleteG(context.Background(), false)
+		h.app.Db().AuthState.DeleteOne(state).Exec(c.Request().Context())
 
 		token, err := h.c.Exchange(context.Background(), c.FormValue("code"))
 		if err != nil {
@@ -180,34 +191,31 @@ func (h *DiscordAuthHandler) Callback() echo.HandlerFunc {
 		}
 
 		switch state.Type {
-		case models.AuthDiscordStatesTypeLogin:
+		case enums.DiscordLogin:
 			return h.CallbackLogin(state, token)(c)
 		}
 		return c.Redirect(http.StatusTemporaryRedirect, "/")
 	}
 }
 
-func (h *DiscordAuthHandler) CallbackLogin(state *models.AuthDiscordState, token *oauth2.Token) echo.HandlerFunc {
+func (h *DiscordAuthHandler) CallbackLogin(state *ent.AuthState, token *oauth2.Token) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Get the user
 		user, err := h.app.Client().Rest().GetCurrentUser(token.AccessToken)
 		if err != nil {
-			logrus.WithField("state", state.State).WithError(err).Error("error getting user")
+			logrus.WithField("state", state.ID).WithError(err).Error("error getting user")
 			return ErrorPage(c, http.StatusInternalServerError)
 		}
 
 		sessionID := utils.GenerateNewCookieId()
 
-		// Create a session
-		session := &models.AuthCookie{
-			ID:        sessionID,
-			PlayerID:  user.ID.String(),
-			ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
-		}
-
-		err = session.InsertG(context.Background(), boil.Infer())
+		err = h.app.Db().Cookie.Create().
+			SetID(sessionID).
+			SetPlayerID(user.ID.String()).
+			SetExpiresAt(time.Now().Add(7 * 24 * time.Hour)).
+			Exec(c.Request().Context())
 		if err != nil {
-			logrus.WithField("state", state.State).WithError(err).Error("error inserting session")
+			logrus.WithField("state", state.ID).WithError(err).Error("error inserting session")
 			return ErrorPage(c, http.StatusInternalServerError)
 		}
 

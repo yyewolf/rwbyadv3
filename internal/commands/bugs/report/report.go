@@ -23,7 +23,7 @@ type reportCommand struct {
 	app interfaces.App
 }
 
-func ReportCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
+func ReportCommand(menus *builder.MenuStore, app interfaces.App) *builder.Command {
 	var cmd reportCommand
 
 	cmd.app = app
@@ -56,11 +56,11 @@ func ReportCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 	)
 }
 
-func (cmd *reportCommand) HandleCommand(t string) handler.CommandHandler {
-	return func(e *handler.CommandEvent) error {
-		return e.Modal(discord.NewModalCreateBuilder().
-			SetCustomID("modal_report_" + t).
-			SetTitle("Report a new " + t).
+func (cmd *reportCommand) HandleCommand(reportType string) handler.CommandHandler {
+	return func(event *handler.CommandEvent) error {
+		return event.Modal(discord.NewModalCreateBuilder().
+			SetCustomID("modal_report_" + reportType).
+			SetTitle("Report a new " + reportType).
 			AddContainerComponents([]discord.ContainerComponent{
 				discord.NewActionRow().AddComponents(
 					discord.NewShortTextInput("title", "Title").
@@ -76,28 +76,29 @@ func (cmd *reportCommand) HandleCommand(t string) handler.CommandHandler {
 	}
 }
 
-func (cmd *reportCommand) HandleResponse(t string) handler.ModalHandler {
-	return func(e *handler.ModalEvent) error {
-		d := e.Data
+func (cmd *reportCommand) HandleResponse(reportType string) handler.ModalHandler {
+	return func(event *handler.ModalEvent) error {
+		form := event.Data
 
-		reportType := string(d.CustomID[13:])
-		reportTitle := d.Text("title")
-		reportDescription := d.Text("description")
+		reportType := string(form.CustomID[13:])
+		reportTitle := form.Text("title")
+		reportDescription := form.Text("description")
 
 		issue, err := cmd.app.Github().NewGithubIssue(repo.NewIssueParams{
-			Title:       fmt.Sprintf("New %s: %s", reportType, reportTitle),
+			Title:       fmt.Sprintf("New %s: %s - %s", reportType, reportTitle, event.User().ID),
 			Description: reportDescription,
 		})
 		if err != nil {
-			logrus.WithError(err).Error("Failed to create issue")
-			return e.CreateMessage(
+			logrus.WithField("user_id", event.User().ID).WithError(err).Error("Failed to create issue")
+			return event.CreateMessage(
 				discord.NewMessageCreateBuilder().
 					SetContent("Failed to create the bug report.").
 					SetEphemeral(true).
 					Build(),
 			)
 		}
-		return e.CreateMessage(
+
+		return event.CreateMessage(
 			discord.NewMessageCreateBuilder().
 				SetEmbeds(
 					discord.NewEmbedBuilder().

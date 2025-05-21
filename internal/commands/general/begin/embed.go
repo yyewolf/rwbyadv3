@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"github.com/disgoorg/disgo/discord"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
-func (cmd *beginCommand) generator(p *models.Player, page int) (discord.Embed, discord.ContainerComponent) {
+func (cmd *beginCommand) generator(player *ent.Player, page int) (discord.Embed, discord.ContainerComponent) {
 	embed := discord.NewEmbedBuilder()
 	embed.SetColor(cmd.app.Config().App.BotColor)
 	embed.SetEmbedFooter(cmd.app.Footer())
@@ -34,7 +34,7 @@ func (cmd *beginCommand) generator(p *models.Player, page int) (discord.Embed, d
 		cmd.pageThree(embed)
 	}
 
-	customID := fmt.Sprintf("/begin/%s/%d", p.ID, page)
+	customID := fmt.Sprintf("/begin/%s/%d", player.ID, page)
 
 	return embed.Build(), discord.NewActionRow(
 		discord.NewSecondaryButton("◀️ Prev", customID+"/"+componentActionPrev),

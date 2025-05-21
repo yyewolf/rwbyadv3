@@ -4,44 +4,45 @@ import (
 	"fmt"
 
 	"github.com/disgoorg/disgo/discord"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/schema/enums"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
-func (cmd *profileCommand) generator(p *models.Player, u discord.User) discord.Embed {
+func (cmd *profileCommand) generator(currentPlayer *ent.Player, discordUser discord.User) discord.Embed {
 	embed := discord.NewEmbedBuilder()
 
-	embed.SetTitlef("These is your profile %s.", u.EffectiveName())
+	embed.SetTitlef("These is your profile %s.", discordUser.EffectiveName())
 	embed.SetColor(cmd.app.Config().App.BotColor)
 
 	embed.AddField(
 		"Player :",
 		utils.Joinln(
-			fmt.Sprintf("Level : **%d**", p.Level),
-			fmt.Sprintf("XP : **%d**/**%d**", p.XP, p.NextLevelXP),
-			fmt.Sprintf("Slots : **%d**", p.BackpackLevel),
-			fmt.Sprintf("Boxes : **%d**/**%d**", len(p.R.LootBoxes), p.BackpackLevel),
-			fmt.Sprintf("Liens : **%d** (**%d** locked)", p.Liens, p.LiensBidded),
+			fmt.Sprintf("Level : **%d**", currentPlayer.Level),
+			fmt.Sprintf("XP : **%d**/**%d**", currentPlayer.ExperiencePoints, currentPlayer.ExperiencePointsThreshold),
+			fmt.Sprintf("Slots : **%d**", currentPlayer.BackpackLevel),
+			fmt.Sprintf("Boxes : **%d**/**%d**", len(currentPlayer.Edges.Lootboxes), currentPlayer.BackpackLevel),
+			fmt.Sprintf("Liens : **%d** (**%d** locked)", currentPlayer.Liens, currentPlayer.LiensInAuction),
 		),
 		true,
 	)
 
-	counts := utils.Players.LootBoxesCount(p)
+	counts := currentPlayer.LootBoxesCount()
 
 	embed.AddField(
 		"Inventory :",
 		utils.Joinln(
-			fmt.Sprintf("Cards : **%d**/**%d** (**%d** reserved)", len(p.R.PlayerCards), utils.Players.MaxSlots(p), p.SlotsReserved),
-			fmt.Sprintf("Classic boxes : **%d**", counts[models.LootBoxesTypeClassic]),
-			fmt.Sprintf("Rare boxes : **%d**", counts[models.LootBoxesTypeRare]),
-			fmt.Sprintf("Limited boxes : **%d**", counts[models.LootBoxesTypeLimited]),
-			fmt.Sprintf("Special boxes : **%d**", counts[models.LootBoxesTypeSpecial]),
+			fmt.Sprintf("Cards : **%d**/**%d** (**%d** reserved)", len(currentPlayer.Edges.Cards), utils.Players.MaxSlots(currentPlayer), currentPlayer.BackpackReservedSlots),
+			fmt.Sprintf("Classic boxes : **%d**", counts[enums.LootBoxClassic]),
+			fmt.Sprintf("Rare boxes : **%d**", counts[enums.LootBoxRare]),
+			fmt.Sprintf("Limited boxes : **%d**", counts[enums.LootBoxLimited]),
+			fmt.Sprintf("Special boxes : **%d**", counts[enums.LootBoxSpecial]),
 		),
 		true,
 	)
 
 	// Activities
-	dungeonActivity := utils.Players.GetDungeonState(p)
+	dungeonActivity := currentPlayer.GetDungeonState()
 
 	embed.AddField(
 		"Activities :",

@@ -2,77 +2,97 @@ package hooks
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
-func cardAfterInsert(ctx context.Context, exec boil.ContextExecutor, c *models.Card) error {
-	amount, err := models.PlayerCards(models.PlayerCardWhere.PlayerID.EQ(c.PlayerID)).Count(ctx, exec)
-	if err != nil {
-		return err
-	}
+func listingMutator(app interfaces.App) func(next ent.Mutator) ent.Mutator {
+	return func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			listingMutation, ok := m.(*ent.ListingMutation)
+			if !ok {
+				return nil, fmt.Errorf("listing mutation expected, got %T", m)
+			}
 
-	playerCard := models.PlayerCard{
-		PlayerID: c.PlayerID,
-		CardID:   c.ID,
-		Position: int(amount),
-	}
+			id, ok := listingMutation.ID()
+			if !ok {
+				return nil, fmt.Errorf("listing ID expected")
+			}
 
-	return playerCard.Insert(ctx, exec, boil.Infer())
-}
+			switch m.Op() {
+			case ent.OpCreate:
+				utils.App.DispatchNewListing(app, id)
+			case ent.OpDeleteOne:
+				utils.App.DispatchRemoveListing(app, id)
+			}
 
-func listingsAfterInsert(app interfaces.App) func(ctx context.Context, exec boil.ContextExecutor, c *models.Listing) error {
-	return func(ctx context.Context, exec boil.ContextExecutor, c *models.Listing) error {
-		utils.App.DispatchNewListing(app, c)
-		return nil
-	}
-}
-
-func listingsAfterDelete(app interfaces.App) func(ctx context.Context, exec boil.ContextExecutor, c *models.Listing) error {
-	return func(ctx context.Context, exec boil.ContextExecutor, c *models.Listing) error {
-		utils.App.DispatchRemoveListing(app, c)
-		return nil
+			return next.Mutate(ctx, m)
+		})
 	}
 }
 
-func auctionsAfterInsert(app interfaces.App) func(ctx context.Context, exec boil.ContextExecutor, c *models.Auction) error {
-	return func(ctx context.Context, exec boil.ContextExecutor, c *models.Auction) error {
-		utils.App.DispatchNewAuction(app, c)
-		return nil
+func auctionMutator(app interfaces.App) func(next ent.Mutator) ent.Mutator {
+	return func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			auctionMutation, ok := m.(*ent.AuctionMutation)
+			if !ok {
+				return nil, fmt.Errorf("auction mutation expected, got %T", m)
+			}
+
+			id, ok := auctionMutation.ID()
+			if !ok {
+				return nil, fmt.Errorf("auction ID expected")
+			}
+
+			switch m.Op() {
+			case ent.OpCreate:
+				utils.App.DispatchNewAuction(app, id)
+			case ent.OpDeleteOne:
+				utils.App.DispatchRemoveAuction(app, id)
+			case ent.OpUpdateOne:
+				utils.App.DispatchUpdateAuction(app, id)
+			}
+
+			return next.Mutate(ctx, m)
+		})
 	}
 }
 
-func auctionsAfterUpdate(app interfaces.App) func(ctx context.Context, exec boil.ContextExecutor, c *models.Auction) error {
-	return func(ctx context.Context, exec boil.ContextExecutor, c *models.Auction) error {
-		utils.App.DispatchUpdateAuction(app, c)
-		return nil
-	}
-}
+func bidMutator(app interfaces.App) func(next ent.Mutator) ent.Mutator {
+	return func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			bidMutation, ok := m.(*ent.AuctionBidMutation)
+			if !ok {
+				return nil, fmt.Errorf("bid mutation expected, got %T", m)
+			}
 
-func auctionsAfterDelete(app interfaces.App) func(ctx context.Context, exec boil.ContextExecutor, c *models.Auction) error {
-	return func(ctx context.Context, exec boil.ContextExecutor, c *models.Auction) error {
-		utils.App.DispatchRemoveAuction(app, c)
-		return nil
-	}
-}
+			_, err := bidMutation.IDs(ctx)
+			if err == nil {
+				return next.Mutate(ctx, m)
+			}
 
-func bidAfterInsertOrUpdate(app interfaces.App) func(ctx context.Context, exec boil.ContextExecutor, c *models.AuctionsBid) error {
-	return func(ctx context.Context, exec boil.ContextExecutor, c *models.AuctionsBid) error {
-		utils.App.DispatchNewBid(app, c)
-		return nil
+			id, ok := bidMutation.ID()
+			if !ok {
+				return nil, fmt.Errorf("bid ID expected")
+			}
+
+			switch m.Op() {
+			case ent.OpCreate:
+				utils.App.DispatchNewBid(app, id)
+			case ent.OpUpdateOne:
+				utils.App.DispatchNewBid(app, id)
+			}
+
+			return next.Mutate(ctx, m)
+		})
 	}
 }
 
 func RegisterHooks(app interfaces.App) {
-	models.AddCardHook(boil.AfterInsertHook, cardAfterInsert)
-	models.AddListingHook(boil.AfterInsertHook, listingsAfterInsert(app))
-	models.AddListingHook(boil.AfterDeleteHook, listingsAfterDelete(app))
-	models.AddAuctionHook(boil.AfterInsertHook, auctionsAfterInsert(app))
-	models.AddAuctionHook(boil.AfterDeleteHook, auctionsAfterDelete(app))
-	models.AddAuctionHook(boil.AfterUpdateHook, auctionsAfterUpdate(app))
-	models.AddAuctionsBidHook(boil.AfterInsertHook, bidAfterInsertOrUpdate(app))
-	models.AddAuctionsBidHook(boil.AfterUpdateHook, bidAfterInsertOrUpdate(app))
+	app.Db().Listing.Use(listingMutator(app))
+	app.Db().Auction.Use(auctionMutator(app))
+	app.Db().AuctionBid.Use(bidMutator(app))
 }

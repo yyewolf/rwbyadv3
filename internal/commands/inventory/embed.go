@@ -1,19 +1,20 @@
 package inventory
 
 import (
+	"context"
 	"fmt"
 	"math"
 
 	"github.com/disgoorg/disgo/discord"
-	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/card"
 )
 
 var (
 	perPage = 10.0
 )
 
-func (cmd *inventoryCommand) generator(username string, p *models.Player, page int) (discord.Embed, discord.ContainerComponent) {
+func (cmd *inventoryCommand) generator(username string, currentPlayer *ent.Player, page int) (discord.Embed, discord.ContainerComponent, error) {
 	embed := discord.NewEmbedBuilder()
 	embed.SetTitlef("%s's inventory :", username)
 	embed.SetDescriptionf("To select a character, please use %s.", cmd.app.CommandMention("select"))
@@ -21,8 +22,14 @@ func (cmd *inventoryCommand) generator(username string, p *models.Player, page i
 	embed.SetEmbedFooter(cmd.app.Footer())
 
 	// Pagination here
-	cards := utils.Players.AvailableCards(p)
-	total := len(cards)
+	count, err := currentPlayer.QueryCards().
+		Where(card.Available(true)).
+		Count(context.Background())
+	if err != nil {
+		return discord.Embed{}, nil, err
+	}
+
+	total := count
 	maxPage := int(math.Ceil(float64(total)/perPage)) - 1
 
 	var field discord.EmbedField
@@ -35,31 +42,39 @@ func (cmd *inventoryCommand) generator(username string, p *models.Player, page i
 	}
 
 	top := (page + 1) * int(perPage)
-	if top > len(cards) {
-		top = len(cards)
+	if top > count {
+		top = count
+	}
+
+	cards, err := currentPlayer.QueryCards().
+		Order(card.ByPosition()).
+		Where(card.Available(true)).
+		Offset(page * int(perPage)).
+		Limit(int(perPage)).
+		All(context.Background())
+	if err != nil {
+		return discord.Embed{}, nil, err
 	}
 
 	field.Name = fmt.Sprintf("Cards (page %d/%d) :", page+1, maxPage+1)
 
-	displayedCards := cards[page*int(perPage) : top]
-
-	for i, c := range displayedCards {
+	for i, card := range cards {
 		idx := page*int(perPage) + i + 1
-		field.Value += fmt.Sprintf("`N°%d | %s`\n", idx, utils.Cards.FullString(c))
+		field.Value += fmt.Sprintf("`N°%d | %s`\n", idx, card.FullString())
 	}
 
-	if len(displayedCards) == 0 {
+	if len(cards) == 0 {
 		field.Name = "Cards :"
 		field.Value = "You have no cards to be shown."
 	}
 
 	embed.AddFields(field)
 
-	customID := fmt.Sprintf("/inventory/%s/%d", p.ID, page)
+	customID := fmt.Sprintf("/inventory/%s/%d", currentPlayer.ID, page)
 
 	return embed.Build(), discord.NewActionRow(
 		discord.NewSecondaryButton("◀️ Prev", customID+"/"+componentActionPrev),
 		discord.NewSecondaryButton("🔄 Refresh", customID+"/"+componentActionRefresh),
 		discord.NewSecondaryButton("▶️ Next", customID+"/"+componentActionNext),
-	)
+	), nil
 }

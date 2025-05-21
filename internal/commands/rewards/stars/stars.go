@@ -1,18 +1,17 @@
 package stars
 
 import (
-	"context"
 	"net/url"
 	"time"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
-	"github.com/google/uuid"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/sirupsen/logrus"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/schema/enums"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 const (
@@ -24,7 +23,7 @@ type starCommand struct {
 	app interfaces.App
 }
 
-func StarCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
+func StarCommand(menus *builder.MenuStore, app interfaces.App) *builder.Command {
 	var cmd starCommand
 
 	cmd.app = app
@@ -48,11 +47,10 @@ func StarCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 	)
 }
 
-func (cmd *starCommand) HandleCommand(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
-	s := p.R.GetGithubStar()
-	if s.HasStarred {
-		return e.Respond(
+func (cmd *starCommand) HandleCommand(logger *logrus.Entry, event *handler.CommandEvent) error {
+	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+	if currentPlayer.Edges.GithubStar.HasStarred {
+		return event.Respond(
 			discord.InteractionResponseTypeCreateMessage,
 			discord.NewMessageCreateBuilder().
 				SetContentf("You already starred the repo!").
@@ -60,32 +58,30 @@ func (cmd *starCommand) HandleCommand(e *handler.CommandEvent) error {
 		)
 	}
 
-	state := &models.AuthGithubState{
-		State:     uuid.NewString(),
-		PlayerID:  p.ID,
-		ExpiresAt: time.Now().Add(24 * time.Hour),
-		Type:      models.AuthGithubStatesTypeCheckStar,
-	}
-	err := state.InsertG(context.Background(), boil.Infer())
+	state, err := cmd.app.Db().AuthState.Create().
+		SetPlayerID(currentPlayer.ID).
+		SetExpiresAt(time.Now().Add(24 * time.Hour)).
+		SetType(enums.GithubCheckStar).
+		Save(event.Ctx)
 	if err != nil {
-		return utils.CommandError(e, err)
+		return utils.CommandError(logger, event, err)
 	}
 
 	cfg := cmd.app.Config()
 
 	url, err := url.JoinPath(cfg.Github.App.BaseURI, "/")
 	if err != nil {
-		return utils.CommandError(e, err)
+		return utils.CommandError(logger, event, err)
 	}
 
-	return e.Respond(
+	return event.Respond(
 		discord.InteractionResponseTypeCreateMessage,
 		discord.NewMessageCreateBuilder().
 			SetContentf("Please star the [repository](https://github.com/%s/%s).\nYou can then click this link to verify your star: %s?s=%s",
 				cfg.Github.Username,
 				cfg.Github.Repository,
 				url,
-				state.State,
+				state.ID,
 			).
 			SetEphemeral(true),
 	)

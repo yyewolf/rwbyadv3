@@ -8,10 +8,10 @@ import (
 )
 
 func (cmd *helpCommand) generateEmbed() {
-	commands, _ := cmd.app.Client().Rest().GetGlobalCommands(cmd.c.Discord.AppID, false)
+	commands, _ := cmd.app.Client().Rest().GetGlobalCommands(cmd.config.Discord.AppID, false)
 
 	cmd.embeds = make(map[string]*discord.Embed)
-	menus := cmd.ms.Menus
+	menus := cmd.menus.Menus
 
 	for _, menu := range menus {
 		embed := &discord.Embed{

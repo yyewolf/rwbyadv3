@@ -7,6 +7,7 @@ import (
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
 	"github.com/disgoorg/snowflake/v2"
+	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
@@ -21,10 +22,9 @@ const (
 
 type pingCommand struct {
 	app interfaces.App
-	// jobHandler interfaces.JobHandler
 }
 
-func PingCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
+func PingCommand(menus *builder.MenuStore, app interfaces.App) *builder.Command {
 	var cmd pingCommand
 
 	cmd.app = app
@@ -34,7 +34,10 @@ func PingCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 		builder.WithCommandName(commandName),
 		builder.WithDescription(commandDescription),
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
-			h.Command("/"+commandName, cmd.HandleCommand)
+			h.Command("/"+commandName, builder.WithContext(
+				app,
+				cmd.HandleCommand,
+			))
 			return nil
 		}),
 		builder.WithSlashCommand(discord.SlashCommandCreate{
@@ -44,20 +47,20 @@ func PingCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 	)
 }
 
-func (cmd *pingCommand) HandleCommand(e *handler.CommandEvent) error {
+func (cmd *pingCommand) HandleCommand(logger *logrus.Entry, event *handler.CommandEvent) error {
 	// Create delayed pong in 10 seconds
 	workflowOptions := client.StartWorkflowOptions{
-		ID:         "delayed_pong_" + e.ID().String(),
+		ID:         "delayed_pong_" + event.ID().String(),
 		TaskQueue:  cmd.app.Config().Temporal.TaskQueue,
 		StartDelay: 5 * time.Second,
 	}
 
-	_, err := cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.DelayedPongWorkflow, e.User().ID.String())
+	_, err := cmd.app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, cmd.DelayedPongWorkflow, event.User().ID.String())
 	if err != nil {
-		return utils.CommandError(e, err)
+		return utils.CommandError(logger, event, err)
 	}
 
-	return e.Respond(
+	return event.Respond(
 		discord.InteractionResponseTypeCreateMessage,
 		discord.NewMessageCreateBuilder().
 			SetContentf("Pong !").

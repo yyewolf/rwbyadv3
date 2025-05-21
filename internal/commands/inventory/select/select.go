@@ -1,14 +1,14 @@
 package selectc
 
 import (
-	"context"
-
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
+	"github.com/sirupsen/logrus"
+	"github.com/yyewolf/rwbyadv3/ent"
+	"github.com/yyewolf/rwbyadv3/ent/card"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/models"
 )
 
 const (
@@ -20,7 +20,7 @@ type selectCommand struct {
 	app interfaces.App
 }
 
-func SelectCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
+func SelectCommand(menus *builder.MenuStore, app interfaces.App) *builder.Command {
 	var cmd selectCommand
 
 	cmd.app = app
@@ -33,7 +33,6 @@ func SelectCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 				app,
 				cmd.HandleCommand,
 				builder.WithPlayer(),
-				builder.WithPlayerCards(),
 			))
 			return nil
 		}),
@@ -52,27 +51,41 @@ func SelectCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 	)
 }
 
-func (cmd *selectCommand) HandleCommand(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.PlayerKey).(*models.Player)
+func (cmd *selectCommand) HandleCommand(logger *logrus.Entry, event *handler.CommandEvent) error {
+	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-	want := e.SlashCommandInteractionData().Int("card")
-
-	card, found := utils.Players.GetAvailableCard(p, want-1)
-	if !found {
-		return e.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("Sorry, you do not have a card with this number...").
+	want := event.SlashCommandInteractionData().Int("card")
+	if want < 1 {
+		return event.CreateMessage(discord.NewMessageCreateBuilder().
+			SetContent("Please select a card with a number greater than 0...").
 			SetEphemeral(true).
 			Build(),
 		)
 	}
 
-	err := p.SetSelectedCardG(context.Background(), false, card)
+	card, err := currentPlayer.QueryCards().
+		Order(card.ByPosition()).
+		Where(card.Available(true)).
+		Offset(want - 1).
+		First(event.Ctx)
 	if err != nil {
-		return utils.CommandError(e, err)
+		if ent.IsNotFound(err) {
+			return event.CreateMessage(discord.NewMessageCreateBuilder().
+				SetContent("Sorry, you do not have a card with this number...").
+				SetEphemeral(true).
+				Build(),
+			)
+		}
+		return utils.CommandError(logger, event, err)
 	}
 
-	return e.CreateMessage(discord.NewMessageCreateBuilder().
-		SetContentf("All good, you selected : `%s`", utils.Cards.FullString(card)).
+	err = currentPlayer.Update().SetSelectedCard(card).Exec(event.Ctx)
+	if err != nil {
+		return utils.CommandError(logger, event, err)
+	}
+
+	return event.CreateMessage(discord.NewMessageCreateBuilder().
+		SetContentf("All good, you selected : `%s`", card.FullString()).
 		SetEphemeral(true).
 		Build(),
 	)

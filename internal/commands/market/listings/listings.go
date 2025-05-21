@@ -22,7 +22,7 @@ type listingsCommand struct {
 	app interfaces.App
 }
 
-func ListingsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
+func ListingsCommand(menus *builder.MenuStore, app interfaces.App) *builder.Command {
 	var cmd listingsCommand
 
 	cmd.app = app
@@ -35,26 +35,22 @@ func ListingsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command
 				app,
 				cmd.AddListing,
 				builder.WithPlayer(),
-				builder.WithPlayerCards(),
 			))
 			h.Command("/listings/remove", builder.WithContext(
 				app,
 				cmd.RemoveListing,
 				builder.WithPlayer(),
-				builder.WithPlayerCards(),
 			))
 
 			h.Command("/listings/list", builder.WithContext(
 				app,
 				cmd.GetListings,
 				builder.WithPlayer(),
-				builder.WithPlayerCards(),
 			))
 			h.ButtonComponent("/"+componentId, builder.WithContextD(
 				app,
 				cmd.HandleGetListingsInteraction,
 				builder.WithPlayer(),
-				builder.WithPlayerCards(),
 			))
 
 			return nil

@@ -1,16 +1,19 @@
 package utils
 
 import (
+	"runtime/debug"
+
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 )
 
-func CommandError(e *handler.CommandEvent, err error) error {
-	logrus.
+func CommandError(logger *logrus.Entry, e *handler.CommandEvent, err error) error {
+	logger.
 		WithField(string(builder.ContextIdKey), e.Ctx.Value(builder.ContextIdKey)).
 		WithError(err).
+		WithField("stack", string(debug.Stack())).
 		Error("An error occurred while handling a command")
 
 	return e.Respond(
@@ -21,10 +24,11 @@ func CommandError(e *handler.CommandEvent, err error) error {
 	)
 }
 
-func ComponentError(e *handler.ComponentEvent, err error) error {
-	logrus.
+func ComponentError(logger *logrus.Entry, e *handler.ComponentEvent, err error) error {
+	logger.
 		WithField(string(builder.ContextIdKey), e.Ctx.Value(builder.ContextIdKey)).
 		WithError(err).
+		WithField("stack", string(debug.Stack())).
 		Error("An error occurred while handling a component")
 
 	return e.Respond(

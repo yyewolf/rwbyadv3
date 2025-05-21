@@ -7,10 +7,12 @@ import (
 	"github.com/disgoorg/disgo"
 	"github.com/disgoorg/disgo/bot"
 	"github.com/disgoorg/disgo/cache"
+	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/events"
 	"github.com/disgoorg/disgo/gateway"
 	"github.com/disgoorg/disgo/handler"
 	"github.com/sirupsen/logrus"
+	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/commands"
 	botEvent "github.com/yyewolf/rwbyadv3/internal/commands/events"
@@ -29,6 +31,9 @@ import (
 
 type App struct {
 	config *env.Config
+
+	// db stuff
+	entClient *ent.Client
 
 	// discord stuff
 	handler *handler.Mux
@@ -54,6 +59,9 @@ type App struct {
 	// options
 	enableWeb bool
 	webApp    *web.WebApp
+
+	// cache
+	usr *discord.OAuth2User
 }
 
 func New(options ...Option) interfaces.App {
@@ -65,11 +73,12 @@ func New(options ...Option) interfaces.App {
 
 	app.jobHandler = jobs.New(
 		jobs.WithConfig(app.config),
+		jobs.WithDb(app.entClient),
 	)
 
 	app.handler = handler.New()
 
-	c, err := disgo.New(app.config.Discord.Token,
+	discordClient, err := disgo.New(app.config.Discord.Token,
 		bot.WithLogger(slog.New(sloglogrus.Option{Level: slog.Level(logrus.GetLevel()), Logger: logrus.StandardLogger()}.NewLogrusHandler())),
 		bot.WithGatewayConfigOpts(
 			gateway.WithIntents(gateway.IntentsNonPrivileged),
@@ -83,7 +92,7 @@ func New(options ...Option) interfaces.App {
 		logrus.WithField("error", err).Fatal("could not start discord client")
 	}
 
-	app.client = c
+	app.client = discordClient
 
 	app.shutdown = make(chan struct{})
 	app.errorChannel = make(chan error)
@@ -141,6 +150,10 @@ func (app *App) OnReady(_ *events.Ready) {
 
 func (a *App) Client() bot.Client {
 	return a.client
+}
+
+func (a *App) Db() *ent.Client {
+	return a.entClient
 }
 
 func (a *App) Handler() *handler.Mux {
