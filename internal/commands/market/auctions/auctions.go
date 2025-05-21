@@ -36,7 +36,7 @@ type auctionsCommand struct {
 	addConfirmation *confirmation.Handler
 }
 
-func AuctionsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
+func AuctionsCommand(menus *builder.MenuStore, app interfaces.App) *builder.Command {
 	var cmd auctionsCommand
 
 	cmd.app = app
@@ -46,7 +46,7 @@ func AuctionsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command
 
 	cmd.addConfirmation = confirmation.NewHandler(app, addConfirmationId, builder.WithContextD(
 		app,
-		cmd.AddAuction,
+		cmd.AddAuctionAfterValidation,
 		builder.WithPlayer(),
 		builder.WithPlayerCards(),
 	))
@@ -57,7 +57,7 @@ func AuctionsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command
 		builder.WithRegisterFunc(func(h *handler.Mux) error {
 			h.Command("/auctions/add", builder.WithContext(
 				app,
-				cmd.AddAuctionB,
+				cmd.AddAuction,
 				builder.WithPlayer(),
 			))
 

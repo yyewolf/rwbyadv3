@@ -3,6 +3,7 @@ package preprod
 import (
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
+	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/ent/schema/enums"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
@@ -19,7 +20,7 @@ type preprodCommand struct {
 	app interfaces.App
 }
 
-func PreprodCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
+func PreprodCommand(menus *builder.MenuStore, app interfaces.App) *builder.Command {
 	var cmd preprodCommand
 
 	cmd.app = app
@@ -122,92 +123,86 @@ func PreprodCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command 
 	)
 }
 
-func (cmd *preprodCommand) DoLootBox(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+func (cmd *preprodCommand) DoLootBox(logger *logrus.Entry, event *handler.CommandEvent) error {
+	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
 	for _, t := range enums.LootBoxTypes() {
 		cmd.app.Db().LootBox.Create().
-			SetPlayerID(p.ID).
+			SetPlayerID(currentPlayer.ID).
 			SetType(t).
-			Save(e.Ctx)
+			Save(event.Ctx)
 	}
 
-	count, err := p.QueryLootboxes().Count(e.Ctx)
+	count, err := currentPlayer.QueryLootboxes().Count(event.Ctx)
 	if err != nil {
-		return utils.CommandError(e, err)
+		return utils.CommandError(logger, event, err)
 	}
 
-	return e.CreateMessage(
+	return event.CreateMessage(
 		discord.NewMessageCreateBuilder().
 			SetContentf("You now have %d loot boxes", count).
 			Build(),
 	)
 }
 
-func (cmd *preprodCommand) GivePlayerXP(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+func (cmd *preprodCommand) GivePlayerXP(logger *logrus.Entry, event *handler.CommandEvent) error {
+	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+	amount := event.SlashCommandInteractionData().Int("amount")
+	levelUp := currentPlayer.GiveXP(int64(amount))
 
-	amount := e.SlashCommandInteractionData().Int("amount")
+	currentPlayer.Update().
+		SetExperiencePoints(currentPlayer.ExperiencePoints).
+		SetExperiencePointsThreshold(currentPlayer.ExperiencePointsThreshold).
+		SetLevel(currentPlayer.Level).
+		Save(event.Ctx)
 
-	levelUp := p.GiveXP(int64(amount))
-
-	p.Update().
-		SetExperiencePoints(p.ExperiencePoints).
-		SetExperiencePointsThreshold(p.ExperiencePointsThreshold).
-		SetLevel(p.Level).
-		Save(e.Ctx)
-
-	return e.CreateMessage(
+	return event.CreateMessage(
 		discord.NewMessageCreateBuilder().
 			SetContentf("Ok done, level up : %v", levelUp).
 			Build(),
 	)
 }
 
-func (cmd *preprodCommand) SetPlayerLevel(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+func (cmd *preprodCommand) SetPlayerLevel(logger *logrus.Entry, event *handler.CommandEvent) error {
+	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+	level := event.SlashCommandInteractionData().Int("level")
+	currentPlayer.Level = int64(level)
+	currentPlayer.ExperiencePoints = 0
+	currentPlayer.ExperiencePointsThreshold = currentPlayer.GetNextLevelXP()
 
-	level := e.SlashCommandInteractionData().Int("level")
+	currentPlayer.Update().
+		SetExperiencePoints(currentPlayer.ExperiencePoints).
+		SetExperiencePointsThreshold(currentPlayer.ExperiencePointsThreshold).
+		SetLevel(currentPlayer.Level).
+		Save(event.Ctx)
 
-	p.Level = int64(level)
-	p.ExperiencePoints = 0
-	p.ExperiencePointsThreshold = p.GetNextLevelXP()
-
-	p.Update().
-		SetExperiencePoints(p.ExperiencePoints).
-		SetExperiencePointsThreshold(p.ExperiencePointsThreshold).
-		SetLevel(p.Level).
-		Save(e.Ctx)
-
-	return e.CreateMessage(
+	return event.CreateMessage(
 		discord.NewMessageCreateBuilder().
 			SetContentf("Ok done.").
 			Build(),
 	)
 }
 
-func (cmd *preprodCommand) SetLiens(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+func (cmd *preprodCommand) SetLiens(logger *logrus.Entry, event *handler.CommandEvent) error {
+	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-	p.Update().
-		SetLiens(int64(e.SlashCommandInteractionData().Int("liens"))).
-		Save(e.Ctx)
+	currentPlayer.Update().
+		SetLiens(int64(event.SlashCommandInteractionData().Int("liens"))).
+		Save(event.Ctx)
 
-	return e.CreateMessage(
+	return event.CreateMessage(
 		discord.NewMessageCreateBuilder().
 			SetContentf("Ok done.").
 			Build(),
 	)
 }
 
-func (cmd *preprodCommand) SetBackpack(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+func (cmd *preprodCommand) SetBackpack(logger *logrus.Entry, event *handler.CommandEvent) error {
+	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+	backpacks := event.SlashCommandInteractionData().Int("backpacks")
+	currentPlayer.Update().SetBackpackLevel(int64(backpacks)).Save(event.Ctx)
 
-	backpacks := e.SlashCommandInteractionData().Int("backpacks")
-
-	p.Update().SetBackpackLevel(int64(backpacks)).Save(e.Ctx)
-
-	return e.CreateMessage(
+	return event.CreateMessage(
 		discord.NewMessageCreateBuilder().
 			SetContentf("Ok done.").
 			Build(),

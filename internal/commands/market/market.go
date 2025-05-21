@@ -8,15 +8,15 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 )
 
-func NewMenu(ms *builder.MenuStore, app interfaces.App) *builder.Menu {
-	return ms.NewMenu(
+func NewMenu(menus *builder.MenuStore, app interfaces.App) *builder.Menu {
+	return menus.NewMenu(
 		builder.WithMenuName("Market"),
 		builder.WithEmoji(discord.Emoji{
 			Name: "🛒",
 		}),
 		builder.WithCommands(
-			listings.ListingsCommand(ms, app),
-			auctions.AuctionsCommand(ms, app),
+			listings.ListingsCommand(menus, app),
+			auctions.AuctionsCommand(menus, app),
 		),
 	)
 }

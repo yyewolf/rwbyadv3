@@ -16,7 +16,12 @@ var (
 			Name: "rwby_processed_commands_total",
 			Help: "The total number of processed commands",
 		},
-		[]string{},
+		[]string{
+			"user_id",
+			"command",
+			"guild_id",
+			"channel_id",
+		},
 	)
 )
 

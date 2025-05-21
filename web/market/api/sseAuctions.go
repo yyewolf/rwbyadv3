@@ -94,11 +94,6 @@ func (h *MarketApiHandler) OnNewBid(params map[string]interface{}) error {
 func (h *MarketApiHandler) OnUpdateAuction(params map[string]interface{}) error {
 	id := uuid.MustParse(params["id"].(string))
 
-	h.listeners.Broadcast(&utils.Event{
-		Event: []byte(fmt.Sprintf("auction_%s_update", auction.ID)),
-		Data:  []byte("cc"),
-	})
-
 	var found bool
 	for _, cachedAuction := range h.latestAuctions {
 		if cachedAuction.ID == id {

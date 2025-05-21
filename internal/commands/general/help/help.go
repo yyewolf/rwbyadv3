@@ -19,19 +19,19 @@ const (
 )
 
 type helpCommand struct {
-	c   *env.Config
-	app interfaces.App
-	ms  *builder.MenuStore
+	config *env.Config
+	app    interfaces.App
+	menus  *builder.MenuStore
 
 	embeds map[string]*discord.Embed
 }
 
-func HelpCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
+func HelpCommand(menus *builder.MenuStore, app interfaces.App) *builder.Command {
 	var cmd helpCommand
 
 	cmd.app = app
-	cmd.ms = ms
-	cmd.c = app.Config()
+	cmd.menus = menus
+	cmd.config = app.Config()
 
 	return builder.NewCommand(
 		builder.WithCommandName(commandName),
@@ -51,7 +51,7 @@ func HelpCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 func (cmd *helpCommand) GetSelect(selectedMenu string) []discord.ContainerComponent {
 	var options []discord.StringSelectMenuOption
 
-	for _, menu := range cmd.ms.Menus {
+	for _, menu := range cmd.menus.Menus {
 		opt := discord.NewStringSelectMenuOption(
 			fmt.Sprintf("%s %s", menu.Emoji.Name, menu.Name),
 			menu.Name,
@@ -70,46 +70,42 @@ func (cmd *helpCommand) GetSelect(selectedMenu string) []discord.ContainerCompon
 	}
 }
 
-func (cmd *helpCommand) HandleCommand(e *handler.CommandEvent) error {
+func (cmd *helpCommand) HandleCommand(logger *logrus.Entry, event *handler.CommandEvent) error {
 	if cmd.embeds == nil {
 		cmd.generateEmbed()
 	}
 
 	var defaultMenu = "General"
 
-	var s = cmd.GetSelect(defaultMenu)
-
-	return e.Respond(
+	return event.Respond(
 		discord.InteractionResponseTypeCreateMessage,
 		discord.NewMessageCreateBuilder().
 			AddEmbeds(cmd.getEmbed(defaultMenu)).
-			AddContainerComponents(s...),
+			AddContainerComponents(cmd.GetSelect(defaultMenu)...),
 	)
 }
 
-func (cmd *helpCommand) HandleInteraction(data discord.SelectMenuInteractionData, e *handler.ComponentEvent) error {
+func (cmd *helpCommand) HandleInteraction(logger *logrus.Entry, data discord.SelectMenuInteractionData, event *handler.ComponentEvent) error {
 	if cmd.embeds == nil {
 		cmd.generateEmbed()
 	}
 
 	menuName := data.(discord.StringSelectMenuInteractionData).Values[0]
 
-	err := e.DeferUpdateMessage()
+	err := event.DeferUpdateMessage()
 	if err != nil {
-		logrus.WithError(err).WithField("menu", "help").Error("Failed to update message")
+		logger.WithError(err).WithField("menu", "help").Error("Failed to update message")
 	}
 
-	var s = cmd.GetSelect(menuName)
-
 	// Update the embed of the original message
-	_, err = e.UpdateInteractionResponse(
+	_, err = event.UpdateInteractionResponse(
 		discord.NewMessageUpdateBuilder().
 			AddEmbeds(cmd.getEmbed(menuName)).
-			AddContainerComponents(s...).
+			AddContainerComponents(cmd.GetSelect(menuName)...).
 			Build(),
 	)
 	if err != nil {
-		logrus.WithError(err).WithField("menu", "help").Error("Failed to update message")
+		logger.WithError(err).WithField("menu", "help").Error("Failed to update message")
 	}
 
 	return nil

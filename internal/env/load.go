@@ -1,6 +1,7 @@
 package env
 
 import (
+	logrusloki "github.com/schoentoon/logrus-loki"
 	"github.com/yyewolf/rwbyadv3/internal/values"
 
 	"github.com/caarlos0/env/v10"
@@ -28,6 +29,15 @@ func Load() {
 		logrus.Fatalf("MODE is not set, be sure to have a .env file or set the environment variables")
 	default:
 		logrus.Fatalf("MODE is not set, be sure to have a .env file or set the environment variables")
+	}
+
+	if cfg.Loki.Enabled {
+		hook, err := logrusloki.NewLokiDefaults(cfg.Loki.URI)
+		if err != nil {
+			logrus.Fatalf("failed to create loki hook: %v", err)
+		}
+
+		logrus.AddHook(hook)
 	}
 
 	logrus.Infof("Environment loaded: %s", cfg.Mode)

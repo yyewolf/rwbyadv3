@@ -22,7 +22,7 @@ type listingsCommand struct {
 	app interfaces.App
 }
 
-func ListingsCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
+func ListingsCommand(menus *builder.MenuStore, app interfaces.App) *builder.Command {
 	var cmd listingsCommand
 
 	cmd.app = app

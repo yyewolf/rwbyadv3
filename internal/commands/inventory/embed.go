@@ -14,7 +14,7 @@ var (
 	perPage = 10.0
 )
 
-func (cmd *inventoryCommand) generator(username string, p *ent.Player, page int) (discord.Embed, discord.ContainerComponent, error) {
+func (cmd *inventoryCommand) generator(username string, currentPlayer *ent.Player, page int) (discord.Embed, discord.ContainerComponent, error) {
 	embed := discord.NewEmbedBuilder()
 	embed.SetTitlef("%s's inventory :", username)
 	embed.SetDescriptionf("To select a character, please use %s.", cmd.app.CommandMention("select"))
@@ -22,7 +22,7 @@ func (cmd *inventoryCommand) generator(username string, p *ent.Player, page int)
 	embed.SetEmbedFooter(cmd.app.Footer())
 
 	// Pagination here
-	count, err := p.QueryCards().
+	count, err := currentPlayer.QueryCards().
 		Where(card.Available(true)).
 		Count(context.Background())
 	if err != nil {
@@ -46,7 +46,7 @@ func (cmd *inventoryCommand) generator(username string, p *ent.Player, page int)
 		top = count
 	}
 
-	cards, err := p.QueryCards().
+	cards, err := currentPlayer.QueryCards().
 		Order(card.ByPosition()).
 		Where(card.Available(true)).
 		Offset(page * int(perPage)).
@@ -58,9 +58,9 @@ func (cmd *inventoryCommand) generator(username string, p *ent.Player, page int)
 
 	field.Name = fmt.Sprintf("Cards (page %d/%d) :", page+1, maxPage+1)
 
-	for i, c := range cards {
+	for i, card := range cards {
 		idx := page*int(perPage) + i + 1
-		field.Value += fmt.Sprintf("`N°%d | %s`\n", idx, c.FullString())
+		field.Value += fmt.Sprintf("`N°%d | %s`\n", idx, card.FullString())
 	}
 
 	if len(cards) == 0 {
@@ -70,7 +70,7 @@ func (cmd *inventoryCommand) generator(username string, p *ent.Player, page int)
 
 	embed.AddFields(field)
 
-	customID := fmt.Sprintf("/inventory/%s/%d", p.ID, page)
+	customID := fmt.Sprintf("/inventory/%s/%d", currentPlayer.ID, page)
 
 	return embed.Build(), discord.NewActionRow(
 		discord.NewSecondaryButton("◀️ Prev", customID+"/"+componentActionPrev),

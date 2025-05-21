@@ -5,6 +5,7 @@ import (
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
+	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
@@ -23,7 +24,7 @@ type dailyCommand struct {
 	app interfaces.App
 }
 
-func DailyCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
+func DailyCommand(menus *builder.MenuStore, app interfaces.App) *builder.Command {
 	var cmd dailyCommand
 
 	cmd.app = app
@@ -47,11 +48,11 @@ func DailyCommand(ms *builder.MenuStore, app interfaces.App) *builder.Command {
 	)
 }
 
-func (cmd *dailyCommand) HandleCommand(e *handler.CommandEvent) error {
-	player := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
-	daily := player.Edges.Daily
+func (cmd *dailyCommand) HandleCommand(logger *logrus.Entry, event *handler.CommandEvent) error {
+	currentPlayer := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+	daily := currentPlayer.Edges.Daily
 	if !daily.HasVoted {
-		return e.Respond(
+		return event.Respond(
 			discord.InteractionResponseTypeCreateMessage,
 			discord.NewMessageCreateBuilder().
 				SetEmbeds(
@@ -84,18 +85,18 @@ func (cmd *dailyCommand) HandleCommand(e *handler.CommandEvent) error {
 
 	texts := make([]string, 0)
 
-	err := ent.WithTx(e.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
+	err := ent.WithTx(event.Ctx, cmd.app.Db(), func(tx *ent.Tx) error {
 		// Give loots and create text
 		for _, loot := range list {
 			if loot, ok := loot.(loots.Loot); ok {
-				loot.PickedUp(tx, player)
+				loot.PickedUp(tx, currentPlayer)
 				texts = append(texts, loot.RewardText(list))
 			}
 		}
 
 		err := tx.Daily.UpdateOne(daily).
 			SetHasVoted(false).
-			Exec(e.Ctx)
+			Exec(event.Ctx)
 		if err != nil {
 			return err
 		}
@@ -103,10 +104,10 @@ func (cmd *dailyCommand) HandleCommand(e *handler.CommandEvent) error {
 		return nil
 	})
 	if err != nil {
-		return utils.CommandError(e, err)
+		return utils.CommandError(logger, event, err)
 	}
 
-	return e.Respond(
+	return event.Respond(
 		discord.InteractionResponseTypeCreateMessage,
 		discord.NewMessageCreateBuilder().
 			SetEmbeds(

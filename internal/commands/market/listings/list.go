@@ -8,6 +8,7 @@ import (
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
+	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/ent/listing"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
@@ -18,7 +19,7 @@ var (
 	perPage = 10.0
 )
 
-func (cmd *listingsCommand) generator(username string, p *ent.Player, page int) (discord.Embed, discord.ContainerComponent, error) {
+func (cmd *listingsCommand) generator(username string, currentPlayer *ent.Player, page int) (discord.Embed, discord.ContainerComponent, error) {
 	embed := discord.NewEmbedBuilder()
 	embed.SetTitlef("%s's listings :", username)
 	// embed.SetDescriptionf("To select a character, please use %s.", cmd.app.CommandMention("select"))
@@ -26,7 +27,7 @@ func (cmd *listingsCommand) generator(username string, p *ent.Player, page int) 
 	embed.SetEmbedFooter(cmd.app.Footer())
 
 	// Pagination here
-	count, err := p.QueryListings().Count(context.Background())
+	count, err := currentPlayer.QueryListings().Count(context.Background())
 	if err != nil {
 		return discord.Embed{}, nil, err
 	}
@@ -47,7 +48,7 @@ func (cmd *listingsCommand) generator(username string, p *ent.Player, page int) 
 		top = count
 	}
 
-	listings, err := p.QueryListings().
+	listings, err := currentPlayer.QueryListings().
 		Order(listing.ByCreateTime()).
 		Offset(page * int(perPage)).
 		Limit(int(perPage)).
@@ -71,7 +72,7 @@ func (cmd *listingsCommand) generator(username string, p *ent.Player, page int) 
 
 	embed.AddFields(field)
 
-	customID := fmt.Sprintf("/listings/%s/%d", p.ID, page)
+	customID := fmt.Sprintf("/listings/%s/%d", currentPlayer.ID, page)
 
 	return embed.Build(), discord.NewActionRow(
 		discord.NewSecondaryButton("◀️ Prev", customID+"/"+componentActionPrev),
@@ -80,20 +81,20 @@ func (cmd *listingsCommand) generator(username string, p *ent.Player, page int) 
 	), nil
 }
 
-func (cmd *listingsCommand) GetListings(e *handler.CommandEvent) error {
-	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+func (cmd *listingsCommand) GetListings(logger *logrus.Entry, event *handler.CommandEvent) error {
+	p := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-	username := e.User().Username
-	if e.User().GlobalName != nil {
-		username = *e.User().GlobalName
+	username := event.User().Username
+	if event.User().GlobalName != nil {
+		username = *event.User().GlobalName
 	}
 
 	embed, components, err := cmd.generator(username, p, 0)
 	if err != nil {
-		return utils.CommandError(e, err)
+		return utils.CommandError(logger, event, err)
 	}
 
-	return e.Respond(
+	return event.Respond(
 		discord.InteractionResponseTypeCreateMessage,
 		discord.NewMessageCreateBuilder().
 			AddEmbeds(embed).
@@ -101,14 +102,14 @@ func (cmd *listingsCommand) GetListings(e *handler.CommandEvent) error {
 	)
 }
 
-func (cmd *listingsCommand) HandleGetListingsInteraction(data discord.ButtonInteractionData, e *handler.ComponentEvent) error {
+func (cmd *listingsCommand) HandleGetListingsInteraction(logger *logrus.Entry, data discord.ButtonInteractionData, event *handler.ComponentEvent) error {
 	// Get route parameters
-	playerID := e.Vars["player_id"]
-	action := e.Vars["action"]
-	page, _ := strconv.Atoi(e.Vars["page"])
+	playerID := event.Vars["player_id"]
+	action := event.Vars["action"]
+	page, _ := strconv.Atoi(event.Vars["page"])
 
-	e.DeferUpdateMessage()
-	if playerID != e.User().ID.String() {
+	event.DeferUpdateMessage()
+	if playerID != event.User().ID.String() {
 		return nil
 	}
 
@@ -120,19 +121,19 @@ func (cmd *listingsCommand) HandleGetListingsInteraction(data discord.ButtonInte
 	default:
 	}
 
-	p := e.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
+	p := event.Ctx.Value(builder.NewPlayerKey).(*ent.Player)
 
-	username := e.User().Username
-	if e.User().GlobalName != nil {
-		username = *e.User().GlobalName
+	username := event.User().Username
+	if event.User().GlobalName != nil {
+		username = *event.User().GlobalName
 	}
 
 	embed, components, err := cmd.generator(username, p, page)
 	if err != nil {
-		return utils.ComponentError(e, err)
+		return utils.ComponentError(logger, event, err)
 	}
 
-	_, err = e.UpdateInteractionResponse(
+	_, err = event.UpdateInteractionResponse(
 		discord.NewMessageUpdateBuilder().
 			AddEmbeds(embed).
 			AddContainerComponents(components).
