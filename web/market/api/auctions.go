@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"math"
-	"net/url"
 	"strconv"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/disgoorg/disgo/discord"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/ent/auction"
 	"github.com/yyewolf/rwbyadv3/ent/auctionbid"
@@ -65,6 +65,7 @@ func (h *MarketApiHandler) fetchAuctions(ctx context.Context, offset, limit int,
 }
 
 func handleError(c echo.Context, err error, userMessage string) error {
+	logrus.WithError(err).Error(userMessage)
 	c.Response().Header().Add("HX-Retarget", "#message")
 	return templates.RenderView(c, market.Error(userMessage))
 }
@@ -74,23 +75,19 @@ func (h *MarketApiHandler) GetAuctions(c echo.Context) error {
 		Where(auction.EndsAtGTE(time.Now())).
 		Count(c.Request().Context())
 	if err != nil {
-		return err
+		return handleError(c, err, "An error occurred while fetching the auctions.")
 	}
 
 	paginator := pagination.NewPaginator(c.Request(), auctionsPerPage, amount)
 
-	query := c.QueryParam("q")
-	if c.Request().Header.Get("HX-Request") == "true" && query == "" {
-		parsedUrl, err := url.ParseRequestURI(c.Request().Header.Get("HX-Current-URL"))
-		if err != nil {
-			return err
-		}
-		query = parsedUrl.Query().Get("q")
+	query, err := h.GetQueryParam(c, "query")
+	if err != nil {
+		return handleError(c, err, "An error occurred while fetching the auctions.")
 	}
 
 	auctions, err := h.fetchAuctions(c.Request().Context(), paginator.Offset(), auctionsPerPage, query)
 	if err != nil {
-		return err
+		return handleError(c, err, "An error occurred while fetching the auctions.")
 	}
 
 	return templates.RenderView(c, market.Auctions(auctions, paginator))
@@ -99,12 +96,12 @@ func (h *MarketApiHandler) GetAuctions(c echo.Context) error {
 func (h *MarketApiHandler) GetAuction(c echo.Context) error {
 	auctionID, err := uuid.Parse(c.Param("auctionId"))
 	if err != nil {
-		return err
+		return handleError(c, err, "Invalid auction ID.")
 	}
 
 	auction, err := h.fetchAuctionByID(c.Request().Context(), auctionID)
 	if err != nil {
-		return err
+		return handleError(c, err, "An error occurred while fetching the auction.")
 	}
 
 	return templates.RenderView(c, market.Auction(auction))
@@ -113,12 +110,12 @@ func (h *MarketApiHandler) GetAuction(c echo.Context) error {
 func (h *MarketApiHandler) GetAuctionPrice(c echo.Context) error {
 	auctionID, err := uuid.Parse(c.Param("auctionId"))
 	if err != nil {
-		return err
+		return handleError(c, err, "Invalid auction ID.")
 	}
 
 	auction, err := h.fetchAuctionByID(c.Request().Context(), auctionID)
 	if err != nil {
-		return err
+		return handleError(c, err, "An error occurred while fetching the auction.")
 	}
 
 	return templates.RenderView(c, market.AuctionAmount(auction.GetPrice()))
@@ -127,12 +124,12 @@ func (h *MarketApiHandler) GetAuctionPrice(c echo.Context) error {
 func (h *MarketApiHandler) GetAuctionTimeleft(c echo.Context) error {
 	auctionID, err := uuid.Parse(c.Param("auctionId"))
 	if err != nil {
-		return err
+		return handleError(c, err, "Invalid auction ID.")
 	}
 
 	auction, err := h.fetchAuctionByID(c.Request().Context(), auctionID)
 	if err != nil {
-		return err
+		return handleError(c, err, "An error occurred while fetching the auction.")
 	}
 
 	return templates.RenderView(c, market.AuctionTimeleft(auction))
@@ -153,7 +150,7 @@ func (h *MarketApiHandler) GetLatestAuctions(c echo.Context) error {
 		Where(auction.EndsAtGTE(time.Now())).
 		All(c.Request().Context())
 	if err != nil {
-		return err
+		return handleError(c, err, "An error occurred while fetching latest auctions.")
 	}
 
 	return templates.RenderView(c, market.LatestAuctions(auctions))
@@ -162,12 +159,12 @@ func (h *MarketApiHandler) GetLatestAuctions(c echo.Context) error {
 func (h *MarketApiHandler) GetAuctionModal(c echo.Context) error {
 	auctionID, err := uuid.Parse(c.Param("auctionId"))
 	if err != nil {
-		return err
+		return handleError(c, err, "Invalid auction ID.")
 	}
 
 	auction, err := h.fetchAuctionByID(c.Request().Context(), auctionID)
 	if err != nil {
-		return err
+		return handleError(c, err, "An error occurred while fetching the auction.")
 	}
 
 	return templates.RenderView(c, market.AuctionModal(auction))
@@ -179,12 +176,12 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 
 	auctionID, err := uuid.Parse(c.Param("auctionId"))
 	if err != nil {
-		return err
+		return handleError(c, err, "Invalid auction ID.")
 	}
 
 	auction, err := h.fetchAuctionByID(c.Request().Context(), auctionID)
 	if err != nil {
-		return err
+		return handleError(c, err, "An error occurred while fetching the auction.")
 	}
 
 	formBidAmount := c.FormValue("bid")
