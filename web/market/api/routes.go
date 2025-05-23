@@ -2,16 +2,20 @@ package api
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/ent/auction"
+	"github.com/yyewolf/rwbyadv3/ent/auctionbid"
 	"github.com/yyewolf/rwbyadv3/ent/listing"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/jobs"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
+	"github.com/yyewolf/rwbyadv3/web/api"
 	"github.com/yyewolf/rwbyadv3/web/auth"
 	"github.com/yyewolf/rwbyadv3/web/auth/discord"
 )
@@ -22,6 +26,11 @@ type MarketApiHandler struct {
 	listeners      utils.Listeners
 	latestListings []*ent.Listing
 	latestAuctions []*ent.Auction
+}
+
+func HandleErrorJson(c echo.Context, err error, userMessage string) error {
+	logrus.WithError(err).Error(userMessage)
+	return api.NewErrorResponse[any](api.ErrorInternalServerError, userMessage).JSON(c, http.StatusInternalServerError)
 }
 
 func RegisterAPIRoutes(app interfaces.App, g *echo.Group) {
@@ -49,15 +58,11 @@ func RegisterAPIRoutes(app interfaces.App, g *echo.Group) {
 	g.GET("/listings", handler.GetListings)
 	// g.GET("/listings/:listingId", echo.WrapHandler(templ.Handler(market.Main()))) Not required, maybe later :D
 	g.POST("/listings/:listingId", handler.PurchaseListing, auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectMarket)))
-	g.GET("/listings/:listingId/modal", handler.GetListingModal, auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectMarket)))
 
 	// Auctions routes
 	g.GET("/auctions", handler.GetAuctions)
 	g.GET("/auctions/:auctionId", handler.GetAuction)
-	g.GET("/auctions/:auctionId/price", handler.GetAuctionPrice)
-	g.GET("/auctions/:auctionId/timer", handler.GetAuctionTimeleft)
 	g.POST("/auctions/:auctionId", handler.BidOnAuction, auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectMarket)))
-	g.GET("/auctions/:auctionId/modal", handler.GetAuctionModal, auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectMarket)))
 }
 
 func (h *MarketApiHandler) ReloadListings() {
@@ -83,8 +88,11 @@ func (h *MarketApiHandler) ReloadAuctions() {
 			cq.WithStats()
 			cq.WithType()
 		}).
-		Where(auction.EndsAtEQ(time.Now())).
-		All(context.TODO())
+		WithBids(func(abq *ent.AuctionBidQuery) {
+			abq.Order(auctionbid.ByPrice(sql.OrderDesc()))
+		}).
+		Where(auction.EndsAtGTE(time.Now())).
+		All(context.Background())
 
 	h.latestAuctions = auctions
 }

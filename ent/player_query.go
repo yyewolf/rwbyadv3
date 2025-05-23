@@ -729,7 +729,7 @@ func (pq *PlayerQuery) WithPlayerDecks(opts ...func(*PlayerDeckQuery)) *PlayerQu
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -752,7 +752,7 @@ func (pq *PlayerQuery) GroupBy(field string, fields ...string) *PlayerGroupBy {
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //	}
 //
 //	client.Player.Query().

@@ -298,7 +298,7 @@ func (dq *DailyQuery) WithOf(opts ...func(*PlayerQuery)) *DailyQuery {
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -321,7 +321,7 @@ func (dq *DailyQuery) GroupBy(field string, fields ...string) *DailyGroupBy {
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //	}
 //
 //	client.Daily.Query().

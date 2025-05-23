@@ -18,33 +18,33 @@ import (
 type CardStats struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID int `json:"id,omitempty,omitzero"`
 	// CreateTime holds the value of the "create_time" field.
-	CreateTime time.Time `json:"create_time,omitempty"`
+	CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 	// UpdateTime holds the value of the "update_time" field.
-	UpdateTime time.Time `json:"update_time,omitempty"`
+	UpdateTime time.Time `json:"update_time,omitempty,omitzero"`
 	// CardID holds the value of the "card_id" field.
-	CardID uuid.UUID `json:"card_id,omitempty"`
+	CardID uuid.UUID `json:"card_id,omitempty,omitzero"`
 	// Health holds the value of the "health" field.
-	Health int64 `json:"health,omitempty"`
+	Health int64 `json:"health,omitempty,omitzero"`
 	// Armor holds the value of the "armor" field.
-	Armor int64 `json:"armor,omitempty"`
+	Armor int64 `json:"armor,omitempty,omitzero"`
 	// Damage holds the value of the "damage" field.
-	Damage int64 `json:"damage,omitempty"`
+	Damage int64 `json:"damage,omitempty,omitzero"`
 	// Healing holds the value of the "healing" field.
-	Healing int64 `json:"healing,omitempty"`
+	Healing int64 `json:"healing,omitempty,omitzero"`
 	// Speed holds the value of the "speed" field.
-	Speed int64 `json:"speed,omitempty"`
+	Speed int64 `json:"speed,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CardStatsQuery when eager-loading is set.
-	Edges        CardStatsEdges `json:"edges"`
+	Edges        CardStatsEdges `json:"edges,omitempty"`
 	selectValues sql.SelectValues
 }
 
 // CardStatsEdges holds the relations/edges for other nodes in the graph.
 type CardStatsEdges struct {
 	// Of holds the value of the of edge.
-	Of *Card `json:"of,omitempty"`
+	Of *Card `json:"of,omitempty,omitzero"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool

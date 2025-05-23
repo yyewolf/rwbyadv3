@@ -262,7 +262,7 @@ func (pfcq *PlayerFavoriteCardsQuery) WithCard(opts ...func(*CardQuery)) *Player
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -285,7 +285,7 @@ func (pfcq *PlayerFavoriteCardsQuery) GroupBy(field string, fields ...string) *P
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //	}
 //
 //	client.PlayerFavoriteCards.Query().

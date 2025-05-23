@@ -514,7 +514,7 @@ func (cq *CardQuery) WithPlayerDecks(opts ...func(*PlayerDeckQuery)) *CardQuery 
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -537,7 +537,7 @@ func (cq *CardQuery) GroupBy(field string, fields ...string) *CardGroupBy {
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //	}
 //
 //	client.Card.Query().

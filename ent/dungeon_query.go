@@ -299,7 +299,7 @@ func (dq *DungeonQuery) WithOwnedBy(opts ...func(*PlayerQuery)) *DungeonQuery {
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -322,7 +322,7 @@ func (dq *DungeonQuery) GroupBy(field string, fields ...string) *DungeonGroupBy 
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //	}
 //
 //	client.Dungeon.Query().

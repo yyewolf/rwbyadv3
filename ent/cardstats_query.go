@@ -299,7 +299,7 @@ func (csq *CardStatsQuery) WithOf(opts ...func(*CardQuery)) *CardStatsQuery {
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -322,7 +322,7 @@ func (csq *CardStatsQuery) GroupBy(field string, fields ...string) *CardStatsGro
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //	}
 //
 //	client.CardStats.Query().

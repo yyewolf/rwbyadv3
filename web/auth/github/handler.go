@@ -20,9 +20,6 @@ import (
 	"github.com/yyewolf/rwbyadv3/ent/schema/enums"
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
-	"github.com/yyewolf/rwbyadv3/web/templates"
-	"github.com/yyewolf/rwbyadv3/web/templates/errors"
-	"github.com/yyewolf/rwbyadv3/web/templates/success"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
 )
@@ -69,26 +66,6 @@ func ImproveState(s string) string {
 
 func ReverseState(s string) string {
 	return strings.Split(s, "/")[0]
-}
-
-func ErrorPage(c echo.Context, code int) error {
-	return templates.RenderView(c, errors.ErrorIndex(
-		"- Auth Error",
-		"",
-		true,
-		true,
-		errors.Error(fmt.Sprint(code), "Try again in a few seconds...", ""),
-	))
-}
-
-func SuccessPage(c echo.Context, text string) error {
-	return templates.RenderView(c, success.SuccessIndex(
-		"- Auth Success",
-		"",
-		true,
-		true,
-		success.Success(text, "", ""),
-	))
 }
 
 func (h *GithubAuthHandler) BeginAuth() echo.HandlerFunc {
@@ -182,7 +159,7 @@ func (h *GithubAuthHandler) CallbackCheckStars(state *ent.AuthState, token *oaut
 			)
 
 			logrus.WithField("state", state.ID).Debug("user has not starred")
-			return ErrorPage(c, http.StatusInternalServerError)
+			return ErrorPage(c, 0) // This will use the GitHub star error type
 		}
 
 		// ok, we save the user and has_starred
@@ -202,6 +179,6 @@ func (h *GithubAuthHandler) CallbackCheckStars(state *ent.AuthState, token *oaut
 				Build(),
 		)
 
-		return SuccessPage(c, "Successfully looked through github, thank you, you can go back to discord now 😊")
+		return c.Redirect(http.StatusTemporaryRedirect, "/landing/discord/")
 	}
 }

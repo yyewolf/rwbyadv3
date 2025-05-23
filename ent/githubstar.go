@@ -17,27 +17,27 @@ import (
 type GithubStar struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID int `json:"id,omitempty,omitzero"`
 	// CreateTime holds the value of the "create_time" field.
-	CreateTime time.Time `json:"create_time,omitempty"`
+	CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 	// UpdateTime holds the value of the "update_time" field.
-	UpdateTime time.Time `json:"update_time,omitempty"`
+	UpdateTime time.Time `json:"update_time,omitempty,omitzero"`
 	// PlayerID holds the value of the "player_id" field.
-	PlayerID string `json:"player_id,omitempty"`
+	PlayerID string `json:"player_id,omitempty,omitzero"`
 	// GithubUserID holds the value of the "github_user_id" field.
-	GithubUserID string `json:"github_user_id,omitempty"`
+	GithubUserID string `json:"github_user_id,omitempty,omitzero"`
 	// HasStarred holds the value of the "has_starred" field.
-	HasStarred bool `json:"has_starred,omitempty"`
+	HasStarred bool `json:"has_starred,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GithubStarQuery when eager-loading is set.
-	Edges        GithubStarEdges `json:"edges"`
+	Edges        GithubStarEdges `json:"edges,omitempty"`
 	selectValues sql.SelectValues
 }
 
 // GithubStarEdges holds the relations/edges for other nodes in the graph.
 type GithubStarEdges struct {
 	// Of holds the value of the of edge.
-	Of *Player `json:"of,omitempty"`
+	Of *Player `json:"of,omitempty,omitzero"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool

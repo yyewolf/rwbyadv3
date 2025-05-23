@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/ent/cookie"
+	"github.com/yyewolf/rwbyadv3/web/api"
 )
 
 type Options struct {
@@ -26,7 +27,7 @@ func WithRedirect(to string, params ...string) OptionsFunc {
 	}
 }
 
-func doRedirect(c echo.Context, options Options) {
+func doRedirect(c echo.Context, options Options) string {
 	uri, _ := url.Parse("/auth/discord/")
 
 	values := uri.Query()
@@ -36,10 +37,7 @@ func doRedirect(c echo.Context, options Options) {
 	}
 	uri.RawQuery = values.Encode()
 
-	if c.Request().Header.Get("HX-Request") != "true" {
-		c.Response().Header().Set("Location", uri.String())
-	}
-	c.Response().Header().Set("HX-Redirect", uri.String())
+	return uri.String()
 }
 
 func (h *DiscordAuthHandler) RequireAuth(opts ...OptionsFunc) func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -57,8 +55,7 @@ func (h *DiscordAuthHandler) RequireAuth(opts ...OptionsFunc) func(next echo.Han
 				logrus.WithError(err).Error("error getting session cookie")
 
 				if options.DoRedirect {
-					doRedirect(c, options)
-					return c.NoContent(http.StatusSeeOther)
+					return api.SendRedirect(c, doRedirect(c, options))
 				}
 
 				return ErrorPage(c, http.StatusUnauthorized)
@@ -77,8 +74,7 @@ func (h *DiscordAuthHandler) RequireAuth(opts ...OptionsFunc) func(next echo.Han
 				logrus.WithError(err).Error("error finding session")
 
 				if options.DoRedirect {
-					doRedirect(c, options)
-					return c.NoContent(http.StatusSeeOther)
+					return api.SendRedirect(c, doRedirect(c, options))
 				}
 
 				return ErrorPage(c, http.StatusUnauthorized)

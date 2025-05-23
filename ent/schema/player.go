@@ -6,6 +6,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/mixin"
 	"github.com/google/uuid"
+	"github.com/yyewolf/entvis"
 )
 
 // Player holds the schema definition for the Player entity.
@@ -16,21 +17,21 @@ type Player struct {
 // Fields of the Player.
 func (Player) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id"),
-		field.String("username").Default(""),
+		field.String("id").Annotations(entvis.Visibility(RolePublic)),
+		field.String("username").Default("").Annotations(entvis.Visibility(RoleSelf)),
 
-		field.Int64("liens").Default(500).NonNegative(),
-		field.Int64("liens_in_auction").Default(0).NonNegative(),
+		field.Int64("liens").Default(500).NonNegative().Annotations(entvis.Visibility(RoleSelf)),
+		field.Int64("liens_in_auction").Default(0).NonNegative().Annotations(entvis.Visibility(RoleSelf)),
 
-		field.Int64("level").Default(1).Positive(),
-		field.Int64("experience_points").Default(0).NonNegative(),
-		field.Int64("experience_points_threshold").Default(0).NonNegative(),
+		field.Int64("level").Default(1).Positive().Annotations(entvis.Visibility(RoleSelf)),
+		field.Int64("experience_points").Default(0).NonNegative().Annotations(entvis.Visibility(RoleSelf)),
+		field.Int64("experience_points_threshold").Default(0).NonNegative().Annotations(entvis.Visibility(RoleSelf)),
 
-		field.Int64("backpack_level").Default(1).Positive(),
-		field.Int64("backpack_reserved_slots").Default(0).NonNegative(),
+		field.Int64("backpack_level").Default(1).Positive().Annotations(entvis.Visibility(RoleSelf)),
+		field.Int64("backpack_reserved_slots").Default(0).NonNegative().Annotations(entvis.Visibility(RoleSelf)),
 
 		// Foreign Keys
-		field.UUID("selected_card_id", uuid.New()).Optional(),
+		field.UUID("selected_card_id", uuid.New()).Optional().Annotations(entvis.Visibility(RoleSelf)),
 	}
 }
 

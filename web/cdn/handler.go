@@ -22,11 +22,4 @@ func NewCDNHandler(app interfaces.App, g *echo.Group) {
 		echo.StaticDirectoryHandler(echo.MustSubFS(rwbyadv3.GetCardFS(), "cards/img"), false),
 		CachingMiddleware,
 	)
-
-	g.Add(
-		http.MethodGet,
-		"/static/*",
-		echo.StaticDirectoryHandler(echo.MustSubFS(rwbyadv3.GetStaticFS(), "static/dist"), false),
-		CachingMiddleware,
-	)
 }

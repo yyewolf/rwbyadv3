@@ -19,6 +19,7 @@ func NewNotificationsRepository(app interfaces.App) *NotificationsRepository {
 
 	// Possible notifications
 	app.Worker().RegisterWorkflow(n.SendDmWorkflow)            // Some component needs to send a DM
+	app.Worker().RegisterActivity(n.SendDmActivity)            // Some component needs to send a DM
 	app.Worker().RegisterWorkflow(n.NotifyCardLevelUpWorkflow) // A card just leveled up
 
 	app.Worker().RegisterWorkflow(n.NotifyPlayerLevelUpWorkflow) // A player just leveled up

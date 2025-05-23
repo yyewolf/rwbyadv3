@@ -3,6 +3,7 @@ package notifications
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/snowflake/v2"
@@ -32,13 +33,31 @@ func DispatchDm(app interfaces.App, p *ent.Player, m discord.MessageCreate) {
 func (n *NotificationsRepository) SendDmWorkflow(ctx workflow.Context, params *SendDmParams) error {
 	// TODO : Add check for DMs, GuildChannels, and if the user wants the notification at all
 
-	c := n.app.Client()
-
-	ch, err := c.Rest().CreateDMChannel(snowflake.MustParse(params.Player.ID))
+	activityOptions := workflow.ActivityOptions{
+		StartToCloseTimeout: 5 * time.Second,
+	}
+	ctx = workflow.WithActivityOptions(ctx, activityOptions)
+	var activityResult bool
+	err := workflow.ExecuteActivity(ctx, n.SendDmActivity, params).Get(ctx, &activityResult)
 	if err != nil {
 		return err
 	}
 
-	_, err = c.Rest().CreateMessage(ch.ID(), params.Message)
 	return err
+}
+
+func (n *NotificationsRepository) SendDmActivity(ctx context.Context, params *SendDmParams) (bool, error) {
+	c := n.app.Client()
+
+	ch, err := c.Rest().CreateDMChannel(snowflake.MustParse(params.Player.ID))
+	if err != nil {
+		return false, err
+	}
+
+	_, err = c.Rest().CreateMessage(ch.ID(), params.Message)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }

@@ -4,8 +4,9 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"entgo.io/ent/schema/mixin"
 	"github.com/google/uuid"
+	"github.com/yyewolf/entvis"
+	"github.com/yyewolf/rwbyadv3/ent/schema/mixin"
 )
 
 // Listing holds the schema definition for the Listing entity.
@@ -16,17 +17,17 @@ type Listing struct {
 // Fields of the Listing.
 func (Listing) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.New()).Default(uuid.New),
+		field.UUID("id", uuid.New()).Default(uuid.New).Annotations(entvis.Visibility(RoleSelf, RolePublic)),
 		field.String("player_id"),
-		field.UUID("card_id", uuid.New()),
-		field.Int64("price").NonNegative(),
-		field.String("note").Optional(),
+		field.UUID("card_id", uuid.New()).Annotations(entvis.Visibility(RoleSelf, RolePublic)),
+		field.Int64("price").NonNegative().Annotations(entvis.Visibility(RoleSelf, RolePublic)),
+		field.String("note").Optional().Annotations(entvis.Visibility(RoleSelf, RolePublic)),
 	}
 }
 
 func (Listing) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		mixin.Time{},
+		mixin.PublicTime{},
 	}
 }
 

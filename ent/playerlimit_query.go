@@ -298,7 +298,7 @@ func (plq *PlayerLimitQuery) WithOf(opts ...func(*PlayerQuery)) *PlayerLimitQuer
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -321,7 +321,7 @@ func (plq *PlayerLimitQuery) GroupBy(field string, fields ...string) *PlayerLimi
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //	}
 //
 //	client.PlayerLimit.Query().

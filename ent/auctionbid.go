@@ -19,29 +19,29 @@ import (
 type AuctionBid struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty,omitzero"`
 	// CreateTime holds the value of the "create_time" field.
-	CreateTime time.Time `json:"create_time,omitempty"`
+	CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 	// UpdateTime holds the value of the "update_time" field.
-	UpdateTime time.Time `json:"update_time,omitempty"`
+	UpdateTime time.Time `json:"update_time,omitempty,omitzero"`
 	// AuctionID holds the value of the "auction_id" field.
-	AuctionID uuid.UUID `json:"auction_id,omitempty"`
+	AuctionID uuid.UUID `json:"auction_id,omitempty,omitzero"`
 	// PlayerID holds the value of the "player_id" field.
-	PlayerID string `json:"player_id,omitempty"`
+	PlayerID string `json:"player_id,omitempty,omitzero"`
 	// Price holds the value of the "price" field.
-	Price int64 `json:"price,omitempty"`
+	Price int64 `json:"price,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the AuctionBidQuery when eager-loading is set.
-	Edges        AuctionBidEdges `json:"edges"`
+	Edges        AuctionBidEdges `json:"edges,omitempty"`
 	selectValues sql.SelectValues
 }
 
 // AuctionBidEdges holds the relations/edges for other nodes in the graph.
 type AuctionBidEdges struct {
 	// Auction holds the value of the auction edge.
-	Auction *Auction `json:"auction,omitempty"`
+	Auction *Auction `json:"auction,omitempty,omitzero"`
 	// Player holds the value of the player edge.
-	Player *Player `json:"player,omitempty"`
+	Player *Player `json:"player,omitempty,omitzero"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool

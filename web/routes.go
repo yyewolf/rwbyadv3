@@ -1,8 +1,11 @@
 package web
 
 import (
-	"github.com/yyewolf/rwbyadv3/web/trades"
 	"net/http"
+	"os"
+
+	"github.com/yyewolf/rwbyadv3"
+	"github.com/yyewolf/rwbyadv3/web/trades"
 
 	"github.com/labstack/echo/v4"
 	"github.com/yyewolf/rwbyadv3/internal/env"
@@ -10,6 +13,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/web/auth"
 	"github.com/yyewolf/rwbyadv3/web/cdn"
 	"github.com/yyewolf/rwbyadv3/web/dungeons"
+	"github.com/yyewolf/rwbyadv3/web/landing"
 	"github.com/yyewolf/rwbyadv3/web/market"
 	"github.com/yyewolf/rwbyadv3/web/metrics"
 	"github.com/yyewolf/rwbyadv3/web/topgg"
@@ -39,24 +43,28 @@ func NewWebApp(opts ...Option) *WebApp {
 }
 
 func (w *WebApp) RegisterRoutes() {
+	apis := w.Group("/apis")
+
 	auth.NewAuthHandler(w.app, w.Group("/auth"))
-	metrics.NewMetricsHandler(w.app, w.Group("/metrics"))
-
-	// Also redirect from /market to /market/
-	w.GET("/market", RedirectTo("/market/"))
-	market.NewMarketHandler(w.app, w.Group("/market"))
-
-	// Also redirect from /dungeons to /dungeons/
-	w.GET("/dungeons", RedirectTo("/dungeons/"))
+	metrics.NewMetricsHandler(w.app, apis.Group("/metrics"))
+	market.NewMarketHandler(w.app, apis.Group("/market"))
 	dungeons.NewDungeonsHandler(w.app, w.Group("/dungeons"))
-
-	// Also redirect from /trades to /trades/
-	w.GET("/trades", RedirectTo("/trades/"))
-	trades.NewTradesHandler(w.app, w.Group("/trades"))
+	trades.NewTradesHandler(w.app, apis.Group("/trades"))
 
 	cdn.NewCDNHandler(w.app, w.Group("/cdn"))
 
+	// Register landing error handler
+	landing.RegisterErrorHandler(w.app, w.Group("/landing"))
+
 	topgg.NewTopGgHandler(w.app, w.Group("/topgg"))
+
+	// If No Route, go to the static files :
+	fs := echo.MustSubFS(rwbyadv3.GetWwwFS(), "www/build")
+	if w.app.Config().Mode == "dev" {
+		fs = echo.MustSubFS(os.DirFS("."), "www/build-dev")
+	}
+
+	w.RouteNotFound("*", echo.StaticDirectoryHandler(fs, false))
 }
 
 func (w *WebApp) Start() error {
