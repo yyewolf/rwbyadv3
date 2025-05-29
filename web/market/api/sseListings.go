@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/ent/listing"
+	"github.com/yyewolf/rwbyadv3/internal/utils"
 )
 
 func (h *MarketApiHandler) OnAddListing(params map[string]interface{}) error {
@@ -33,6 +34,11 @@ func (h *MarketApiHandler) OnAddListing(params map[string]interface{}) error {
 func (h *MarketApiHandler) OnRemoveListing(params map[string]interface{}) error {
 	time.Sleep(100 * time.Millisecond) // Wait for the listing to be deleted from the database
 	id := uuid.MustParse(params["id"].(string))
+
+	h.listeners.Broadcast(&utils.Event{
+		Event: []byte("listing_remove"),
+		Data:  []byte(id.String()),
+	})
 
 	var found bool
 	for _, cachedListing := range h.latestListings {

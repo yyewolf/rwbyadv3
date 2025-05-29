@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"math"
-	"strconv"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -11,16 +10,15 @@ import (
 	"github.com/disgoorg/disgo/discord"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/ent/auction"
 	"github.com/yyewolf/rwbyadv3/ent/auctionbid"
+	"github.com/yyewolf/rwbyadv3/ent/card"
 	"github.com/yyewolf/rwbyadv3/ent/cardtype"
 	"github.com/yyewolf/rwbyadv3/ent/player"
 	"github.com/yyewolf/rwbyadv3/internal/notifications"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/web/templates"
-	"github.com/yyewolf/rwbyadv3/web/templates/market"
+	"github.com/yyewolf/rwbyadv3/web/api"
 )
 
 var (
@@ -42,97 +40,92 @@ func (h *MarketApiHandler) fetchAuctionByID(ctx context.Context, auctionID uuid.
 		Only(ctx)
 }
 
+func (h *MarketApiHandler) countAuctions(ctx context.Context, query string) (int, error) {
+	return h.app.Db().Auction.Query().
+		Where(auction.EndsAtGTE(time.Now())).
+		Where(
+			auction.Or(
+				auction.HasOwnedByWith(
+					player.UsernameContainsFold(query),
+				),
+				auction.HasCardWith(
+					card.HasTypeWith(
+						cardtype.Or(
+							cardtype.NameContainsFold(query),
+							cardtype.SCategoriesContainsFold(query),
+						),
+					),
+				),
+			),
+		).
+		Count(ctx)
+}
+
 func (h *MarketApiHandler) fetchAuctions(ctx context.Context, offset, limit int, query string) ([]*ent.Auction, error) {
 	return h.app.Db().Auction.Query().
 		Offset(offset).
 		Limit(limit).
 		Order(auction.ByCreateTime(sql.OrderDesc())).
-		WithOwnedBy(func(pq *ent.PlayerQuery) {
-			pq.Where(player.UsernameContains(query))
-		}).
+		WithOwnedBy().
 		WithCard(func(cq *ent.CardQuery) {
 			cq.WithStats()
-			cq.WithType(func(ctq *ent.CardTypeQuery) {
-				ctq.Where(cardtype.NameContains(query))
-				ctq.Where(cardtype.SCategoriesContains(query))
-			})
+			cq.WithType()
 		}).
 		WithBids(func(abq *ent.AuctionBidQuery) {
 			abq.Order(auctionbid.ByPrice(sql.OrderDesc()))
 		}).
 		Where(auction.EndsAtGTE(time.Now())).
+		Where(
+			auction.Or(
+				auction.HasOwnedByWith(
+					player.UsernameContainsFold(query),
+				),
+				auction.HasCardWith(
+					card.HasTypeWith(
+						cardtype.Or(
+							cardtype.NameContainsFold(query),
+							cardtype.SCategoriesContainsFold(query),
+						),
+					),
+				),
+			),
+		).
 		All(ctx)
 }
 
-func handleError(c echo.Context, err error, userMessage string) error {
-	logrus.WithError(err).Error(userMessage)
-	c.Response().Header().Add("HX-Retarget", "#message")
-	return templates.RenderView(c, market.Error(userMessage))
-}
-
 func (h *MarketApiHandler) GetAuctions(c echo.Context) error {
-	amount, err := h.app.Db().Auction.Query().
-		Where(auction.EndsAtGTE(time.Now())).
-		Count(c.Request().Context())
+	amount, err := h.countAuctions(c.Request().Context(), "")
 	if err != nil {
-		return handleError(c, err, "An error occurred while fetching the auctions.")
+		return HandleErrorJson(c, err, "An error occurred while counting the auctions.")
 	}
 
 	paginator := pagination.NewPaginator(c.Request(), auctionsPerPage, amount)
 
 	query, err := h.GetQueryParam(c, "query")
 	if err != nil {
-		return handleError(c, err, "An error occurred while fetching the auctions.")
+		return HandleErrorJson(c, err, "An error occurred while fetching the auctions.")
 	}
 
 	auctions, err := h.fetchAuctions(c.Request().Context(), paginator.Offset(), auctionsPerPage, query)
 	if err != nil {
-		return handleError(c, err, "An error occurred while fetching the auctions.")
+		return HandleErrorJson(c, err, "An error occurred while fetching the auctions.")
 	}
 
-	return templates.RenderView(c, market.Auctions(auctions, paginator))
+	return api.SendPaginated(c, ent.ViewAuctionListAs(auctions, ent.Public), paginator)
 }
 
 func (h *MarketApiHandler) GetAuction(c echo.Context) error {
 	auctionID, err := uuid.Parse(c.Param("auctionId"))
 	if err != nil {
-		return handleError(c, err, "Invalid auction ID.")
+		return HandleErrorJson(c, err, "Invalid auction ID.")
 	}
 
 	auction, err := h.fetchAuctionByID(c.Request().Context(), auctionID)
 	if err != nil {
-		return handleError(c, err, "An error occurred while fetching the auction.")
+		return HandleErrorJson(c, err, "An error occurred while fetching the auction.")
 	}
 
-	return templates.RenderView(c, market.Auction(auction))
-}
-
-func (h *MarketApiHandler) GetAuctionPrice(c echo.Context) error {
-	auctionID, err := uuid.Parse(c.Param("auctionId"))
-	if err != nil {
-		return handleError(c, err, "Invalid auction ID.")
-	}
-
-	auction, err := h.fetchAuctionByID(c.Request().Context(), auctionID)
-	if err != nil {
-		return handleError(c, err, "An error occurred while fetching the auction.")
-	}
-
-	return templates.RenderView(c, market.AuctionAmount(auction.GetPrice()))
-}
-
-func (h *MarketApiHandler) GetAuctionTimeleft(c echo.Context) error {
-	auctionID, err := uuid.Parse(c.Param("auctionId"))
-	if err != nil {
-		return handleError(c, err, "Invalid auction ID.")
-	}
-
-	auction, err := h.fetchAuctionByID(c.Request().Context(), auctionID)
-	if err != nil {
-		return handleError(c, err, "An error occurred while fetching the auction.")
-	}
-
-	return templates.RenderView(c, market.AuctionTimeleft(auction))
+	return api.SendOK(c, ent.ViewAuctionAs(auction, ent.Public))
 }
 
 func (h *MarketApiHandler) GetLatestAuctions(c echo.Context) error {
@@ -150,61 +143,52 @@ func (h *MarketApiHandler) GetLatestAuctions(c echo.Context) error {
 		Where(auction.EndsAtGTE(time.Now())).
 		All(c.Request().Context())
 	if err != nil {
-		return handleError(c, err, "An error occurred while fetching latest auctions.")
+		return HandleErrorJson(c, err, "An error occurred while fetching latest auctions.")
 	}
 
-	return templates.RenderView(c, market.LatestAuctions(auctions))
+	return api.SendOK(c, ent.ViewAuctionListAs(auctions, ent.Public))
 }
 
-func (h *MarketApiHandler) GetAuctionModal(c echo.Context) error {
-	auctionID, err := uuid.Parse(c.Param("auctionId"))
-	if err != nil {
-		return handleError(c, err, "Invalid auction ID.")
-	}
-
-	auction, err := h.fetchAuctionByID(c.Request().Context(), auctionID)
-	if err != nil {
-		return handleError(c, err, "An error occurred while fetching the auction.")
-	}
-
-	return templates.RenderView(c, market.AuctionModal(auction))
+type BidOnAuctionRequest struct {
+	BidAmount int64 `json:"bid_amount" validate:"required,min=50"`
 }
 
 func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 	session := utils.GetSessionFromContext(c)
 	bidder := session.Edges.Player
 
+	var req BidOnAuctionRequest
+	if err := c.Bind(&req); err != nil {
+		return HandleErrorJson(c, err, "Invalid request data.")
+	}
+
 	auctionID, err := uuid.Parse(c.Param("auctionId"))
 	if err != nil {
-		return handleError(c, err, "Invalid auction ID.")
+		return HandleErrorJson(c, err, "Invalid auction ID.")
 	}
 
 	auction, err := h.fetchAuctionByID(c.Request().Context(), auctionID)
 	if err != nil {
-		return handleError(c, err, "An error occurred while fetching the auction.")
+		return HandleErrorJson(c, err, "An error occurred while fetching the auction.")
 	}
 
-	formBidAmount := c.FormValue("bid")
-	bidAmount, err := strconv.ParseInt(formBidAmount, 10, 64)
-	if err != nil {
-		return handleError(c, err, "You need to enter a number.")
-	}
+	bidAmount := req.BidAmount
 
 	if bidder.AvailableBalance() < bidAmount {
 		// error too poor
-		return handleError(c, err, "You do not have enough liens to bid this amount.")
+		return HandleErrorJson(c, err, "You do not have enough liens to bid this amount.")
 	}
 
 	auctionPrice := auction.GetPrice()
 
 	if bidAmount < auctionPrice+49 {
 		// error too poor
-		return handleError(c, err, "You need to bid a bit more.")
+		return HandleErrorJson(c, err, "You need to bid a bit more.")
 	}
 
 	// Check for available slots
 	if utils.Players.AvailableSlots(bidder) == 0 {
-		return handleError(c, err, "You do not have enough slots in your backpack to purchase this card.")
+		return HandleErrorJson(c, err, "You do not have enough slots in your backpack to purchase this card.")
 	}
 
 	var latestBid *ent.AuctionBid
@@ -213,14 +197,14 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 	}
 
 	// Check if the player is already in the auction
-	if latestBid != nil && latestBid.PlayerID == bidder.ID {
-		return handleError(c, err, "You are already in the auction.")
-	}
+	// if latestBid != nil && latestBid.PlayerID == bidder.ID {
+	// 	return HandleErrorJson(c, err, "You are already in the auction.")
+	// }
 
 	err = ent.WithTx(c.Request().Context(), h.app.Db(), func(tx *ent.Tx) error {
 		// Check if there's already a bid in place
 		if latestBid != nil {
-			err = tx.Player.UpdateOne(latestBid.Edges.Player).
+			err = tx.Player.UpdateOneID(latestBid.PlayerID).
 				AddLiens(latestBid.Price).
 				AddLiensInAuction(-1 * latestBid.Price).
 				AddBackpackReservedSlots(-1).
@@ -270,7 +254,7 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 		return nil
 	})
 	if err != nil {
-		return handleError(c, err, "An error occurred while bidding.")
+		return HandleErrorJson(c, err, "An error occurred while bidding.")
 	}
 
 	cardDescription := auction.Edges.Card.FullString()
@@ -301,6 +285,5 @@ func (h *MarketApiHandler) BidOnAuction(c echo.Context) error {
 		)
 	}
 
-	c.Response().Header().Add("HX-Retarget", "#message")
-	return templates.RenderView(c, market.Success("You successfully bid on the listing !"))
+	return api.SendOK(c, true)
 }

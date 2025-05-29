@@ -16,13 +16,13 @@ import (
 type CardType struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID string `json:"id,omitempty"`
+	ID string `json:"id,omitempty,omitzero"`
 	// Name holds the value of the "name" field.
-	Name string `json:"name,omitempty"`
+	Name string `json:"name,omitempty,omitzero"`
 	// Categories holds the value of the "categories" field.
-	Categories []string `json:"categories,omitempty"`
+	Categories []string `json:"categories,omitempty,omitzero"`
 	// SCategories holds the value of the "s_categories" field.
-	SCategories  string `json:"s_categories,omitempty"`
+	SCategories  string `json:"s_categories,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 

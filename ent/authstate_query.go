@@ -299,7 +299,7 @@ func (asq *AuthStateQuery) WithPlayer(opts ...func(*PlayerQuery)) *AuthStateQuer
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -322,7 +322,7 @@ func (asq *AuthStateQuery) GroupBy(field string, fields ...string) *AuthStateGro
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //	}
 //
 //	client.AuthState.Query().

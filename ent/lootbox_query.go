@@ -299,7 +299,7 @@ func (lbq *LootBoxQuery) WithOwnedBy(opts ...func(*PlayerQuery)) *LootBoxQuery {
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -322,7 +322,7 @@ func (lbq *LootBoxQuery) GroupBy(field string, fields ...string) *LootBoxGroupBy
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //	}
 //
 //	client.LootBox.Query().

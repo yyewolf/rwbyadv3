@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -18,9 +17,6 @@ import (
 	"github.com/yyewolf/rwbyadv3/internal/env"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
-	"github.com/yyewolf/rwbyadv3/web/templates"
-	"github.com/yyewolf/rwbyadv3/web/templates/errors"
-	"github.com/yyewolf/rwbyadv3/web/templates/success"
 	"golang.org/x/oauth2"
 )
 
@@ -73,26 +69,6 @@ func ReverseState(s string) string {
 	return strings.Split(s, "/")[0]
 }
 
-func ErrorPage(c echo.Context, code int) error {
-	return templates.RenderView(c, errors.ErrorIndex(
-		"- Auth Error",
-		"",
-		true,
-		true,
-		errors.Error(fmt.Sprint(code), "Try again in a few seconds...", ""),
-	))
-}
-
-func SuccessPageRedirect(c echo.Context, text, redirectURI string) error {
-	return templates.RenderView(c, success.SuccessIndex(
-		"- Auth Success",
-		"",
-		true,
-		false,
-		success.Success(text, "", redirectURI),
-	))
-}
-
 func (h *DiscordAuthHandler) BeginAuth() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Get state from query
@@ -106,13 +82,13 @@ func (h *DiscordAuthHandler) BeginAuth() echo.HandlerFunc {
 			redirectUri := "/"
 			switch w {
 			case RedirectMain:
-				redirectUri = "/"
+				redirectUri = "/redirect/?to=main"
 			case RedirectMarket:
-				redirectUri = "/market"
+				redirectUri = "/redirect/?to=market"
 			case RedirectDungeons:
-				redirectUri = "/dungeons/" + params.Get("dungeonId")
+				redirectUri = "/redirect/?to=dungeons&id=" + params.Get("dungeonId")
 			case RedirectTrades:
-				redirectUri = "/trades/" + params.Get("tradeId")
+				redirectUri = "/redirect/?to=trades&id=" + params.Get("tradeId")
 			default:
 				return ErrorPage(c, http.StatusForbidden)
 			}
@@ -232,6 +208,7 @@ func (h *DiscordAuthHandler) CallbackLogin(state *ent.AuthState, token *oauth2.T
 		// Set the cookie
 		c.SetCookie(cookie)
 
-		return SuccessPageRedirect(c, "Successfully logged in, you should be redirected in a few seconds...", state.RedirectURI)
+		// return SuccessPageRedirect(c, "Successfully logged in, you should be redirected in a few seconds...", state.RedirectURI)
+		return c.Redirect(http.StatusTemporaryRedirect, state.RedirectURI)
 	}
 }

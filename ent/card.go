@@ -22,57 +22,57 @@ import (
 type Card struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty,omitzero"`
 	// CreateTime holds the value of the "create_time" field.
-	CreateTime time.Time `json:"create_time,omitempty"`
+	CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 	// UpdateTime holds the value of the "update_time" field.
-	UpdateTime time.Time `json:"update_time,omitempty"`
+	UpdateTime time.Time `json:"update_time,omitempty,omitzero"`
 	// PlayerID holds the value of the "player_id" field.
-	PlayerID string `json:"player_id,omitempty"`
+	PlayerID string `json:"player_id,omitempty,omitzero"`
 	// CardType holds the value of the "card_type" field.
-	CardType string `json:"card_type,omitempty"`
+	CardType string `json:"card_type,omitempty,omitzero"`
 	// Position holds the value of the "position" field.
-	Position float64 `json:"position,omitempty"`
+	Position float64 `json:"position,omitempty,omitzero"`
 	// Available holds the value of the "available" field.
-	Available bool `json:"available,omitempty"`
+	Available bool `json:"available,omitempty,omitzero"`
 	// Level holds the value of the "level" field.
-	Level int64 `json:"level,omitempty"`
+	Level int64 `json:"level,omitempty,omitzero"`
 	// ExperiencePoints holds the value of the "experience_points" field.
-	ExperiencePoints int64 `json:"experience_points,omitempty"`
+	ExperiencePoints int64 `json:"experience_points,omitempty,omitzero"`
 	// ExperiencePointsThreshold holds the value of the "experience_points_threshold" field.
-	ExperiencePointsThreshold int64 `json:"experience_points_threshold,omitempty"`
+	ExperiencePointsThreshold int64 `json:"experience_points_threshold,omitempty,omitzero"`
 	// Rarity holds the value of the "rarity" field.
-	Rarity int `json:"rarity,omitempty"`
+	Rarity int `json:"rarity,omitempty,omitzero"`
 	// Buffs holds the value of the "buffs" field.
-	Buffs int `json:"buffs,omitempty"`
+	Buffs int `json:"buffs,omitempty,omitzero"`
 	// IndividualValue holds the value of the "individual_value" field.
-	IndividualValue float64 `json:"individual_value,omitempty"`
+	IndividualValue float64 `json:"individual_value,omitempty,omitzero"`
 	// Metadata holds the value of the "metadata" field.
-	Metadata schema.CardMetadata `json:"metadata,omitempty"`
+	Metadata schema.CardMetadata `json:"metadata,omitempty,omitzero"`
 	// OwnedAt holds the value of the "owned_at" field.
-	OwnedAt time.Time `json:"owned_at,omitempty"`
+	OwnedAt time.Time `json:"owned_at,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CardQuery when eager-loading is set.
-	Edges        CardEdges `json:"edges"`
+	Edges        CardEdges `json:"edges,omitempty"`
 	selectValues sql.SelectValues
 }
 
 // CardEdges holds the relations/edges for other nodes in the graph.
 type CardEdges struct {
 	// OwnedBy holds the value of the owned_by edge.
-	OwnedBy *Player `json:"owned_by,omitempty"`
+	OwnedBy *Player `json:"owned_by,omitempty,omitzero"`
 	// InFavoritesOf holds the value of the in_favorites_of edge.
-	InFavoritesOf []*Player `json:"in_favorites_of,omitempty"`
+	InFavoritesOf []*Player `json:"in_favorites_of,omitempty,omitzero"`
 	// InDeckOf holds the value of the in_deck_of edge.
-	InDeckOf []*Player `json:"in_deck_of,omitempty"`
+	InDeckOf []*Player `json:"in_deck_of,omitempty,omitzero"`
 	// Type holds the value of the type edge.
-	Type *CardType `json:"type,omitempty"`
+	Type *CardType `json:"type,omitempty,omitzero"`
 	// Stats holds the value of the stats edge.
-	Stats *CardStats `json:"stats,omitempty"`
+	Stats *CardStats `json:"stats,omitempty,omitzero"`
 	// PlayerFavoriteCards holds the value of the player_favorite_cards edge.
-	PlayerFavoriteCards []*PlayerFavoriteCards `json:"player_favorite_cards,omitempty"`
+	PlayerFavoriteCards []*PlayerFavoriteCards `json:"player_favorite_cards,omitempty,omitzero"`
 	// PlayerDecks holds the value of the player_decks edge.
-	PlayerDecks []*PlayerDeck `json:"player_decks,omitempty"`
+	PlayerDecks []*PlayerDeck `json:"player_decks,omitempty,omitzero"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [7]bool

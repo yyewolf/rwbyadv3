@@ -1,14 +1,14 @@
-### Build the main web assets
+### Build the www web assets
 ###
-FROM node:22.5-alpine AS web-builder-main
+FROM node:22.5-alpine AS web-builder-www
 # Install make 
 RUN apk add --no-cache make
-WORKDIR /app
+WORKDIR /app/www
 # Install NodeJS dependencies
-COPY package.json package-lock.json ./
+COPY ./www/package.json ./www/package-lock.json ./
 RUN npm install
-COPY . .
-RUN make assets
+COPY ./www .
+RUN npm run build
 
 ### Build the dungeons assets
 ###
@@ -31,9 +31,7 @@ ENV CGO_ENABLED=0
 COPY go.mod go.sum ./
 RUN --mount=type=ssh go mod download && go mod verify
 COPY . .
-RUN go install github.com/a-h/templ/cmd/templ@latest
-RUN go generate templ.go
-COPY --from=web-builder-main /app/static /app/static
+COPY --from=web-builder-www /app/www/build /app/www/build
 COPY --from=web-builder-dungeons /app/dungeons/dist /app/dungeons/dist
 RUN go build -ldflags "-s -w" -o /app/rwbyadv3 /app/cmd/bot/main.go
 # Install CA certificates for scratch image

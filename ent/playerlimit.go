@@ -17,27 +17,27 @@ import (
 type PlayerLimit struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID int `json:"id,omitempty,omitzero"`
 	// CreateTime holds the value of the "create_time" field.
-	CreateTime time.Time `json:"create_time,omitempty"`
+	CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 	// UpdateTime holds the value of the "update_time" field.
-	UpdateTime time.Time `json:"update_time,omitempty"`
+	UpdateTime time.Time `json:"update_time,omitempty,omitzero"`
 	// PlayerID holds the value of the "player_id" field.
-	PlayerID string `json:"player_id,omitempty"`
+	PlayerID string `json:"player_id,omitempty,omitzero"`
 	// DungeonsLeft holds the value of the "dungeons_left" field.
-	DungeonsLeft int `json:"dungeons_left,omitempty"`
+	DungeonsLeft int `json:"dungeons_left,omitempty,omitzero"`
 	// DungeonsResetAt holds the value of the "dungeons_reset_at" field.
-	DungeonsResetAt time.Time `json:"dungeons_reset_at,omitempty"`
+	DungeonsResetAt time.Time `json:"dungeons_reset_at,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PlayerLimitQuery when eager-loading is set.
-	Edges        PlayerLimitEdges `json:"edges"`
+	Edges        PlayerLimitEdges `json:"edges,omitempty"`
 	selectValues sql.SelectValues
 }
 
 // PlayerLimitEdges holds the relations/edges for other nodes in the graph.
 type PlayerLimitEdges struct {
 	// Of holds the value of the of edge.
-	Of *Player `json:"of,omitempty"`
+	Of *Player `json:"of,omitempty,omitzero"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool

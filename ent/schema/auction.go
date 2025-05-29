@@ -6,6 +6,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/mixin"
 	"github.com/google/uuid"
+	"github.com/yyewolf/entvis"
 )
 
 // Auction holds the schema definition for the Auction entity.
@@ -16,11 +17,11 @@ type Auction struct {
 // Fields of the Auction.
 func (Auction) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.New()).Default(uuid.New),
+		field.UUID("id", uuid.New()).Default(uuid.New).Annotations(entvis.Visibility(RoleSelf, RolePublic)),
 		field.String("player_id"),
-		field.UUID("card_id", uuid.New()),
-		field.Int("time_extensions").Default(0),
-		field.Time("ends_at"),
+		field.UUID("card_id", uuid.New()).Annotations(entvis.Visibility(RoleSelf, RolePublic)),
+		field.Int("time_extensions").Default(0).Annotations(entvis.Visibility(RoleSelf, RolePublic)),
+		field.Time("ends_at").Annotations(entvis.Visibility(RoleSelf, RolePublic)),
 	}
 }
 

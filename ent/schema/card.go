@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/mixin"
 	"github.com/google/uuid"
+	"github.com/yyewolf/entvis"
 )
 
 // Card holds the schema definition for the Card entity.
@@ -22,20 +23,20 @@ type CardMetadata struct {
 // Fields of the Card.
 func (Card) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.New()).Default(uuid.New),
-		field.String("player_id"),
-		field.String("card_type"),
-		field.Float("position"),
-		field.Bool("available").Default(true),
+		field.UUID("id", uuid.New()).Default(uuid.New).Annotations(entvis.Visibility(RoleSelf, RolePublic)),
+		field.String("player_id").Annotations(entvis.Visibility(RoleSelf)),
+		field.String("card_type").Annotations(entvis.Visibility(RoleSelf, RolePublic)),
+		field.Float("position").Annotations(entvis.Visibility(RoleSelf)),
+		field.Bool("available").Default(true).Annotations(entvis.Visibility(RoleSelf)),
 
-		field.Int64("level").Default(1).Positive(),
-		field.Int64("experience_points").Default(0).NonNegative(),
-		field.Int64("experience_points_threshold").Default(0).NonNegative(),
+		field.Int64("level").Default(1).Positive().Annotations(entvis.Visibility(RoleSelf, RolePublic)),
+		field.Int64("experience_points").Default(0).NonNegative().Annotations(entvis.Visibility(RoleSelf)),
+		field.Int64("experience_points_threshold").Default(0).NonNegative().Annotations(entvis.Visibility(RoleSelf)),
 
-		field.Int("rarity").NonNegative(),
-		field.Int("buffs").Default(0).NonNegative(),
+		field.Int("rarity").NonNegative().Annotations(entvis.Visibility(RoleSelf, RolePublic)),
+		field.Int("buffs").Default(0).NonNegative().Annotations(entvis.Visibility(RoleSelf, RolePublic)),
 
-		field.Float("individual_value").Positive(),
+		field.Float("individual_value").Positive().Annotations(entvis.Visibility(RoleSelf, RolePublic)),
 
 		field.JSON("metadata", CardMetadata{}).Default(CardMetadata{}),
 		field.Time("owned_at").Default(time.Now),

@@ -24,15 +24,19 @@ func NewDungeonsHandler(app interfaces.App, g *echo.Group) {
 		fs = echo.MustSubFS(os.DirFS("."), "dungeons/dist")
 	}
 
+	var middlewares []echo.MiddlewareFunc
+	if app.Config().Mode != "dev" {
+		middlewares = append(middlewares, CachingMiddleware)
+	}
+
 	g.Add(
 		http.MethodGet,
 		"/static/*",
 		echo.StaticDirectoryHandler(fs, false),
-		CachingMiddleware,
+		middlewares...,
 	)
 
-	g.GET("/:dungeonId", View(app), auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectDungeons, "dungeonId")))
-	g.GET("/api/dungeon", GetDebugMap(app))
+	// g.GET("/api/dungeon", GetDebugMap(app))
 	g.GET("/api/dungeon/:dungeonId", GetDungeon(app), auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectDungeons, "dungeonId")))
 	g.POST("/api/dungeon/:dungeonId/end", EndDungeon(app), auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectDungeons, "dungeonId")))
 }

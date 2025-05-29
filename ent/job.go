@@ -18,27 +18,27 @@ import (
 type Job struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty,omitzero"`
 	// CreateTime holds the value of the "create_time" field.
-	CreateTime time.Time `json:"create_time,omitempty"`
+	CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 	// UpdateTime holds the value of the "update_time" field.
-	UpdateTime time.Time `json:"update_time,omitempty"`
+	UpdateTime time.Time `json:"update_time,omitempty,omitzero"`
 	// Jobkey holds the value of the "jobkey" field.
-	Jobkey string `json:"jobkey,omitempty"`
+	Jobkey string `json:"jobkey,omitempty,omitzero"`
 	// Retries holds the value of the "retries" field.
-	Retries int `json:"retries,omitempty"`
+	Retries int `json:"retries,omitempty,omitzero"`
 	// RunAt holds the value of the "run_at" field.
-	RunAt time.Time `json:"run_at,omitempty"`
+	RunAt time.Time `json:"run_at,omitempty,omitzero"`
 	// Params holds the value of the "params" field.
-	Params map[string]interface{} `json:"params,omitempty"`
+	Params map[string]interface{} `json:"params,omitempty,omitzero"`
 	// LastRunID holds the value of the "last_run_id" field.
-	LastRunID int64 `json:"last_run_id,omitempty"`
+	LastRunID int64 `json:"last_run_id,omitempty,omitzero"`
 	// Recurring holds the value of the "recurring" field.
-	Recurring bool `json:"recurring,omitempty"`
+	Recurring bool `json:"recurring,omitempty,omitzero"`
 	// DeltaTime holds the value of the "delta_time" field.
-	DeltaTime int64 `json:"delta_time,omitempty"`
+	DeltaTime int64 `json:"delta_time,omitempty,omitzero"`
 	// Errored holds the value of the "errored" field.
-	Errored      bool `json:"errored,omitempty"`
+	Errored      bool `json:"errored,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 

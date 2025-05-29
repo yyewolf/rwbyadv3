@@ -372,7 +372,7 @@ func (aq *AuctionQuery) WithBids(opts ...func(*AuctionBidQuery)) *AuctionQuery {
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -395,7 +395,7 @@ func (aq *AuctionQuery) GroupBy(field string, fields ...string) *AuctionGroupBy 
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //	}
 //
 //	client.Auction.Query().

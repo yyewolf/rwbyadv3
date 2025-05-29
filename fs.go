@@ -11,16 +11,16 @@ func GetCardFS() embed.FS {
 	return cardFS
 }
 
-//go:embed static/dist/*
-var staticFS embed.FS
-
-func GetStaticFS() embed.FS {
-	return staticFS
-}
-
 //go:embed dungeons/dist/*
 var dungeonFS embed.FS
 
 func GetDungeonFS() embed.FS {
 	return dungeonFS
+}
+
+//go:embed www/build/*
+var wwwFS embed.FS
+
+func GetWwwFS() embed.FS {
+	return wwwFS
 }

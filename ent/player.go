@@ -21,63 +21,63 @@ import (
 type Player struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID string `json:"id,omitempty"`
+	ID string `json:"id,omitempty,omitzero"`
 	// CreateTime holds the value of the "create_time" field.
-	CreateTime time.Time `json:"create_time,omitempty"`
+	CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 	// UpdateTime holds the value of the "update_time" field.
-	UpdateTime time.Time `json:"update_time,omitempty"`
+	UpdateTime time.Time `json:"update_time,omitempty,omitzero"`
 	// Username holds the value of the "username" field.
-	Username string `json:"username,omitempty"`
+	Username string `json:"username,omitempty,omitzero"`
 	// Liens holds the value of the "liens" field.
-	Liens int64 `json:"liens,omitempty"`
+	Liens int64 `json:"liens,omitempty,omitzero"`
 	// LiensInAuction holds the value of the "liens_in_auction" field.
-	LiensInAuction int64 `json:"liens_in_auction,omitempty"`
+	LiensInAuction int64 `json:"liens_in_auction,omitempty,omitzero"`
 	// Level holds the value of the "level" field.
-	Level int64 `json:"level,omitempty"`
+	Level int64 `json:"level,omitempty,omitzero"`
 	// ExperiencePoints holds the value of the "experience_points" field.
-	ExperiencePoints int64 `json:"experience_points,omitempty"`
+	ExperiencePoints int64 `json:"experience_points,omitempty,omitzero"`
 	// ExperiencePointsThreshold holds the value of the "experience_points_threshold" field.
-	ExperiencePointsThreshold int64 `json:"experience_points_threshold,omitempty"`
+	ExperiencePointsThreshold int64 `json:"experience_points_threshold,omitempty,omitzero"`
 	// BackpackLevel holds the value of the "backpack_level" field.
-	BackpackLevel int64 `json:"backpack_level,omitempty"`
+	BackpackLevel int64 `json:"backpack_level,omitempty,omitzero"`
 	// BackpackReservedSlots holds the value of the "backpack_reserved_slots" field.
-	BackpackReservedSlots int64 `json:"backpack_reserved_slots,omitempty"`
+	BackpackReservedSlots int64 `json:"backpack_reserved_slots,omitempty,omitzero"`
 	// SelectedCardID holds the value of the "selected_card_id" field.
-	SelectedCardID uuid.UUID `json:"selected_card_id,omitempty"`
+	SelectedCardID uuid.UUID `json:"selected_card_id,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PlayerQuery when eager-loading is set.
-	Edges        PlayerEdges `json:"edges"`
+	Edges        PlayerEdges `json:"edges,omitempty"`
 	selectValues sql.SelectValues
 }
 
 // PlayerEdges holds the relations/edges for other nodes in the graph.
 type PlayerEdges struct {
 	// Limits holds the value of the limits edge.
-	Limits *PlayerLimit `json:"limits,omitempty"`
+	Limits *PlayerLimit `json:"limits,omitempty,omitzero"`
 	// Cards holds the value of the cards edge.
-	Cards []*Card `json:"cards,omitempty"`
+	Cards []*Card `json:"cards,omitempty,omitzero"`
 	// FavoriteCards holds the value of the favorite_cards edge.
-	FavoriteCards []*Card `json:"favorite_cards,omitempty"`
+	FavoriteCards []*Card `json:"favorite_cards,omitempty,omitzero"`
 	// Deck holds the value of the deck edge.
-	Deck []*Card `json:"deck,omitempty"`
+	Deck []*Card `json:"deck,omitempty,omitzero"`
 	// Lootboxes holds the value of the lootboxes edge.
-	Lootboxes []*LootBox `json:"lootboxes,omitempty"`
+	Lootboxes []*LootBox `json:"lootboxes,omitempty,omitzero"`
 	// SelectedCard holds the value of the selected_card edge.
-	SelectedCard *Card `json:"selected_card,omitempty"`
+	SelectedCard *Card `json:"selected_card,omitempty,omitzero"`
 	// GithubStar holds the value of the github_star edge.
-	GithubStar *GithubStar `json:"github_star,omitempty"`
+	GithubStar *GithubStar `json:"github_star,omitempty,omitzero"`
 	// Daily holds the value of the daily edge.
-	Daily *Daily `json:"daily,omitempty"`
+	Daily *Daily `json:"daily,omitempty,omitzero"`
 	// Auctions holds the value of the auctions edge.
-	Auctions []*Auction `json:"auctions,omitempty"`
+	Auctions []*Auction `json:"auctions,omitempty,omitzero"`
 	// Listings holds the value of the listings edge.
-	Listings []*Listing `json:"listings,omitempty"`
+	Listings []*Listing `json:"listings,omitempty,omitzero"`
 	// Dungeons holds the value of the dungeons edge.
-	Dungeons []*Dungeon `json:"dungeons,omitempty"`
+	Dungeons []*Dungeon `json:"dungeons,omitempty,omitzero"`
 	// PlayerFavoriteCards holds the value of the player_favorite_cards edge.
-	PlayerFavoriteCards []*PlayerFavoriteCards `json:"player_favorite_cards,omitempty"`
+	PlayerFavoriteCards []*PlayerFavoriteCards `json:"player_favorite_cards,omitempty,omitzero"`
 	// PlayerDecks holds the value of the player_decks edge.
-	PlayerDecks []*PlayerDeck `json:"player_decks,omitempty"`
+	PlayerDecks []*PlayerDeck `json:"player_decks,omitempty,omitzero"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [13]bool

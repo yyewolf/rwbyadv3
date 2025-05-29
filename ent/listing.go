@@ -19,31 +19,31 @@ import (
 type Listing struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty,omitzero"`
 	// CreateTime holds the value of the "create_time" field.
-	CreateTime time.Time `json:"create_time,omitempty"`
+	CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 	// UpdateTime holds the value of the "update_time" field.
-	UpdateTime time.Time `json:"update_time,omitempty"`
+	UpdateTime time.Time `json:"update_time,omitempty,omitzero"`
 	// PlayerID holds the value of the "player_id" field.
-	PlayerID string `json:"player_id,omitempty"`
+	PlayerID string `json:"player_id,omitempty,omitzero"`
 	// CardID holds the value of the "card_id" field.
-	CardID uuid.UUID `json:"card_id,omitempty"`
+	CardID uuid.UUID `json:"card_id,omitempty,omitzero"`
 	// Price holds the value of the "price" field.
-	Price int64 `json:"price,omitempty"`
+	Price int64 `json:"price,omitempty,omitzero"`
 	// Note holds the value of the "note" field.
-	Note string `json:"note,omitempty"`
+	Note string `json:"note,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ListingQuery when eager-loading is set.
-	Edges        ListingEdges `json:"edges"`
+	Edges        ListingEdges `json:"edges,omitempty"`
 	selectValues sql.SelectValues
 }
 
 // ListingEdges holds the relations/edges for other nodes in the graph.
 type ListingEdges struct {
 	// OwnedBy holds the value of the owned_by edge.
-	OwnedBy *Player `json:"owned_by,omitempty"`
+	OwnedBy *Player `json:"owned_by,omitempty,omitzero"`
 	// Card holds the value of the card edge.
-	Card *Card `json:"card,omitempty"`
+	Card *Card `json:"card,omitempty,omitzero"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool

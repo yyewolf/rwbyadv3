@@ -262,7 +262,7 @@ func (pdq *PlayerDeckQuery) WithCard(opts ...func(*CardQuery)) *PlayerDeckQuery 
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -285,7 +285,7 @@ func (pdq *PlayerDeckQuery) GroupBy(field string, fields ...string) *PlayerDeckG
 // Example:
 //
 //	var v []struct {
-//		CreateTime time.Time `json:"create_time,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty,omitzero"`
 //	}
 //
 //	client.PlayerDeck.Query().

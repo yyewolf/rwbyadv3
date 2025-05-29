@@ -262,7 +262,7 @@ func (ctq *CardTypeQuery) Clone() *CardTypeQuery {
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Name string `json:"name,omitempty,omitzero"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -285,7 +285,7 @@ func (ctq *CardTypeQuery) GroupBy(field string, fields ...string) *CardTypeGroup
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Name string `json:"name,omitempty,omitzero"`
 //	}
 //
 //	client.CardType.Query().
