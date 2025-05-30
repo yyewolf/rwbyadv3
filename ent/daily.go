@@ -32,7 +32,7 @@ type Daily struct {
 	Streak int64 `json:"streak,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DailyQuery when eager-loading is set.
-	Edges        DailyEdges `json:"edges,omitempty"`
+	Edges        DailyEdges `json:"edges,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 

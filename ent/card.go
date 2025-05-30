@@ -53,7 +53,7 @@ type Card struct {
 	OwnedAt time.Time `json:"owned_at,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CardQuery when eager-loading is set.
-	Edges        CardEdges `json:"edges,omitempty"`
+	Edges        CardEdges `json:"edges,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 

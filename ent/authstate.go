@@ -34,7 +34,7 @@ type AuthState struct {
 	Type enums.AuthStateTypes `json:"type,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the AuthStateQuery when eager-loading is set.
-	Edges        AuthStateEdges `json:"edges,omitempty"`
+	Edges        AuthStateEdges `json:"edges,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 

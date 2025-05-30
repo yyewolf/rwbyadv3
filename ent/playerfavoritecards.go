@@ -30,7 +30,7 @@ type PlayerFavoriteCards struct {
 	Position float64 `json:"position,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PlayerFavoriteCardsQuery when eager-loading is set.
-	Edges        PlayerFavoriteCardsEdges `json:"edges,omitempty"`
+	Edges        PlayerFavoriteCardsEdges `json:"edges,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 

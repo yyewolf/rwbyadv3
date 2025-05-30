@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
+	"github.com/yyewolf/rwbyadv3/web/api"
 )
 
 // Predefined error types
@@ -24,6 +25,11 @@ const (
 // ErrorPage redirects to the landing error page with the specified error code
 func ErrorPage(c echo.Context, errorType string) error {
 	return c.Redirect(http.StatusFound, fmt.Sprintf("/landing/error/?error=%s", errorType))
+}
+
+// APIErrorPage redirects to the landing error page with the specified error code
+func APIErrorPage(c echo.Context, errorType string) error {
+	return api.SendRedirect(c, fmt.Sprintf("/landing/error/?error=%s", errorType))
 }
 
 // RegisterErrorHandler registers the error page routes

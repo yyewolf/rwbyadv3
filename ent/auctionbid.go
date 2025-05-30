@@ -32,7 +32,7 @@ type AuctionBid struct {
 	Price int64 `json:"price,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the AuctionBidQuery when eager-loading is set.
-	Edges        AuctionBidEdges `json:"edges,omitempty"`
+	Edges        AuctionBidEdges `json:"edges,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 

@@ -180,7 +180,8 @@ func WithContext[K Event](app interfaces.App, handler func(logger *logrus.Entry,
 			ctxVal.Set(reflect.ValueOf(v))
 		}
 
-		return handler(logger, event)
+		go handler(logger, event)
+		return nil
 	}
 }
 
@@ -229,7 +230,8 @@ func WithContextD[D any, K Event](app interfaces.App, handler func(logger *logru
 			ctxVal.Set(reflect.ValueOf(v))
 		}
 
-		return handler(logger, data, event)
+		go handler(logger, data, event)
+		return nil
 	}
 }
 

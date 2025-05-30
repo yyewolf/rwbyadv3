@@ -58,6 +58,10 @@ const (
 	EdgeListings = "listings"
 	// EdgeDungeons holds the string denoting the dungeons edge name in mutations.
 	EdgeDungeons = "dungeons"
+	// EdgeTrades holds the string denoting the trades edge name in mutations.
+	EdgeTrades = "trades"
+	// EdgeTradesReceived holds the string denoting the trades_received edge name in mutations.
+	EdgeTradesReceived = "trades_received"
 	// EdgePlayerFavoriteCards holds the string denoting the player_favorite_cards edge name in mutations.
 	EdgePlayerFavoriteCards = "player_favorite_cards"
 	// EdgePlayerDecks holds the string denoting the player_decks edge name in mutations.
@@ -137,6 +141,20 @@ const (
 	DungeonsInverseTable = "dungeons"
 	// DungeonsColumn is the table column denoting the dungeons relation/edge.
 	DungeonsColumn = "player_id"
+	// TradesTable is the table that holds the trades relation/edge.
+	TradesTable = "trades"
+	// TradesInverseTable is the table name for the Trade entity.
+	// It exists in this package in order to avoid circular dependency with the "trade" package.
+	TradesInverseTable = "trades"
+	// TradesColumn is the table column denoting the trades relation/edge.
+	TradesColumn = "initiator_id"
+	// TradesReceivedTable is the table that holds the trades_received relation/edge.
+	TradesReceivedTable = "trades"
+	// TradesReceivedInverseTable is the table name for the Trade entity.
+	// It exists in this package in order to avoid circular dependency with the "trade" package.
+	TradesReceivedInverseTable = "trades"
+	// TradesReceivedColumn is the table column denoting the trades_received relation/edge.
+	TradesReceivedColumn = "receiver_id"
 	// PlayerFavoriteCardsTable is the table that holds the player_favorite_cards relation/edge.
 	PlayerFavoriteCardsTable = "player_favorite_cards"
 	// PlayerFavoriteCardsInverseTable is the table name for the PlayerFavoriteCards entity.
@@ -416,6 +434,34 @@ func ByDungeons(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByTradesCount orders the results by trades count.
+func ByTradesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newTradesStep(), opts...)
+	}
+}
+
+// ByTrades orders the results by trades terms.
+func ByTrades(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTradesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByTradesReceivedCount orders the results by trades_received count.
+func ByTradesReceivedCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newTradesReceivedStep(), opts...)
+	}
+}
+
+// ByTradesReceived orders the results by trades_received terms.
+func ByTradesReceived(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTradesReceivedStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByPlayerFavoriteCardsCount orders the results by player_favorite_cards count.
 func ByPlayerFavoriteCardsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -518,6 +564,20 @@ func newDungeonsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DungeonsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, DungeonsTable, DungeonsColumn),
+	)
+}
+func newTradesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TradesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, TradesTable, TradesColumn),
+	)
+}
+func newTradesReceivedStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TradesReceivedInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, TradesReceivedTable, TradesReceivedColumn),
 	)
 }
 func newPlayerFavoriteCardsStep() *sqlgraph.Step {

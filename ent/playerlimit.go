@@ -30,7 +30,7 @@ type PlayerLimit struct {
 	DungeonsResetAt time.Time `json:"dungeons_reset_at,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PlayerLimitQuery when eager-loading is set.
-	Edges        PlayerLimitEdges `json:"edges,omitempty"`
+	Edges        PlayerLimitEdges `json:"edges,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 

@@ -21,12 +21,12 @@ export function getCardIconUri(cardType: string): string {
 // Function to convert rarity to hexadecimal color (similar to RarityToColor in Go)
 export function rarityToColor(rarity: number | undefined): string {
 	rarity = rarity || 0; // Default to 0 if rarity is undefined
-	const colors = ['#B5B5B5', '#9DF3C5', '#7EB4FF', '#D887F5', '#FFD700'];
-	return colors[Math.min(rarity - 1, colors.length - 1)] || colors[0];
+	const colors = ['#808080', '#7CFC00', '#87CEEB', '#BA55D3', '#FFD700', '#FF0000']; // Hex colors for Common, Uncommon, Rare, Very Rare, Legendary, Collector
+	return colors[rarity] || '#808080'; // Default to gray if rarity is out of bounds
 }
 
 export function getCardRarityName(rarity: number | undefined): string {
 	// Default to 'Common' if rarity is undefined
-	const rarities = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
-	return rarities[Math.min((rarity || 1) - 1, rarities.length - 1)];
+	const rarities = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Legendary', 'Collector'];
+	return rarities[rarity || 0] || 'Common'; // Default to 'Common' if rarity is out of bounds
 }

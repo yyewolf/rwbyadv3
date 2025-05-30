@@ -18,6 +18,7 @@ const (
 	ErrorConflict            ErrorCode = "CONFLICT"
 	ErrorInternalServerError ErrorCode = "INTERNAL_SERVER_ERROR"
 	ErrorValidation          ErrorCode = "VALIDATION_ERROR"
+	ErrorRedirected          ErrorCode = "REDIRECTED"
 )
 
 // Error represents a standardized API error
@@ -183,6 +184,12 @@ func SendInternalError(c echo.Context, message string) error {
 		message = "Internal server error"
 	}
 	return NewErrorResponse[any](ErrorInternalServerError, message).JSON(c, http.StatusInternalServerError)
+}
+
+// OkRedirect sends a redirect response with a 200 OK status
+func OkRedirect(c echo.Context, redirectURL string) error {
+	return NewRedirectErrorResponse[any](ErrorRedirected, "Redirecting to login", redirectURL).
+		JSON(c, http.StatusOK)
 }
 
 // SendRedirect sends a redirect response with a 401 Unauthorized status

@@ -56,3 +56,6 @@ type PlayerFavoriteCards func(*sql.Selector)
 
 // PlayerLimit is the predicate function for playerlimit builders.
 type PlayerLimit func(*sql.Selector)
+
+// Trade is the predicate function for trade builders.
+type Trade func(*sql.Selector)

@@ -32,6 +32,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/ent/predicate"
 	"github.com/yyewolf/rwbyadv3/ent/schema"
 	"github.com/yyewolf/rwbyadv3/ent/schema/enums"
+	"github.com/yyewolf/rwbyadv3/ent/trade"
 )
 
 const (
@@ -60,6 +61,7 @@ const (
 	TypePlayerDeck          = "PlayerDeck"
 	TypePlayerFavoriteCards = "PlayerFavoriteCards"
 	TypePlayerLimit         = "PlayerLimit"
+	TypeTrade               = "Trade"
 )
 
 // AuctionMutation represents an operation that mutates the Auction nodes in the graph.
@@ -10077,6 +10079,12 @@ type PlayerMutation struct {
 	dungeons                       map[uuid.UUID]struct{}
 	removeddungeons                map[uuid.UUID]struct{}
 	cleareddungeons                bool
+	trades                         map[uuid.UUID]struct{}
+	removedtrades                  map[uuid.UUID]struct{}
+	clearedtrades                  bool
+	trades_received                map[uuid.UUID]struct{}
+	removedtrades_received         map[uuid.UUID]struct{}
+	clearedtrades_received         bool
 	done                           bool
 	oldValue                       func(context.Context) (*Player, error)
 	predicates                     []predicate.Player
@@ -11257,6 +11265,114 @@ func (m *PlayerMutation) ResetDungeons() {
 	m.removeddungeons = nil
 }
 
+// AddTradeIDs adds the "trades" edge to the Trade entity by ids.
+func (m *PlayerMutation) AddTradeIDs(ids ...uuid.UUID) {
+	if m.trades == nil {
+		m.trades = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.trades[ids[i]] = struct{}{}
+	}
+}
+
+// ClearTrades clears the "trades" edge to the Trade entity.
+func (m *PlayerMutation) ClearTrades() {
+	m.clearedtrades = true
+}
+
+// TradesCleared reports if the "trades" edge to the Trade entity was cleared.
+func (m *PlayerMutation) TradesCleared() bool {
+	return m.clearedtrades
+}
+
+// RemoveTradeIDs removes the "trades" edge to the Trade entity by IDs.
+func (m *PlayerMutation) RemoveTradeIDs(ids ...uuid.UUID) {
+	if m.removedtrades == nil {
+		m.removedtrades = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.trades, ids[i])
+		m.removedtrades[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedTrades returns the removed IDs of the "trades" edge to the Trade entity.
+func (m *PlayerMutation) RemovedTradesIDs() (ids []uuid.UUID) {
+	for id := range m.removedtrades {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// TradesIDs returns the "trades" edge IDs in the mutation.
+func (m *PlayerMutation) TradesIDs() (ids []uuid.UUID) {
+	for id := range m.trades {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetTrades resets all changes to the "trades" edge.
+func (m *PlayerMutation) ResetTrades() {
+	m.trades = nil
+	m.clearedtrades = false
+	m.removedtrades = nil
+}
+
+// AddTradesReceivedIDs adds the "trades_received" edge to the Trade entity by ids.
+func (m *PlayerMutation) AddTradesReceivedIDs(ids ...uuid.UUID) {
+	if m.trades_received == nil {
+		m.trades_received = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.trades_received[ids[i]] = struct{}{}
+	}
+}
+
+// ClearTradesReceived clears the "trades_received" edge to the Trade entity.
+func (m *PlayerMutation) ClearTradesReceived() {
+	m.clearedtrades_received = true
+}
+
+// TradesReceivedCleared reports if the "trades_received" edge to the Trade entity was cleared.
+func (m *PlayerMutation) TradesReceivedCleared() bool {
+	return m.clearedtrades_received
+}
+
+// RemoveTradesReceivedIDs removes the "trades_received" edge to the Trade entity by IDs.
+func (m *PlayerMutation) RemoveTradesReceivedIDs(ids ...uuid.UUID) {
+	if m.removedtrades_received == nil {
+		m.removedtrades_received = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.trades_received, ids[i])
+		m.removedtrades_received[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedTradesReceived returns the removed IDs of the "trades_received" edge to the Trade entity.
+func (m *PlayerMutation) RemovedTradesReceivedIDs() (ids []uuid.UUID) {
+	for id := range m.removedtrades_received {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// TradesReceivedIDs returns the "trades_received" edge IDs in the mutation.
+func (m *PlayerMutation) TradesReceivedIDs() (ids []uuid.UUID) {
+	for id := range m.trades_received {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetTradesReceived resets all changes to the "trades_received" edge.
+func (m *PlayerMutation) ResetTradesReceived() {
+	m.trades_received = nil
+	m.clearedtrades_received = false
+	m.removedtrades_received = nil
+}
+
 // Where appends a list predicates to the PlayerMutation builder.
 func (m *PlayerMutation) Where(ps ...predicate.Player) {
 	m.predicates = append(m.predicates, ps...)
@@ -11656,7 +11772,7 @@ func (m *PlayerMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *PlayerMutation) AddedEdges() []string {
-	edges := make([]string, 0, 11)
+	edges := make([]string, 0, 13)
 	if m.limits != nil {
 		edges = append(edges, player.EdgeLimits)
 	}
@@ -11689,6 +11805,12 @@ func (m *PlayerMutation) AddedEdges() []string {
 	}
 	if m.dungeons != nil {
 		edges = append(edges, player.EdgeDungeons)
+	}
+	if m.trades != nil {
+		edges = append(edges, player.EdgeTrades)
+	}
+	if m.trades_received != nil {
+		edges = append(edges, player.EdgeTradesReceived)
 	}
 	return edges
 }
@@ -11755,13 +11877,25 @@ func (m *PlayerMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case player.EdgeTrades:
+		ids := make([]ent.Value, 0, len(m.trades))
+		for id := range m.trades {
+			ids = append(ids, id)
+		}
+		return ids
+	case player.EdgeTradesReceived:
+		ids := make([]ent.Value, 0, len(m.trades_received))
+		for id := range m.trades_received {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *PlayerMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 11)
+	edges := make([]string, 0, 13)
 	if m.removedcards != nil {
 		edges = append(edges, player.EdgeCards)
 	}
@@ -11782,6 +11916,12 @@ func (m *PlayerMutation) RemovedEdges() []string {
 	}
 	if m.removeddungeons != nil {
 		edges = append(edges, player.EdgeDungeons)
+	}
+	if m.removedtrades != nil {
+		edges = append(edges, player.EdgeTrades)
+	}
+	if m.removedtrades_received != nil {
+		edges = append(edges, player.EdgeTradesReceived)
 	}
 	return edges
 }
@@ -11832,13 +11972,25 @@ func (m *PlayerMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case player.EdgeTrades:
+		ids := make([]ent.Value, 0, len(m.removedtrades))
+		for id := range m.removedtrades {
+			ids = append(ids, id)
+		}
+		return ids
+	case player.EdgeTradesReceived:
+		ids := make([]ent.Value, 0, len(m.removedtrades_received))
+		for id := range m.removedtrades_received {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *PlayerMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 11)
+	edges := make([]string, 0, 13)
 	if m.clearedlimits {
 		edges = append(edges, player.EdgeLimits)
 	}
@@ -11872,6 +12024,12 @@ func (m *PlayerMutation) ClearedEdges() []string {
 	if m.cleareddungeons {
 		edges = append(edges, player.EdgeDungeons)
 	}
+	if m.clearedtrades {
+		edges = append(edges, player.EdgeTrades)
+	}
+	if m.clearedtrades_received {
+		edges = append(edges, player.EdgeTradesReceived)
+	}
 	return edges
 }
 
@@ -11901,6 +12059,10 @@ func (m *PlayerMutation) EdgeCleared(name string) bool {
 		return m.clearedlistings
 	case player.EdgeDungeons:
 		return m.cleareddungeons
+	case player.EdgeTrades:
+		return m.clearedtrades
+	case player.EdgeTradesReceived:
+		return m.clearedtrades_received
 	}
 	return false
 }
@@ -11961,6 +12123,12 @@ func (m *PlayerMutation) ResetEdge(name string) error {
 		return nil
 	case player.EdgeDungeons:
 		m.ResetDungeons()
+		return nil
+	case player.EdgeTrades:
+		m.ResetTrades()
+		return nil
+	case player.EdgeTradesReceived:
+		m.ResetTradesReceived()
 		return nil
 	}
 	return fmt.Errorf("unknown Player edge %s", name)
@@ -13671,4 +13839,828 @@ func (m *PlayerLimitMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown PlayerLimit edge %s", name)
+}
+
+// TradeMutation represents an operation that mutates the Trade nodes in the graph.
+type TradeMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *uuid.UUID
+	create_time         *time.Time
+	update_time         *time.Time
+	liens               *int
+	addliens            *int
+	offer_cards         *[]string
+	appendoffer_cards   []string
+	receive_cards       *[]string
+	appendreceive_cards []string
+	clearedFields       map[string]struct{}
+	initiator           *string
+	clearedinitiator    bool
+	receiver            *string
+	clearedreceiver     bool
+	done                bool
+	oldValue            func(context.Context) (*Trade, error)
+	predicates          []predicate.Trade
+}
+
+var _ ent.Mutation = (*TradeMutation)(nil)
+
+// tradeOption allows management of the mutation configuration using functional options.
+type tradeOption func(*TradeMutation)
+
+// newTradeMutation creates new mutation for the Trade entity.
+func newTradeMutation(c config, op Op, opts ...tradeOption) *TradeMutation {
+	m := &TradeMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeTrade,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withTradeID sets the ID field of the mutation.
+func withTradeID(id uuid.UUID) tradeOption {
+	return func(m *TradeMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Trade
+		)
+		m.oldValue = func(ctx context.Context) (*Trade, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Trade.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withTrade sets the old Trade of the mutation.
+func withTrade(node *Trade) tradeOption {
+	return func(m *TradeMutation) {
+		m.oldValue = func(context.Context) (*Trade, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m TradeMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m TradeMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Trade entities.
+func (m *TradeMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *TradeMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *TradeMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Trade.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreateTime sets the "create_time" field.
+func (m *TradeMutation) SetCreateTime(t time.Time) {
+	m.create_time = &t
+}
+
+// CreateTime returns the value of the "create_time" field in the mutation.
+func (m *TradeMutation) CreateTime() (r time.Time, exists bool) {
+	v := m.create_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreateTime returns the old "create_time" field's value of the Trade entity.
+// If the Trade object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TradeMutation) OldCreateTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreateTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreateTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreateTime: %w", err)
+	}
+	return oldValue.CreateTime, nil
+}
+
+// ResetCreateTime resets all changes to the "create_time" field.
+func (m *TradeMutation) ResetCreateTime() {
+	m.create_time = nil
+}
+
+// SetUpdateTime sets the "update_time" field.
+func (m *TradeMutation) SetUpdateTime(t time.Time) {
+	m.update_time = &t
+}
+
+// UpdateTime returns the value of the "update_time" field in the mutation.
+func (m *TradeMutation) UpdateTime() (r time.Time, exists bool) {
+	v := m.update_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdateTime returns the old "update_time" field's value of the Trade entity.
+// If the Trade object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TradeMutation) OldUpdateTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdateTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdateTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdateTime: %w", err)
+	}
+	return oldValue.UpdateTime, nil
+}
+
+// ResetUpdateTime resets all changes to the "update_time" field.
+func (m *TradeMutation) ResetUpdateTime() {
+	m.update_time = nil
+}
+
+// SetInitiatorID sets the "initiator_id" field.
+func (m *TradeMutation) SetInitiatorID(s string) {
+	m.initiator = &s
+}
+
+// InitiatorID returns the value of the "initiator_id" field in the mutation.
+func (m *TradeMutation) InitiatorID() (r string, exists bool) {
+	v := m.initiator
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldInitiatorID returns the old "initiator_id" field's value of the Trade entity.
+// If the Trade object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TradeMutation) OldInitiatorID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldInitiatorID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldInitiatorID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldInitiatorID: %w", err)
+	}
+	return oldValue.InitiatorID, nil
+}
+
+// ResetInitiatorID resets all changes to the "initiator_id" field.
+func (m *TradeMutation) ResetInitiatorID() {
+	m.initiator = nil
+}
+
+// SetReceiverID sets the "receiver_id" field.
+func (m *TradeMutation) SetReceiverID(s string) {
+	m.receiver = &s
+}
+
+// ReceiverID returns the value of the "receiver_id" field in the mutation.
+func (m *TradeMutation) ReceiverID() (r string, exists bool) {
+	v := m.receiver
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReceiverID returns the old "receiver_id" field's value of the Trade entity.
+// If the Trade object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TradeMutation) OldReceiverID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReceiverID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReceiverID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReceiverID: %w", err)
+	}
+	return oldValue.ReceiverID, nil
+}
+
+// ResetReceiverID resets all changes to the "receiver_id" field.
+func (m *TradeMutation) ResetReceiverID() {
+	m.receiver = nil
+}
+
+// SetLiens sets the "liens" field.
+func (m *TradeMutation) SetLiens(i int) {
+	m.liens = &i
+	m.addliens = nil
+}
+
+// Liens returns the value of the "liens" field in the mutation.
+func (m *TradeMutation) Liens() (r int, exists bool) {
+	v := m.liens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLiens returns the old "liens" field's value of the Trade entity.
+// If the Trade object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TradeMutation) OldLiens(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLiens is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLiens requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLiens: %w", err)
+	}
+	return oldValue.Liens, nil
+}
+
+// AddLiens adds i to the "liens" field.
+func (m *TradeMutation) AddLiens(i int) {
+	if m.addliens != nil {
+		*m.addliens += i
+	} else {
+		m.addliens = &i
+	}
+}
+
+// AddedLiens returns the value that was added to the "liens" field in this mutation.
+func (m *TradeMutation) AddedLiens() (r int, exists bool) {
+	v := m.addliens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetLiens resets all changes to the "liens" field.
+func (m *TradeMutation) ResetLiens() {
+	m.liens = nil
+	m.addliens = nil
+}
+
+// SetOfferCards sets the "offer_cards" field.
+func (m *TradeMutation) SetOfferCards(s []string) {
+	m.offer_cards = &s
+	m.appendoffer_cards = nil
+}
+
+// OfferCards returns the value of the "offer_cards" field in the mutation.
+func (m *TradeMutation) OfferCards() (r []string, exists bool) {
+	v := m.offer_cards
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOfferCards returns the old "offer_cards" field's value of the Trade entity.
+// If the Trade object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TradeMutation) OldOfferCards(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOfferCards is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOfferCards requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOfferCards: %w", err)
+	}
+	return oldValue.OfferCards, nil
+}
+
+// AppendOfferCards adds s to the "offer_cards" field.
+func (m *TradeMutation) AppendOfferCards(s []string) {
+	m.appendoffer_cards = append(m.appendoffer_cards, s...)
+}
+
+// AppendedOfferCards returns the list of values that were appended to the "offer_cards" field in this mutation.
+func (m *TradeMutation) AppendedOfferCards() ([]string, bool) {
+	if len(m.appendoffer_cards) == 0 {
+		return nil, false
+	}
+	return m.appendoffer_cards, true
+}
+
+// ResetOfferCards resets all changes to the "offer_cards" field.
+func (m *TradeMutation) ResetOfferCards() {
+	m.offer_cards = nil
+	m.appendoffer_cards = nil
+}
+
+// SetReceiveCards sets the "receive_cards" field.
+func (m *TradeMutation) SetReceiveCards(s []string) {
+	m.receive_cards = &s
+	m.appendreceive_cards = nil
+}
+
+// ReceiveCards returns the value of the "receive_cards" field in the mutation.
+func (m *TradeMutation) ReceiveCards() (r []string, exists bool) {
+	v := m.receive_cards
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReceiveCards returns the old "receive_cards" field's value of the Trade entity.
+// If the Trade object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TradeMutation) OldReceiveCards(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReceiveCards is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReceiveCards requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReceiveCards: %w", err)
+	}
+	return oldValue.ReceiveCards, nil
+}
+
+// AppendReceiveCards adds s to the "receive_cards" field.
+func (m *TradeMutation) AppendReceiveCards(s []string) {
+	m.appendreceive_cards = append(m.appendreceive_cards, s...)
+}
+
+// AppendedReceiveCards returns the list of values that were appended to the "receive_cards" field in this mutation.
+func (m *TradeMutation) AppendedReceiveCards() ([]string, bool) {
+	if len(m.appendreceive_cards) == 0 {
+		return nil, false
+	}
+	return m.appendreceive_cards, true
+}
+
+// ResetReceiveCards resets all changes to the "receive_cards" field.
+func (m *TradeMutation) ResetReceiveCards() {
+	m.receive_cards = nil
+	m.appendreceive_cards = nil
+}
+
+// ClearInitiator clears the "initiator" edge to the Player entity.
+func (m *TradeMutation) ClearInitiator() {
+	m.clearedinitiator = true
+	m.clearedFields[trade.FieldInitiatorID] = struct{}{}
+}
+
+// InitiatorCleared reports if the "initiator" edge to the Player entity was cleared.
+func (m *TradeMutation) InitiatorCleared() bool {
+	return m.clearedinitiator
+}
+
+// InitiatorIDs returns the "initiator" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// InitiatorID instead. It exists only for internal usage by the builders.
+func (m *TradeMutation) InitiatorIDs() (ids []string) {
+	if id := m.initiator; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetInitiator resets all changes to the "initiator" edge.
+func (m *TradeMutation) ResetInitiator() {
+	m.initiator = nil
+	m.clearedinitiator = false
+}
+
+// ClearReceiver clears the "receiver" edge to the Player entity.
+func (m *TradeMutation) ClearReceiver() {
+	m.clearedreceiver = true
+	m.clearedFields[trade.FieldReceiverID] = struct{}{}
+}
+
+// ReceiverCleared reports if the "receiver" edge to the Player entity was cleared.
+func (m *TradeMutation) ReceiverCleared() bool {
+	return m.clearedreceiver
+}
+
+// ReceiverIDs returns the "receiver" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ReceiverID instead. It exists only for internal usage by the builders.
+func (m *TradeMutation) ReceiverIDs() (ids []string) {
+	if id := m.receiver; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetReceiver resets all changes to the "receiver" edge.
+func (m *TradeMutation) ResetReceiver() {
+	m.receiver = nil
+	m.clearedreceiver = false
+}
+
+// Where appends a list predicates to the TradeMutation builder.
+func (m *TradeMutation) Where(ps ...predicate.Trade) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the TradeMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *TradeMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Trade, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *TradeMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *TradeMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Trade).
+func (m *TradeMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *TradeMutation) Fields() []string {
+	fields := make([]string, 0, 7)
+	if m.create_time != nil {
+		fields = append(fields, trade.FieldCreateTime)
+	}
+	if m.update_time != nil {
+		fields = append(fields, trade.FieldUpdateTime)
+	}
+	if m.initiator != nil {
+		fields = append(fields, trade.FieldInitiatorID)
+	}
+	if m.receiver != nil {
+		fields = append(fields, trade.FieldReceiverID)
+	}
+	if m.liens != nil {
+		fields = append(fields, trade.FieldLiens)
+	}
+	if m.offer_cards != nil {
+		fields = append(fields, trade.FieldOfferCards)
+	}
+	if m.receive_cards != nil {
+		fields = append(fields, trade.FieldReceiveCards)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *TradeMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case trade.FieldCreateTime:
+		return m.CreateTime()
+	case trade.FieldUpdateTime:
+		return m.UpdateTime()
+	case trade.FieldInitiatorID:
+		return m.InitiatorID()
+	case trade.FieldReceiverID:
+		return m.ReceiverID()
+	case trade.FieldLiens:
+		return m.Liens()
+	case trade.FieldOfferCards:
+		return m.OfferCards()
+	case trade.FieldReceiveCards:
+		return m.ReceiveCards()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *TradeMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case trade.FieldCreateTime:
+		return m.OldCreateTime(ctx)
+	case trade.FieldUpdateTime:
+		return m.OldUpdateTime(ctx)
+	case trade.FieldInitiatorID:
+		return m.OldInitiatorID(ctx)
+	case trade.FieldReceiverID:
+		return m.OldReceiverID(ctx)
+	case trade.FieldLiens:
+		return m.OldLiens(ctx)
+	case trade.FieldOfferCards:
+		return m.OldOfferCards(ctx)
+	case trade.FieldReceiveCards:
+		return m.OldReceiveCards(ctx)
+	}
+	return nil, fmt.Errorf("unknown Trade field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TradeMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case trade.FieldCreateTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreateTime(v)
+		return nil
+	case trade.FieldUpdateTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdateTime(v)
+		return nil
+	case trade.FieldInitiatorID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetInitiatorID(v)
+		return nil
+	case trade.FieldReceiverID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReceiverID(v)
+		return nil
+	case trade.FieldLiens:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLiens(v)
+		return nil
+	case trade.FieldOfferCards:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOfferCards(v)
+		return nil
+	case trade.FieldReceiveCards:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReceiveCards(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Trade field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *TradeMutation) AddedFields() []string {
+	var fields []string
+	if m.addliens != nil {
+		fields = append(fields, trade.FieldLiens)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *TradeMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case trade.FieldLiens:
+		return m.AddedLiens()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TradeMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case trade.FieldLiens:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLiens(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Trade numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *TradeMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *TradeMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *TradeMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Trade nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *TradeMutation) ResetField(name string) error {
+	switch name {
+	case trade.FieldCreateTime:
+		m.ResetCreateTime()
+		return nil
+	case trade.FieldUpdateTime:
+		m.ResetUpdateTime()
+		return nil
+	case trade.FieldInitiatorID:
+		m.ResetInitiatorID()
+		return nil
+	case trade.FieldReceiverID:
+		m.ResetReceiverID()
+		return nil
+	case trade.FieldLiens:
+		m.ResetLiens()
+		return nil
+	case trade.FieldOfferCards:
+		m.ResetOfferCards()
+		return nil
+	case trade.FieldReceiveCards:
+		m.ResetReceiveCards()
+		return nil
+	}
+	return fmt.Errorf("unknown Trade field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *TradeMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.initiator != nil {
+		edges = append(edges, trade.EdgeInitiator)
+	}
+	if m.receiver != nil {
+		edges = append(edges, trade.EdgeReceiver)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *TradeMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case trade.EdgeInitiator:
+		if id := m.initiator; id != nil {
+			return []ent.Value{*id}
+		}
+	case trade.EdgeReceiver:
+		if id := m.receiver; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *TradeMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *TradeMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *TradeMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedinitiator {
+		edges = append(edges, trade.EdgeInitiator)
+	}
+	if m.clearedreceiver {
+		edges = append(edges, trade.EdgeReceiver)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *TradeMutation) EdgeCleared(name string) bool {
+	switch name {
+	case trade.EdgeInitiator:
+		return m.clearedinitiator
+	case trade.EdgeReceiver:
+		return m.clearedreceiver
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *TradeMutation) ClearEdge(name string) error {
+	switch name {
+	case trade.EdgeInitiator:
+		m.ClearInitiator()
+		return nil
+	case trade.EdgeReceiver:
+		m.ClearReceiver()
+		return nil
+	}
+	return fmt.Errorf("unknown Trade unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *TradeMutation) ResetEdge(name string) error {
+	switch name {
+	case trade.EdgeInitiator:
+		m.ResetInitiator()
+		return nil
+	case trade.EdgeReceiver:
+		m.ResetReceiver()
+		return nil
+	}
+	return fmt.Errorf("unknown Trade edge %s", name)
 }

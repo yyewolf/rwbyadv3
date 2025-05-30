@@ -178,6 +178,8 @@ func (cmd *openCommand) HandleInteraction(logger *logrus.Entry, data discord.But
 		return utils.ComponentError(logger, event, err)
 	}
 
+	logrus.WithField("card_string", newCard.FullString()).Info("new card created from lootbox")
+
 	embedFile, embed, _ := newCard.Message()
 	embed.Footer = cmd.app.Footer()
 
@@ -186,6 +188,9 @@ func (cmd *openCommand) HandleInteraction(logger *logrus.Entry, data discord.But
 		SetEmbeds(embed).
 		Build(),
 	)
+	if err != nil {
+		logrus.WithError(err).Error("error sending followup message")
+	}
 
 	components := cmd.generator(currentPlayer)
 	event.UpdateInteractionResponse(

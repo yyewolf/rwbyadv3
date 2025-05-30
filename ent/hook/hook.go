@@ -213,6 +213,18 @@ func (f PlayerLimitFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PlayerLimitMutation", m)
 }
 
+// The TradeFunc type is an adapter to allow the use of ordinary
+// function as Trade mutator.
+type TradeFunc func(context.Context, *ent.TradeMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TradeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TradeMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TradeMutation", m)
+}
+
 // Condition is a hook condition function.
 type Condition func(context.Context, ent.Mutation) bool
 

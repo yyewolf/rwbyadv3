@@ -28,7 +28,7 @@ type Cookie struct {
 	ExpiresAt time.Time `json:"expires_at,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CookieQuery when eager-loading is set.
-	Edges        CookieEdges `json:"edges,omitempty"`
+	Edges        CookieEdges `json:"edges,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 

@@ -30,7 +30,7 @@ type LootBox struct {
 	Type enums.LootBoxType `json:"type,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the LootBoxQuery when eager-loading is set.
-	Edges        LootBoxEdges `json:"edges,omitempty"`
+	Edges        LootBoxEdges `json:"edges,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 

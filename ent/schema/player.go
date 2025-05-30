@@ -55,5 +55,7 @@ func (Player) Edges() []ent.Edge {
 		edge.To("auctions", Auction.Type),
 		edge.To("listings", Listing.Type),
 		edge.To("dungeons", Dungeon.Type),
+		edge.From("trades", Trade.Type).Ref("initiator"),
+		edge.From("trades_received", Trade.Type).Ref("receiver"),
 	}
 }
