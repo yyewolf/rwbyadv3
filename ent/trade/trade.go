@@ -82,6 +82,10 @@ var (
 	UpdateDefaultUpdateTime func() time.Time
 	// DefaultLiens holds the default value on creation for the "liens" field.
 	DefaultLiens int
+	// DefaultOfferCards holds the default value on creation for the "offer_cards" field.
+	DefaultOfferCards []string
+	// DefaultReceiveCards holds the default value on creation for the "receive_cards" field.
+	DefaultReceiveCards []string
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )

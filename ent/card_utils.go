@@ -18,6 +18,11 @@ func (c *Card) FullString() string {
 	return fmt.Sprintf("%s level %d (%d/%dXP) %s (%.2f%%)", c.RarityString(), c.Level, c.ExperiencePoints, c.ExperiencePointsThreshold, def.Name, c.IndividualValue)
 }
 
+func (c *Card) PartialString() string {
+	def := c.Primitive()
+	return fmt.Sprintf("%s lvl %d %s (%.2f%%)", c.RarityString(), c.Level, def.Name, c.IndividualValue)
+}
+
 func (c *Card) RarityString() (x string) {
 	switch c.Rarity {
 	case 0: // Common
@@ -59,7 +64,7 @@ func (c *Card) RarityToColor() int {
 	return EmbedColor
 }
 
-func (c *Card) Message() (*discord.File, discord.Embed, *discord.ContainerComponent) {
+func (c *Card) Message() (*discord.File, discord.Embed, discord.ContainerComponent) {
 	img, err := cards.GetEmbeddableImage(c.CardType, "battle", "png")
 	if err != nil {
 		logrus.Panic("no image found, safeguard failed :o")

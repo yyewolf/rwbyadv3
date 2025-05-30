@@ -79,7 +79,10 @@ func FillPlayerContext(builder *ContextBuilder, userID snowflake.ID, ctx context
 	}
 
 	if builder.withPlayerSelectedCard {
-		query.WithSelectedCard()
+		query.WithSelectedCard(func(q *ent.CardQuery) {
+			q.WithType()
+			q.WithStats()
+		})
 	}
 
 	if builder.withPlayerLimits {
@@ -180,8 +183,7 @@ func WithContext[K Event](app interfaces.App, handler func(logger *logrus.Entry,
 			ctxVal.Set(reflect.ValueOf(v))
 		}
 
-		go handler(logger, event)
-		return nil
+		return handler(logger, event)
 	}
 }
 
@@ -230,8 +232,7 @@ func WithContextD[D any, K Event](app interfaces.App, handler func(logger *logru
 			ctxVal.Set(reflect.ValueOf(v))
 		}
 
-		go handler(logger, data, event)
-		return nil
+		return handler(logger, data, event)
 	}
 }
 

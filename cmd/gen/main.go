@@ -27,6 +27,7 @@ func main() {
 		},
 		Templates: []*gen.Template{
 			gen.MustParse(gen.NewTemplate("edgeTags").Parse(edgeTags)),
+			gen.MustParse(gen.NewTemplate("utils").ParseDir("./ent/schema/templates")),
 		},
 	},
 		entc.Extensions(entvis.NewViewExtension()),

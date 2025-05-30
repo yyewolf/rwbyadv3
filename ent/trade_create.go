@@ -162,6 +162,14 @@ func (tc *TradeCreate) defaults() {
 		v := trade.DefaultLiens
 		tc.mutation.SetLiens(v)
 	}
+	if _, ok := tc.mutation.OfferCards(); !ok {
+		v := trade.DefaultOfferCards
+		tc.mutation.SetOfferCards(v)
+	}
+	if _, ok := tc.mutation.ReceiveCards(); !ok {
+		v := trade.DefaultReceiveCards
+		tc.mutation.SetReceiveCards(v)
+	}
 	if _, ok := tc.mutation.ID(); !ok {
 		v := trade.DefaultID()
 		tc.mutation.SetID(v)

@@ -62,7 +62,7 @@ func (cmd *listingsCommand) generator(username string, currentPlayer *ent.Player
 
 	for i, listing := range listings {
 		idx := page*int(perPage) + i + 1
-		field.Value += fmt.Sprintf("`N°%d | %s`\n", idx, listing.Edges.Card.FullString())
+		field.Value += fmt.Sprintf("`N°%d | %d Ⱡ | %s`\n", idx, listing.Price, listing.Edges.Card.PartialString())
 	}
 
 	if len(listings) == 0 {

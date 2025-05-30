@@ -471,6 +471,14 @@ func init() {
 	tradeDescLiens := tradeFields[3].Descriptor()
 	// trade.DefaultLiens holds the default value on creation for the liens field.
 	trade.DefaultLiens = tradeDescLiens.Default.(int)
+	// tradeDescOfferCards is the schema descriptor for offer_cards field.
+	tradeDescOfferCards := tradeFields[4].Descriptor()
+	// trade.DefaultOfferCards holds the default value on creation for the offer_cards field.
+	trade.DefaultOfferCards = tradeDescOfferCards.Default.([]string)
+	// tradeDescReceiveCards is the schema descriptor for receive_cards field.
+	tradeDescReceiveCards := tradeFields[5].Descriptor()
+	// trade.DefaultReceiveCards holds the default value on creation for the receive_cards field.
+	trade.DefaultReceiveCards = tradeDescReceiveCards.Default.([]string)
 	// tradeDescID is the schema descriptor for id field.
 	tradeDescID := tradeFields[0].Descriptor()
 	// trade.DefaultID holds the default value on creation for the id field.
