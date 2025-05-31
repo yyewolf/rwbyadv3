@@ -13,7 +13,7 @@ func NewMenu(menus *builder.MenuStore, app interfaces.App) *builder.Menu {
 			Name: "🔁",
 		}),
 		builder.WithCommands(
-		//
+			TradesCommand(menus, app),
 		),
 	)
 }
