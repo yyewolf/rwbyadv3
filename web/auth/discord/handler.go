@@ -88,7 +88,7 @@ func (h *DiscordAuthHandler) BeginAuth() echo.HandlerFunc {
 			case RedirectDungeons:
 				redirectUri = "/redirect/?to=dungeons&id=" + params.Get("dungeonId")
 			case RedirectTrades:
-				redirectUri = "/redirect/?to=trades&id=" + params.Get("tradeId")
+				redirectUri = "/redirect/?to=trades&playerId=" + params.Get("playerId")
 			default:
 				return ErrorPage(c, http.StatusForbidden)
 			}

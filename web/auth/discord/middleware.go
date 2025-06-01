@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -37,6 +38,8 @@ func doRedirect(c echo.Context, options Options) string {
 	}
 	uri.RawQuery = values.Encode()
 
+	fmt.Println("Redirecting to:", uri.String())
+
 	return uri.String()
 }
 
@@ -52,12 +55,11 @@ func (h *DiscordAuthHandler) RequireAuth(opts ...OptionsFunc) func(next echo.Han
 			// Get the cookie from the request
 			currentCookie, err := c.Cookie("session")
 			if err != nil {
-				logrus.WithError(err).Error("error getting session cookie")
-
 				if options.DoRedirect {
 					return api.SendRedirect(c, doRedirect(c, options))
 				}
 
+				logrus.WithError(err).Error("error getting session cookie")
 				return ErrorPage(c, http.StatusUnauthorized)
 			}
 

@@ -23,7 +23,7 @@ func HandleErrorJson(c echo.Context, err error, userMessage string) error {
 func NewTradesHandler(app interfaces.App, g *echo.Group) {
 	handler := TradeApiHandler{app: app}
 
-	g.GET("/self/cards", handler.MyCards(app), auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectTrades, "tradeId")))
-	g.POST("/:playerId", handler.CreateTrade(app), auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectTrades, "tradeId")))
-	g.GET("/:playerId/cards", handler.TheirCards(app), auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectTrades, "tradeId")))
+	g.GET("/self/cards", handler.MyCards(app), auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectTrades)))
+	g.POST("/:playerId", handler.CreateTrade(app), auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectTrades, "playerId")))
+	g.GET("/:playerId/cards", handler.TheirCards(app), auth.DiscordHandler.RequireAuth(discord.WithRedirect(discord.RedirectTrades, "playerId")))
 }

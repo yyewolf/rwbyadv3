@@ -4,11 +4,12 @@
 	import { page } from '$app/stores';
 
 	// Define allowed redirect destinations
-	const allowedRedirects: Record<string, string> = {
-		market: '/market',
-		home: '/',
-		collection: '/collection',
-		deck: '/deck'
+	const allowedRedirects: Record<string, { route: string; params: string[] }> = {
+		market: { route: '/market', params: [] },
+		home: { route: '/', params: [] },
+		collection: { route: '/collection', params: [] },
+		deck: { route: '/deck', params: [] },
+		trades: { route: '/trade', params: ['playerId'] }
 	};
 
 	// Loading state
@@ -33,7 +34,14 @@
 					countdown--;
 					if (countdown <= 0) {
 						clearInterval(timer);
-						goto(allowedRedirects[to]);
+						// Redirect to route passing the GET parameters along
+						const params = new URLSearchParams();
+						allowedRedirects[to].params.forEach((param) => {
+							if ($page.url.searchParams.has(param)) {
+								params.set(param, $page.url.searchParams.get(param) || '');
+							}
+						});
+						goto(allowedRedirects[to].route + '?' + params.toString());
 					}
 				}, 1000);
 			} else {
