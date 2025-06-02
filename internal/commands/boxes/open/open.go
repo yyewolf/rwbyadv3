@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/ent"
 	entLootbox "github.com/yyewolf/rwbyadv3/ent/lootbox"
+	"github.com/yyewolf/rwbyadv3/ent/player"
 	"github.com/yyewolf/rwbyadv3/ent/schema/enums"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/cards"
@@ -178,6 +179,8 @@ func (cmd *openCommand) HandleInteraction(logger *logrus.Entry, data discord.But
 		return utils.ComponentError(logger, event, err)
 	}
 
+	logrus.WithField("card_string", newCard.FullString()).Info("new card created from lootbox")
+
 	embedFile, embed, _ := newCard.Message()
 	embed.Footer = cmd.app.Footer()
 
@@ -186,12 +189,21 @@ func (cmd *openCommand) HandleInteraction(logger *logrus.Entry, data discord.But
 		SetEmbeds(embed).
 		Build(),
 	)
+	if err != nil {
+		logrus.WithError(err).Error("error sending followup message")
+	}
 
-	components := cmd.generator(currentPlayer)
-	event.UpdateInteractionResponse(
-		discord.NewMessageUpdateBuilder().
-			AddContainerComponents(components).
-			Build(),
-	)
+	currentPlayer, err = cmd.app.Db().Player.Query().
+		Where(player.ID(currentPlayer.ID)).
+		WithLootboxes().
+		Only(event.Ctx)
+	if err == nil {
+		event.UpdateInteractionResponse(
+			discord.NewMessageUpdateBuilder().
+				AddContainerComponents(cmd.generator(currentPlayer)).
+				Build(),
+		)
+	}
+
 	return err
 }

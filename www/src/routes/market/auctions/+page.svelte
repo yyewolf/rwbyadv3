@@ -31,7 +31,7 @@
 		loading = true;
 
 		// Create URL with search query
-		let url = `/apis/market/api/auctions?query=${encodeURIComponent(query)}&p=${page}`;
+		let url = `/apis/market/auctions?query=${encodeURIComponent(query)}&p=${page}`;
 
 		// Add filter parameters if they exist
 		if (filterParams.minPrice) url += `&min_price=${filterParams.minPrice}`;

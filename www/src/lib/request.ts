@@ -29,42 +29,36 @@ export async function apiRequest<T>(
 
 	try {
 		const response = await fetch(url, defaultOptions);
+		const data = (await response.json()) as Response<T>;
+		if (data.error?.redirect) {
+			window.location.href = data.error.redirect;
+			return { meta: { success: false }, data: null, error: data.error } as Response<T>;
+		}
 
 		// Handle unauthorized access (401)
 		if (response.status === 401) {
-			const data = (await response.json()) as Response<null>;
-
-			// If the backend provides a redirect URL, use it
-			if (data.error?.redirect) {
-				window.location.href = data.error.redirect;
-				return { meta: { success: false }, data: null, error: data.error } as Response<T>;
-			} else {
-				// Default unauthorized handling
-				const error = { message: 'You need to log in to access this resource' };
-				if (defaultOptions.notifyOnError) {
-					notifyError(error.message);
-				}
-				return { meta: { success: false }, data: null, error } as Response<T>;
+			// Default unauthorized handling
+			const error = { message: 'You need to log in to access this resource' };
+			if (defaultOptions.notifyOnError) {
+				notifyError(error.message);
 			}
+			return { meta: { success: false }, data: null, error } as Response<T>;
 		}
 
 		// Handle other errors
 		if (!response.ok) {
-			const errorData = await response.json().catch(() => null);
-			const error = errorData?.error || {
+			const error = data?.error || {
 				message: `Request failed with status: ${response.status}`
 			};
 
 			if (defaultOptions.notifyOnError) {
-				notifyError(error.message);
+				notifyError(error.message ?? '');
 			}
 
 			return { meta: { success: false }, data: null, error } as Response<T>;
 		}
 
-		// Handle successful responses
-		const data = await response.json();
-		return data as Response<T>;
+		return data;
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
 

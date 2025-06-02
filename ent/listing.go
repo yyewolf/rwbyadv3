@@ -34,7 +34,7 @@ type Listing struct {
 	Note string `json:"note,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ListingQuery when eager-loading is set.
-	Edges        ListingEdges `json:"edges,omitempty"`
+	Edges        ListingEdges `json:"edges,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 

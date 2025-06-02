@@ -37,7 +37,7 @@ type CardStats struct {
 	Speed int64 `json:"speed,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CardStatsQuery when eager-loading is set.
-	Edges        CardStatsEdges `json:"edges,omitempty"`
+	Edges        CardStatsEdges `json:"edges,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 

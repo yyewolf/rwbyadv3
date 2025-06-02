@@ -30,7 +30,7 @@ type GithubStar struct {
 	HasStarred bool `json:"has_starred,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GithubStarQuery when eager-loading is set.
-	Edges        GithubStarEdges `json:"edges,omitempty"`
+	Edges        GithubStarEdges `json:"edges,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 

@@ -30,7 +30,7 @@ type PlayerDeck struct {
 	Position float64 `json:"position,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PlayerDeckQuery when eager-loading is set.
-	Edges        PlayerDeckEdges `json:"edges,omitempty"`
+	Edges        PlayerDeckEdges `json:"edges,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 

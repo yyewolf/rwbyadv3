@@ -63,7 +63,7 @@ class MarketSSEClient {
 		}
 
 		try {
-			this.eventSource = new EventSource('/apis/market/api/sse');
+			this.eventSource = new EventSource('/apis/market/sse');
 
 			// Set up event listeners
 			this.eventSource.onopen = this.handleOpen.bind(this);

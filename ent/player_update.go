@@ -22,6 +22,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/ent/player"
 	"github.com/yyewolf/rwbyadv3/ent/playerlimit"
 	"github.com/yyewolf/rwbyadv3/ent/predicate"
+	"github.com/yyewolf/rwbyadv3/ent/trade"
 )
 
 // PlayerUpdate is the builder for updating Player entities.
@@ -391,6 +392,36 @@ func (pu *PlayerUpdate) AddDungeons(d ...*Dungeon) *PlayerUpdate {
 	return pu.AddDungeonIDs(ids...)
 }
 
+// AddTradeIDs adds the "trades" edge to the Trade entity by IDs.
+func (pu *PlayerUpdate) AddTradeIDs(ids ...uuid.UUID) *PlayerUpdate {
+	pu.mutation.AddTradeIDs(ids...)
+	return pu
+}
+
+// AddTrades adds the "trades" edges to the Trade entity.
+func (pu *PlayerUpdate) AddTrades(t ...*Trade) *PlayerUpdate {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return pu.AddTradeIDs(ids...)
+}
+
+// AddTradesReceivedIDs adds the "trades_received" edge to the Trade entity by IDs.
+func (pu *PlayerUpdate) AddTradesReceivedIDs(ids ...uuid.UUID) *PlayerUpdate {
+	pu.mutation.AddTradesReceivedIDs(ids...)
+	return pu
+}
+
+// AddTradesReceived adds the "trades_received" edges to the Trade entity.
+func (pu *PlayerUpdate) AddTradesReceived(t ...*Trade) *PlayerUpdate {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return pu.AddTradesReceivedIDs(ids...)
+}
+
 // Mutation returns the PlayerMutation object of the builder.
 func (pu *PlayerUpdate) Mutation() *PlayerMutation {
 	return pu.mutation
@@ -565,6 +596,48 @@ func (pu *PlayerUpdate) RemoveDungeons(d ...*Dungeon) *PlayerUpdate {
 		ids[i] = d[i].ID
 	}
 	return pu.RemoveDungeonIDs(ids...)
+}
+
+// ClearTrades clears all "trades" edges to the Trade entity.
+func (pu *PlayerUpdate) ClearTrades() *PlayerUpdate {
+	pu.mutation.ClearTrades()
+	return pu
+}
+
+// RemoveTradeIDs removes the "trades" edge to Trade entities by IDs.
+func (pu *PlayerUpdate) RemoveTradeIDs(ids ...uuid.UUID) *PlayerUpdate {
+	pu.mutation.RemoveTradeIDs(ids...)
+	return pu
+}
+
+// RemoveTrades removes "trades" edges to Trade entities.
+func (pu *PlayerUpdate) RemoveTrades(t ...*Trade) *PlayerUpdate {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return pu.RemoveTradeIDs(ids...)
+}
+
+// ClearTradesReceived clears all "trades_received" edges to the Trade entity.
+func (pu *PlayerUpdate) ClearTradesReceived() *PlayerUpdate {
+	pu.mutation.ClearTradesReceived()
+	return pu
+}
+
+// RemoveTradesReceivedIDs removes the "trades_received" edge to Trade entities by IDs.
+func (pu *PlayerUpdate) RemoveTradesReceivedIDs(ids ...uuid.UUID) *PlayerUpdate {
+	pu.mutation.RemoveTradesReceivedIDs(ids...)
+	return pu
+}
+
+// RemoveTradesReceived removes "trades_received" edges to Trade entities.
+func (pu *PlayerUpdate) RemoveTradesReceived(t ...*Trade) *PlayerUpdate {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return pu.RemoveTradesReceivedIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1158,6 +1231,96 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if pu.mutation.TradesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   player.TradesTable,
+			Columns: []string{player.TradesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(trade.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedTradesIDs(); len(nodes) > 0 && !pu.mutation.TradesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   player.TradesTable,
+			Columns: []string{player.TradesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(trade.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.TradesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   player.TradesTable,
+			Columns: []string{player.TradesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(trade.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if pu.mutation.TradesReceivedCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   player.TradesReceivedTable,
+			Columns: []string{player.TradesReceivedColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(trade.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedTradesReceivedIDs(); len(nodes) > 0 && !pu.mutation.TradesReceivedCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   player.TradesReceivedTable,
+			Columns: []string{player.TradesReceivedColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(trade.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.TradesReceivedIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   player.TradesReceivedTable,
+			Columns: []string{player.TradesReceivedColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(trade.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{player.Label}
@@ -1532,6 +1695,36 @@ func (puo *PlayerUpdateOne) AddDungeons(d ...*Dungeon) *PlayerUpdateOne {
 	return puo.AddDungeonIDs(ids...)
 }
 
+// AddTradeIDs adds the "trades" edge to the Trade entity by IDs.
+func (puo *PlayerUpdateOne) AddTradeIDs(ids ...uuid.UUID) *PlayerUpdateOne {
+	puo.mutation.AddTradeIDs(ids...)
+	return puo
+}
+
+// AddTrades adds the "trades" edges to the Trade entity.
+func (puo *PlayerUpdateOne) AddTrades(t ...*Trade) *PlayerUpdateOne {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return puo.AddTradeIDs(ids...)
+}
+
+// AddTradesReceivedIDs adds the "trades_received" edge to the Trade entity by IDs.
+func (puo *PlayerUpdateOne) AddTradesReceivedIDs(ids ...uuid.UUID) *PlayerUpdateOne {
+	puo.mutation.AddTradesReceivedIDs(ids...)
+	return puo
+}
+
+// AddTradesReceived adds the "trades_received" edges to the Trade entity.
+func (puo *PlayerUpdateOne) AddTradesReceived(t ...*Trade) *PlayerUpdateOne {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return puo.AddTradesReceivedIDs(ids...)
+}
+
 // Mutation returns the PlayerMutation object of the builder.
 func (puo *PlayerUpdateOne) Mutation() *PlayerMutation {
 	return puo.mutation
@@ -1706,6 +1899,48 @@ func (puo *PlayerUpdateOne) RemoveDungeons(d ...*Dungeon) *PlayerUpdateOne {
 		ids[i] = d[i].ID
 	}
 	return puo.RemoveDungeonIDs(ids...)
+}
+
+// ClearTrades clears all "trades" edges to the Trade entity.
+func (puo *PlayerUpdateOne) ClearTrades() *PlayerUpdateOne {
+	puo.mutation.ClearTrades()
+	return puo
+}
+
+// RemoveTradeIDs removes the "trades" edge to Trade entities by IDs.
+func (puo *PlayerUpdateOne) RemoveTradeIDs(ids ...uuid.UUID) *PlayerUpdateOne {
+	puo.mutation.RemoveTradeIDs(ids...)
+	return puo
+}
+
+// RemoveTrades removes "trades" edges to Trade entities.
+func (puo *PlayerUpdateOne) RemoveTrades(t ...*Trade) *PlayerUpdateOne {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return puo.RemoveTradeIDs(ids...)
+}
+
+// ClearTradesReceived clears all "trades_received" edges to the Trade entity.
+func (puo *PlayerUpdateOne) ClearTradesReceived() *PlayerUpdateOne {
+	puo.mutation.ClearTradesReceived()
+	return puo
+}
+
+// RemoveTradesReceivedIDs removes the "trades_received" edge to Trade entities by IDs.
+func (puo *PlayerUpdateOne) RemoveTradesReceivedIDs(ids ...uuid.UUID) *PlayerUpdateOne {
+	puo.mutation.RemoveTradesReceivedIDs(ids...)
+	return puo
+}
+
+// RemoveTradesReceived removes "trades_received" edges to Trade entities.
+func (puo *PlayerUpdateOne) RemoveTradesReceived(t ...*Trade) *PlayerUpdateOne {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return puo.RemoveTradesReceivedIDs(ids...)
 }
 
 // Where appends a list predicates to the PlayerUpdate builder.
@@ -2322,6 +2557,96 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(dungeon.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.TradesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   player.TradesTable,
+			Columns: []string{player.TradesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(trade.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedTradesIDs(); len(nodes) > 0 && !puo.mutation.TradesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   player.TradesTable,
+			Columns: []string{player.TradesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(trade.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.TradesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   player.TradesTable,
+			Columns: []string{player.TradesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(trade.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.TradesReceivedCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   player.TradesReceivedTable,
+			Columns: []string{player.TradesReceivedColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(trade.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedTradesReceivedIDs(); len(nodes) > 0 && !puo.mutation.TradesReceivedCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   player.TradesReceivedTable,
+			Columns: []string{player.TradesReceivedColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(trade.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.TradesReceivedIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   player.TradesReceivedTable,
+			Columns: []string{player.TradesReceivedColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(trade.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

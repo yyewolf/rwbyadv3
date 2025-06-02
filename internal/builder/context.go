@@ -79,7 +79,10 @@ func FillPlayerContext(builder *ContextBuilder, userID snowflake.ID, ctx context
 	}
 
 	if builder.withPlayerSelectedCard {
-		query.WithSelectedCard()
+		query.WithSelectedCard(func(q *ent.CardQuery) {
+			q.WithType()
+			q.WithStats()
+		})
 	}
 
 	if builder.withPlayerLimits {

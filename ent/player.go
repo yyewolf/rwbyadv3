@@ -46,7 +46,7 @@ type Player struct {
 	SelectedCardID uuid.UUID `json:"selected_card_id,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PlayerQuery when eager-loading is set.
-	Edges        PlayerEdges `json:"edges,omitempty"`
+	Edges        PlayerEdges `json:"edges,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 
@@ -74,13 +74,17 @@ type PlayerEdges struct {
 	Listings []*Listing `json:"listings,omitempty,omitzero"`
 	// Dungeons holds the value of the dungeons edge.
 	Dungeons []*Dungeon `json:"dungeons,omitempty,omitzero"`
+	// Trades holds the value of the trades edge.
+	Trades []*Trade `json:"trades,omitempty,omitzero"`
+	// TradesReceived holds the value of the trades_received edge.
+	TradesReceived []*Trade `json:"trades_received,omitempty,omitzero"`
 	// PlayerFavoriteCards holds the value of the player_favorite_cards edge.
 	PlayerFavoriteCards []*PlayerFavoriteCards `json:"player_favorite_cards,omitempty,omitzero"`
 	// PlayerDecks holds the value of the player_decks edge.
 	PlayerDecks []*PlayerDeck `json:"player_decks,omitempty,omitzero"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [13]bool
+	loadedTypes [15]bool
 }
 
 // LimitsOrErr returns the Limits value or an error if the edge
@@ -190,10 +194,28 @@ func (e PlayerEdges) DungeonsOrErr() ([]*Dungeon, error) {
 	return nil, &NotLoadedError{edge: "dungeons"}
 }
 
+// TradesOrErr returns the Trades value or an error if the edge
+// was not loaded in eager-loading.
+func (e PlayerEdges) TradesOrErr() ([]*Trade, error) {
+	if e.loadedTypes[11] {
+		return e.Trades, nil
+	}
+	return nil, &NotLoadedError{edge: "trades"}
+}
+
+// TradesReceivedOrErr returns the TradesReceived value or an error if the edge
+// was not loaded in eager-loading.
+func (e PlayerEdges) TradesReceivedOrErr() ([]*Trade, error) {
+	if e.loadedTypes[12] {
+		return e.TradesReceived, nil
+	}
+	return nil, &NotLoadedError{edge: "trades_received"}
+}
+
 // PlayerFavoriteCardsOrErr returns the PlayerFavoriteCards value or an error if the edge
 // was not loaded in eager-loading.
 func (e PlayerEdges) PlayerFavoriteCardsOrErr() ([]*PlayerFavoriteCards, error) {
-	if e.loadedTypes[11] {
+	if e.loadedTypes[13] {
 		return e.PlayerFavoriteCards, nil
 	}
 	return nil, &NotLoadedError{edge: "player_favorite_cards"}
@@ -202,7 +224,7 @@ func (e PlayerEdges) PlayerFavoriteCardsOrErr() ([]*PlayerFavoriteCards, error) 
 // PlayerDecksOrErr returns the PlayerDecks value or an error if the edge
 // was not loaded in eager-loading.
 func (e PlayerEdges) PlayerDecksOrErr() ([]*PlayerDeck, error) {
-	if e.loadedTypes[12] {
+	if e.loadedTypes[14] {
 		return e.PlayerDecks, nil
 	}
 	return nil, &NotLoadedError{edge: "player_decks"}
@@ -374,6 +396,16 @@ func (pl *Player) QueryListings() *ListingQuery {
 // QueryDungeons queries the "dungeons" edge of the Player entity.
 func (pl *Player) QueryDungeons() *DungeonQuery {
 	return NewPlayerClient(pl.config).QueryDungeons(pl)
+}
+
+// QueryTrades queries the "trades" edge of the Player entity.
+func (pl *Player) QueryTrades() *TradeQuery {
+	return NewPlayerClient(pl.config).QueryTrades(pl)
+}
+
+// QueryTradesReceived queries the "trades_received" edge of the Player entity.
+func (pl *Player) QueryTradesReceived() *TradeQuery {
+	return NewPlayerClient(pl.config).QueryTradesReceived(pl)
 }
 
 // QueryPlayerFavoriteCards queries the "player_favorite_cards" edge of the Player entity.

@@ -23,6 +23,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/ent/playerfavoritecards"
 	"github.com/yyewolf/rwbyadv3/ent/playerlimit"
 	"github.com/yyewolf/rwbyadv3/ent/schema"
+	"github.com/yyewolf/rwbyadv3/ent/trade"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -451,4 +452,35 @@ func init() {
 	playerlimit.DefaultDungeonsLeft = playerlimitDescDungeonsLeft.Default.(int)
 	// playerlimit.DungeonsLeftValidator is a validator for the "dungeons_left" field. It is called by the builders before save.
 	playerlimit.DungeonsLeftValidator = playerlimitDescDungeonsLeft.Validators[0].(func(int) error)
+	tradeMixin := schema.Trade{}.Mixin()
+	tradeMixinFields0 := tradeMixin[0].Fields()
+	_ = tradeMixinFields0
+	tradeFields := schema.Trade{}.Fields()
+	_ = tradeFields
+	// tradeDescCreateTime is the schema descriptor for create_time field.
+	tradeDescCreateTime := tradeMixinFields0[0].Descriptor()
+	// trade.DefaultCreateTime holds the default value on creation for the create_time field.
+	trade.DefaultCreateTime = tradeDescCreateTime.Default.(func() time.Time)
+	// tradeDescUpdateTime is the schema descriptor for update_time field.
+	tradeDescUpdateTime := tradeMixinFields0[1].Descriptor()
+	// trade.DefaultUpdateTime holds the default value on creation for the update_time field.
+	trade.DefaultUpdateTime = tradeDescUpdateTime.Default.(func() time.Time)
+	// trade.UpdateDefaultUpdateTime holds the default value on update for the update_time field.
+	trade.UpdateDefaultUpdateTime = tradeDescUpdateTime.UpdateDefault.(func() time.Time)
+	// tradeDescLiens is the schema descriptor for liens field.
+	tradeDescLiens := tradeFields[3].Descriptor()
+	// trade.DefaultLiens holds the default value on creation for the liens field.
+	trade.DefaultLiens = tradeDescLiens.Default.(int)
+	// tradeDescOfferCards is the schema descriptor for offer_cards field.
+	tradeDescOfferCards := tradeFields[4].Descriptor()
+	// trade.DefaultOfferCards holds the default value on creation for the offer_cards field.
+	trade.DefaultOfferCards = tradeDescOfferCards.Default.([]string)
+	// tradeDescReceiveCards is the schema descriptor for receive_cards field.
+	tradeDescReceiveCards := tradeFields[5].Descriptor()
+	// trade.DefaultReceiveCards holds the default value on creation for the receive_cards field.
+	trade.DefaultReceiveCards = tradeDescReceiveCards.Default.([]string)
+	// tradeDescID is the schema descriptor for id field.
+	tradeDescID := tradeFields[0].Descriptor()
+	// trade.DefaultID holds the default value on creation for the id field.
+	trade.DefaultID = tradeDescID.Default.(func() uuid.UUID)
 }

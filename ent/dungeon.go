@@ -29,7 +29,7 @@ type Dungeon struct {
 	Seed int64 `json:"seed,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DungeonQuery when eager-loading is set.
-	Edges        DungeonEdges `json:"edges,omitempty"`
+	Edges        DungeonEdges `json:"edges,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 

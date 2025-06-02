@@ -46,6 +46,8 @@ type Tx struct {
 	PlayerFavoriteCards *PlayerFavoriteCardsClient
 	// PlayerLimit is the client for interacting with the PlayerLimit builders.
 	PlayerLimit *PlayerLimitClient
+	// Trade is the client for interacting with the Trade builders.
+	Trade *TradeClient
 
 	// lazily loaded.
 	client     *Client
@@ -194,6 +196,7 @@ func (tx *Tx) init() {
 	tx.PlayerDeck = NewPlayerDeckClient(tx.config)
 	tx.PlayerFavoriteCards = NewPlayerFavoriteCardsClient(tx.config)
 	tx.PlayerLimit = NewPlayerLimitClient(tx.config)
+	tx.Trade = NewTradeClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

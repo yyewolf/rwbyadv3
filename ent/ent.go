@@ -29,6 +29,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/ent/playerdeck"
 	"github.com/yyewolf/rwbyadv3/ent/playerfavoritecards"
 	"github.com/yyewolf/rwbyadv3/ent/playerlimit"
+	"github.com/yyewolf/rwbyadv3/ent/trade"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -106,6 +107,7 @@ func checkColumn(table, column string) error {
 			playerdeck.Table:          playerdeck.ValidColumn,
 			playerfavoritecards.Table: playerfavoritecards.ValidColumn,
 			playerlimit.Table:         playerlimit.ValidColumn,
+			trade.Table:               trade.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

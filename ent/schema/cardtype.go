@@ -14,9 +14,9 @@ type CardType struct {
 // Fields of the CardType.
 func (CardType) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").Annotations(entvis.Visibility(RolePublic)),
-		field.String("name").Annotations(entvis.Visibility(RolePublic)),
-		field.Strings("categories").Annotations(entvis.Visibility(RolePublic)),
+		field.String("id").Annotations(entvis.Visibility(RoleSelf, RolePublic)),
+		field.String("name").Annotations(entvis.Visibility(RoleSelf, RolePublic)),
+		field.Strings("categories").Annotations(entvis.Visibility(RoleSelf, RolePublic)),
 		field.String("s_categories"),
 	}
 }

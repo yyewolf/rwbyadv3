@@ -453,6 +453,37 @@ var (
 			},
 		},
 	}
+	// TradesColumns holds the columns for the "trades" table.
+	TradesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "create_time", Type: field.TypeTime},
+		{Name: "update_time", Type: field.TypeTime},
+		{Name: "liens", Type: field.TypeInt, Default: 0},
+		{Name: "offer_cards", Type: field.TypeJSON},
+		{Name: "receive_cards", Type: field.TypeJSON},
+		{Name: "initiator_id", Type: field.TypeString},
+		{Name: "receiver_id", Type: field.TypeString},
+	}
+	// TradesTable holds the schema information for the "trades" table.
+	TradesTable = &schema.Table{
+		Name:       "trades",
+		Columns:    TradesColumns,
+		PrimaryKey: []*schema.Column{TradesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "trades_players_initiator",
+				Columns:    []*schema.Column{TradesColumns[6]},
+				RefColumns: []*schema.Column{PlayersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "trades_players_receiver",
+				Columns:    []*schema.Column{TradesColumns[7]},
+				RefColumns: []*schema.Column{PlayersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AuctionsTable,
@@ -472,6 +503,7 @@ var (
 		PlayerDecksTable,
 		PlayerFavoriteCardsTable,
 		PlayerLimitsTable,
+		TradesTable,
 	}
 )
 
@@ -497,4 +529,6 @@ func init() {
 	PlayerFavoriteCardsTable.ForeignKeys[0].RefTable = PlayersTable
 	PlayerFavoriteCardsTable.ForeignKeys[1].RefTable = CardsTable
 	PlayerLimitsTable.ForeignKeys[0].RefTable = PlayersTable
+	TradesTable.ForeignKeys[0].RefTable = PlayersTable
+	TradesTable.ForeignKeys[1].RefTable = PlayersTable
 }

@@ -16,7 +16,7 @@ export const getListings = async (
 	page: number
 ): Promise<PaginatedResponse<Listing>> => {
 	return await getPaginated<Listing>(
-		`/apis/market/api/listings?query=${encodeURIComponent(query)}&p=${page}`
+		`/apis/market/listings?query=${encodeURIComponent(query)}&p=${page}`
 	);
 };
 
@@ -25,7 +25,7 @@ export const getListings = async (
  * @returns Response with array of latest listings
  */
 export const getLatestListings = async (): Promise<Response<Listing[]>> => {
-	return await get<Listing[]>(`/apis/market/api/latest/listings`);
+	return await get<Listing[]>(`/apis/market/latest/listings`);
 };
 
 /**
@@ -34,7 +34,7 @@ export const getLatestListings = async (): Promise<Response<Listing[]>> => {
  * @returns Response with the purchased listing or null if redirected
  */
 export const purchaseListing = async (listingId: string): Promise<Response<Listing | null>> => {
-	return await post<Listing | null>(`/apis/market/api/listings/${listingId}`, undefined);
+	return await post<Listing | null>(`/apis/market/listings/${listingId}`, undefined);
 };
 
 /**
@@ -63,7 +63,7 @@ export const getAuctions = async (
 	page: number
 ): Promise<PaginatedResponse<Auction>> => {
 	return await getPaginated<Auction>(
-		`/apis/market/api/auctions?query=${encodeURIComponent(query)}&p=${page}`
+		`/apis/market/auctions?query=${encodeURIComponent(query)}&p=${page}`
 	);
 };
 
@@ -73,7 +73,7 @@ export const getAuctions = async (
  * @returns Response with the auction details
  */
 export const getAuction = async (auctionId: string): Promise<Response<Auction>> => {
-	return await get<Auction>(`/apis/market/api/auctions/${auctionId}`);
+	return await get<Auction>(`/apis/market/auctions/${auctionId}`);
 };
 
 /**
@@ -81,7 +81,7 @@ export const getAuction = async (auctionId: string): Promise<Response<Auction>> 
  * @returns Response with array of latest auctions
  */
 export const getLatestAuctions = async (): Promise<Response<Auction[]>> => {
-	return await get<Auction[]>(`/apis/market/api/latest/auctions`);
+	return await get<Auction[]>(`/apis/market/latest/auctions`);
 };
 
 /**
@@ -94,7 +94,7 @@ export const bidOnAuction = async (
 	auctionId: string,
 	bidAmount: number
 ): Promise<Response<Auction | null>> => {
-	return await post<Auction | null>(`/apis/market/api/auctions/${auctionId}`, {
+	return await post<Auction | null>(`/apis/market/auctions/${auctionId}`, {
 		bid_amount: bidAmount
 	});
 };

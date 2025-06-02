@@ -8,6 +8,7 @@ import (
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/internal/interfaces"
 	"go.temporal.io/sdk/client"
@@ -15,18 +16,39 @@ import (
 )
 
 type SendDmParams struct {
-	Player  *ent.Player
-	Message discord.MessageCreate
+	Player     *ent.Player
+	Message    discord.MessageCreate
+	Components []discord.UnmarshalComponent
 }
 
-func DispatchDm(app interfaces.App, p *ent.Player, m discord.MessageCreate) {
+func UnmarshalComponents(components []discord.UnmarshalComponent) []discord.ContainerComponent {
+	containerComponents := make([]discord.ContainerComponent, len(components))
+	for i := range components {
+		containerComponents[i] = components[i].Component.(discord.ContainerComponent)
+	}
+	return containerComponents
+}
+
+func MarshalComponents(components []discord.ContainerComponent) []discord.UnmarshalComponent {
+	unmarshalComponents := make([]discord.UnmarshalComponent, len(components))
+	for i := range components {
+		unmarshalComponents[i] = discord.UnmarshalComponent{
+			Component: components[i],
+		}
+	}
+	return unmarshalComponents
+}
+
+func DispatchDm(app interfaces.App, p *ent.Player, m discord.MessageCreate, components ...discord.UnmarshalComponent) {
 	workflowOptions := client.StartWorkflowOptions{
 		ID:        fmt.Sprintf("send_dm_%s_%s", p.ID, uuid.NewString()),
 		TaskQueue: app.Config().Temporal.TaskQueue,
 	}
+
 	app.Temporal().ExecuteWorkflow(context.Background(), workflowOptions, Repository.SendDmWorkflow, &SendDmParams{
-		Player:  p,
-		Message: m,
+		Player:     p,
+		Message:    m,
+		Components: components,
 	})
 }
 
@@ -54,8 +76,13 @@ func (n *NotificationsRepository) SendDmActivity(ctx context.Context, params *Se
 		return false, err
 	}
 
+	if len(params.Components) > 0 {
+		params.Message.Components = UnmarshalComponents(params.Components)
+	}
+
 	_, err = c.Rest().CreateMessage(ch.ID(), params.Message)
 	if err != nil {
+		logrus.WithError(err).WithField("channel_id", ch.ID()).Error("Failed to send DM message")
 		return false, err
 	}
 

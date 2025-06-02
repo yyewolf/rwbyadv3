@@ -6,11 +6,13 @@ import (
 	"math"
 	"strconv"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
 	"github.com/sirupsen/logrus"
 	"github.com/yyewolf/rwbyadv3/ent"
 	"github.com/yyewolf/rwbyadv3/ent/auction"
+	"github.com/yyewolf/rwbyadv3/ent/auctionbid"
 	"github.com/yyewolf/rwbyadv3/internal/builder"
 	"github.com/yyewolf/rwbyadv3/internal/utils"
 )
@@ -53,6 +55,9 @@ func (cmd *auctionsCommand) generator(username string, p *ent.Player, page int) 
 		Offset(page * int(perPage)).
 		Limit(int(perPage)).
 		WithCard().
+		WithBids(func(abq *ent.AuctionBidQuery) {
+			abq.Order(auctionbid.ByPrice(sql.OrderDesc()))
+		}).
 		All(context.Background())
 	if err != nil {
 		return discord.Embed{}, nil, err
@@ -62,7 +67,7 @@ func (cmd *auctionsCommand) generator(username string, p *ent.Player, page int) 
 
 	for i, auction := range auctions {
 		idx := page*int(perPage) + i + 1
-		field.Value += fmt.Sprintf("`N°%d | %s`\n", idx, auction.Edges.Card.FullString())
+		field.Value += fmt.Sprintf("`N°%d | %d Ⱡ | %s`\n", idx, auction.GetPrice(), auction.Edges.Card.PartialString())
 	}
 
 	if len(auctions) == 0 {

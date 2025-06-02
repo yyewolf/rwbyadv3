@@ -26,6 +26,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/ent/playerfavoritecards"
 	"github.com/yyewolf/rwbyadv3/ent/playerlimit"
 	"github.com/yyewolf/rwbyadv3/ent/predicate"
+	"github.com/yyewolf/rwbyadv3/ent/trade"
 )
 
 // The Query interface represents an operation that queries a graph.
@@ -543,6 +544,33 @@ func (f TraversePlayerLimit) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.PlayerLimitQuery", q)
 }
 
+// The TradeFunc type is an adapter to allow the use of ordinary function as a Querier.
+type TradeFunc func(context.Context, *ent.TradeQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f TradeFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.TradeQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.TradeQuery", q)
+}
+
+// The TraverseTrade type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseTrade func(context.Context, *ent.TradeQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseTrade) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseTrade) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.TradeQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.TradeQuery", q)
+}
+
 // NewQuery returns the generic Query interface for the given typed query.
 func NewQuery(q ent.Query) (Query, error) {
 	switch q := q.(type) {
@@ -580,6 +608,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.PlayerFavoriteCardsQuery, predicate.PlayerFavoriteCards, playerfavoritecards.OrderOption]{typ: ent.TypePlayerFavoriteCards, tq: q}, nil
 	case *ent.PlayerLimitQuery:
 		return &query[*ent.PlayerLimitQuery, predicate.PlayerLimit, playerlimit.OrderOption]{typ: ent.TypePlayerLimit, tq: q}, nil
+	case *ent.TradeQuery:
+		return &query[*ent.TradeQuery, predicate.Trade, trade.OrderOption]{typ: ent.TypeTrade, tq: q}, nil
 	default:
 		return nil, fmt.Errorf("unknown query type %T", q)
 	}

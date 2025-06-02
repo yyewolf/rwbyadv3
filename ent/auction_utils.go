@@ -13,7 +13,7 @@ func (a *Auction) GetLatestBid() (*AuctionBid, bool) {
 func (a *Auction) GetPrice() int64 {
 	bid, ok := a.GetLatestBid()
 	if !ok {
-		return 1
+		return 0
 	}
 
 	return bid.Price

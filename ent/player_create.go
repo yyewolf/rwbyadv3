@@ -22,6 +22,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/ent/lootbox"
 	"github.com/yyewolf/rwbyadv3/ent/player"
 	"github.com/yyewolf/rwbyadv3/ent/playerlimit"
+	"github.com/yyewolf/rwbyadv3/ent/trade"
 )
 
 // PlayerCreate is the builder for creating a Player entity.
@@ -357,6 +358,36 @@ func (pc *PlayerCreate) AddDungeons(d ...*Dungeon) *PlayerCreate {
 		ids[i] = d[i].ID
 	}
 	return pc.AddDungeonIDs(ids...)
+}
+
+// AddTradeIDs adds the "trades" edge to the Trade entity by IDs.
+func (pc *PlayerCreate) AddTradeIDs(ids ...uuid.UUID) *PlayerCreate {
+	pc.mutation.AddTradeIDs(ids...)
+	return pc
+}
+
+// AddTrades adds the "trades" edges to the Trade entity.
+func (pc *PlayerCreate) AddTrades(t ...*Trade) *PlayerCreate {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return pc.AddTradeIDs(ids...)
+}
+
+// AddTradesReceivedIDs adds the "trades_received" edge to the Trade entity by IDs.
+func (pc *PlayerCreate) AddTradesReceivedIDs(ids ...uuid.UUID) *PlayerCreate {
+	pc.mutation.AddTradesReceivedIDs(ids...)
+	return pc
+}
+
+// AddTradesReceived adds the "trades_received" edges to the Trade entity.
+func (pc *PlayerCreate) AddTradesReceived(t ...*Trade) *PlayerCreate {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return pc.AddTradesReceivedIDs(ids...)
 }
 
 // Mutation returns the PlayerMutation object of the builder.
@@ -757,6 +788,38 @@ func (pc *PlayerCreate) createSpec() (*Player, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(dungeon.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.TradesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   player.TradesTable,
+			Columns: []string{player.TradesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(trade.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.TradesReceivedIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   player.TradesReceivedTable,
+			Columns: []string{player.TradesReceivedColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(trade.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

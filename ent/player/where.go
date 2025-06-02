@@ -829,6 +829,52 @@ func HasDungeonsWith(preds ...predicate.Dungeon) predicate.Player {
 	})
 }
 
+// HasTrades applies the HasEdge predicate on the "trades" edge.
+func HasTrades() predicate.Player {
+	return predicate.Player(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, TradesTable, TradesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTradesWith applies the HasEdge predicate on the "trades" edge with a given conditions (other predicates).
+func HasTradesWith(preds ...predicate.Trade) predicate.Player {
+	return predicate.Player(func(s *sql.Selector) {
+		step := newTradesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasTradesReceived applies the HasEdge predicate on the "trades_received" edge.
+func HasTradesReceived() predicate.Player {
+	return predicate.Player(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, TradesReceivedTable, TradesReceivedColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTradesReceivedWith applies the HasEdge predicate on the "trades_received" edge with a given conditions (other predicates).
+func HasTradesReceivedWith(preds ...predicate.Trade) predicate.Player {
+	return predicate.Player(func(s *sql.Selector) {
+		step := newTradesReceivedStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasPlayerFavoriteCards applies the HasEdge predicate on the "player_favorite_cards" edge.
 func HasPlayerFavoriteCards() predicate.Player {
 	return predicate.Player(func(s *sql.Selector) {

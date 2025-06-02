@@ -280,7 +280,11 @@ func ViewCardTypeAs[K CardTypeRoles](ct *CardType, role K) *CardType {
 			Categories: ct.Categories,
 		}
 	case self:
-		return &CardType{}
+		return &CardType{
+			ID:         ct.ID,
+			Name:       ct.Name,
+			Categories: ct.Categories,
+		}
 	default:
 		log.Fatalf("role not found to view CardType as %T", role)
 	}
@@ -608,6 +612,8 @@ func ViewPlayerAs[K PlayerRoles](pl *Player, role K) *Player {
 				Auctions:            ViewAuctionListAs(pl.Edges.Auctions, role),
 				Listings:            ViewListingListAs(pl.Edges.Listings, role),
 				Dungeons:            ViewDungeonListAs(pl.Edges.Dungeons, role),
+				Trades:              ViewTradeListAs(pl.Edges.Trades, role),
+				TradesReceived:      ViewTradeListAs(pl.Edges.TradesReceived, role),
 				PlayerFavoriteCards: ViewPlayerFavoriteCardsListAs(pl.Edges.PlayerFavoriteCards, role),
 				PlayerDecks:         ViewPlayerDeckListAs(pl.Edges.PlayerDecks, role),
 			},
@@ -635,6 +641,8 @@ func ViewPlayerAs[K PlayerRoles](pl *Player, role K) *Player {
 				Auctions:            ViewAuctionListAs(pl.Edges.Auctions, role),
 				Listings:            ViewListingListAs(pl.Edges.Listings, role),
 				Dungeons:            ViewDungeonListAs(pl.Edges.Dungeons, role),
+				Trades:              ViewTradeListAs(pl.Edges.Trades, role),
+				TradesReceived:      ViewTradeListAs(pl.Edges.TradesReceived, role),
 				PlayerFavoriteCards: ViewPlayerFavoriteCardsListAs(pl.Edges.PlayerFavoriteCards, role),
 				PlayerDecks:         ViewPlayerDeckListAs(pl.Edges.PlayerDecks, role),
 			},
@@ -777,6 +785,48 @@ func ViewPlayerLimitListAs[K PlayerLimitRoles](pl []*PlayerLimit, role K) []*Pla
 	views := make([]*PlayerLimit, len(pl))
 	for i, v := range pl {
 		views[i] = ViewPlayerLimitAs(v, role)
+	}
+	return views
+}
+
+type TradeRoles interface {
+	public | self
+}
+
+func ViewTradeAs[K TradeRoles](t *Trade, role K) *Trade {
+	if t == nil {
+		return nil
+	}
+
+	switch any(role).(type) {
+	case public:
+		return &Trade{
+			Edges: TradeEdges{
+				Initiator: ViewPlayerAs(t.Edges.Initiator, role),
+				Receiver:  ViewPlayerAs(t.Edges.Receiver, role),
+			},
+		}
+	case self:
+		return &Trade{
+			Edges: TradeEdges{
+				Initiator: ViewPlayerAs(t.Edges.Initiator, role),
+				Receiver:  ViewPlayerAs(t.Edges.Receiver, role),
+			},
+		}
+	default:
+		log.Fatalf("role not found to view Trade as %T", role)
+	}
+
+	return nil
+}
+
+func ViewTradeListAs[K TradeRoles](t []*Trade, role K) []*Trade {
+	if len(t) == 0 {
+		return nil
+	}
+	views := make([]*Trade, len(t))
+	for i, v := range t {
+		views[i] = ViewTradeAs(v, role)
 	}
 	return views
 }

@@ -34,7 +34,7 @@ type Auction struct {
 	EndsAt time.Time `json:"ends_at,omitempty,omitzero"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the AuctionQuery when eager-loading is set.
-	Edges        AuctionEdges `json:"edges,omitempty"`
+	Edges        AuctionEdges `json:"edges,omitempty,omitzero"`
 	selectValues sql.SelectValues
 }
 

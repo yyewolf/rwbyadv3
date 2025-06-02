@@ -25,6 +25,7 @@ import (
 	"github.com/yyewolf/rwbyadv3/ent/playerfavoritecards"
 	"github.com/yyewolf/rwbyadv3/ent/playerlimit"
 	"github.com/yyewolf/rwbyadv3/ent/predicate"
+	"github.com/yyewolf/rwbyadv3/ent/trade"
 )
 
 // PlayerQuery is the builder for querying Player entities.
@@ -45,6 +46,8 @@ type PlayerQuery struct {
 	withAuctions            *AuctionQuery
 	withListings            *ListingQuery
 	withDungeons            *DungeonQuery
+	withTrades              *TradeQuery
+	withTradesReceived      *TradeQuery
 	withPlayerFavoriteCards *PlayerFavoriteCardsQuery
 	withPlayerDecks         *PlayerDeckQuery
 	// intermediate query (i.e. traversal path).
@@ -325,6 +328,50 @@ func (pq *PlayerQuery) QueryDungeons() *DungeonQuery {
 	return query
 }
 
+// QueryTrades chains the current query on the "trades" edge.
+func (pq *PlayerQuery) QueryTrades() *TradeQuery {
+	query := (&TradeClient{config: pq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, selector),
+			sqlgraph.To(trade.Table, trade.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, player.TradesTable, player.TradesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryTradesReceived chains the current query on the "trades_received" edge.
+func (pq *PlayerQuery) QueryTradesReceived() *TradeQuery {
+	query := (&TradeClient{config: pq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, selector),
+			sqlgraph.To(trade.Table, trade.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, player.TradesReceivedTable, player.TradesReceivedColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryPlayerFavoriteCards chains the current query on the "player_favorite_cards" edge.
 func (pq *PlayerQuery) QueryPlayerFavoriteCards() *PlayerFavoriteCardsQuery {
 	query := (&PlayerFavoriteCardsClient{config: pq.config}).Query()
@@ -572,6 +619,8 @@ func (pq *PlayerQuery) Clone() *PlayerQuery {
 		withAuctions:            pq.withAuctions.Clone(),
 		withListings:            pq.withListings.Clone(),
 		withDungeons:            pq.withDungeons.Clone(),
+		withTrades:              pq.withTrades.Clone(),
+		withTradesReceived:      pq.withTradesReceived.Clone(),
 		withPlayerFavoriteCards: pq.withPlayerFavoriteCards.Clone(),
 		withPlayerDecks:         pq.withPlayerDecks.Clone(),
 		// clone intermediate query.
@@ -701,6 +750,28 @@ func (pq *PlayerQuery) WithDungeons(opts ...func(*DungeonQuery)) *PlayerQuery {
 	return pq
 }
 
+// WithTrades tells the query-builder to eager-load the nodes that are connected to
+// the "trades" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PlayerQuery) WithTrades(opts ...func(*TradeQuery)) *PlayerQuery {
+	query := (&TradeClient{config: pq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withTrades = query
+	return pq
+}
+
+// WithTradesReceived tells the query-builder to eager-load the nodes that are connected to
+// the "trades_received" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PlayerQuery) WithTradesReceived(opts ...func(*TradeQuery)) *PlayerQuery {
+	query := (&TradeClient{config: pq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withTradesReceived = query
+	return pq
+}
+
 // WithPlayerFavoriteCards tells the query-builder to eager-load the nodes that are connected to
 // the "player_favorite_cards" edge. The optional arguments are used to configure the query builder of the edge.
 func (pq *PlayerQuery) WithPlayerFavoriteCards(opts ...func(*PlayerFavoriteCardsQuery)) *PlayerQuery {
@@ -801,7 +872,7 @@ func (pq *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 	var (
 		nodes       = []*Player{}
 		_spec       = pq.querySpec()
-		loadedTypes = [13]bool{
+		loadedTypes = [15]bool{
 			pq.withLimits != nil,
 			pq.withCards != nil,
 			pq.withFavoriteCards != nil,
@@ -813,6 +884,8 @@ func (pq *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 			pq.withAuctions != nil,
 			pq.withListings != nil,
 			pq.withDungeons != nil,
+			pq.withTrades != nil,
+			pq.withTradesReceived != nil,
 			pq.withPlayerFavoriteCards != nil,
 			pq.withPlayerDecks != nil,
 		}
@@ -905,6 +978,20 @@ func (pq *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 		if err := pq.loadDungeons(ctx, query, nodes,
 			func(n *Player) { n.Edges.Dungeons = []*Dungeon{} },
 			func(n *Player, e *Dungeon) { n.Edges.Dungeons = append(n.Edges.Dungeons, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withTrades; query != nil {
+		if err := pq.loadTrades(ctx, query, nodes,
+			func(n *Player) { n.Edges.Trades = []*Trade{} },
+			func(n *Player, e *Trade) { n.Edges.Trades = append(n.Edges.Trades, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withTradesReceived; query != nil {
+		if err := pq.loadTradesReceived(ctx, query, nodes,
+			func(n *Player) { n.Edges.TradesReceived = []*Trade{} },
+			func(n *Player, e *Trade) { n.Edges.TradesReceived = append(n.Edges.TradesReceived, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1304,6 +1391,66 @@ func (pq *PlayerQuery) loadDungeons(ctx context.Context, query *DungeonQuery, no
 		node, ok := nodeids[fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "player_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (pq *PlayerQuery) loadTrades(ctx context.Context, query *TradeQuery, nodes []*Player, init func(*Player), assign func(*Player, *Trade)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Player)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(trade.FieldInitiatorID)
+	}
+	query.Where(predicate.Trade(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(player.TradesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.InitiatorID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "initiator_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (pq *PlayerQuery) loadTradesReceived(ctx context.Context, query *TradeQuery, nodes []*Player, init func(*Player), assign func(*Player, *Trade)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Player)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(trade.FieldReceiverID)
+	}
+	query.Where(predicate.Trade(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(player.TradesReceivedColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ReceiverID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "receiver_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
